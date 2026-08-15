@@ -192,6 +192,29 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
         options.find((option) => option.value === value) ?? options[0];
     const typeaheadRef = useRef('');
     const typeaheadTimeRef = useRef(0);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const listboxRef = useRef<HTMLDivElement>(null);
+
+    const closeAndFocusTrigger = useCallback(() => {
+        onOpenChange(false);
+        triggerRef.current?.focus();
+    }, [onOpenChange]);
+
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+
+        const selectedOptionButton =
+            listboxRef.current?.querySelector<HTMLButtonElement>(
+                '[aria-selected="true"]:not(:disabled)'
+            );
+        const firstOption =
+            listboxRef.current?.querySelector<HTMLButtonElement>(
+                'button:not(:disabled)'
+            );
+        (selectedOptionButton ?? firstOption)?.focus();
+    }, [isOpen]);
 
     const searchMatchingOption = useCallback(
         (key: string) => {
@@ -218,10 +241,10 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
 
             if (matchingOption !== undefined) {
                 onChange(matchingOption.value);
-                onOpenChange(false);
+                closeAndFocusTrigger();
             }
         },
-        [onChange, onOpenChange, options]
+        [closeAndFocusTrigger, onChange, options]
     );
 
     return (
@@ -231,6 +254,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                 .join(' ')}
         >
             <button
+                ref={triggerRef}
                 className='settings-select'
                 type='button'
                 id={id}
@@ -274,6 +298,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
             </button>
             {isOpen ? (
                 <div
+                    ref={listboxRef}
                     className='settings-dropdown'
                     id={`${id}-listbox`}
                     role='listbox'
@@ -297,12 +322,13 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                                     }
 
                                     onChange(option.value);
-                                    onOpenChange(false);
+                                    closeAndFocusTrigger();
                                 }}
                                 onKeyDown={(event) => {
                                     if (event.key === 'Escape') {
                                         event.preventDefault();
-                                        onOpenChange(false);
+                                        event.stopPropagation();
+                                        closeAndFocusTrigger();
                                     }
                                 }}
                             >
@@ -371,8 +397,10 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         initialPreferences.themeColor
     );
     const [openDropdownId, setOpenDropdownId] = useState<string>();
+    const openDropdownIdRef = useRef(openDropdownId);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
     const wallpaperInputRef = useRef<HTMLInputElement>(null);
+    openDropdownIdRef.current = openDropdownId;
 
     const setMenuOpen = useCallback(
         (nextIsOpen: boolean) => {
@@ -414,6 +442,10 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         const onKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
                 event.preventDefault();
+                if (openDropdownIdRef.current !== undefined) {
+                    setOpenDropdownId(undefined);
+                    return;
+                }
                 setMenuOpen(false);
             }
         };

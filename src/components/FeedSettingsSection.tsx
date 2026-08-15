@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { DragDropProvider } from '@dnd-kit/react';
 import type { DragEndEvent } from '@dnd-kit/react';
 import { isSortable, useSortable } from '@dnd-kit/react/sortable';
@@ -85,6 +85,7 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
 }) => {
     const { t } = useLocale();
     const [query, setQuery] = useState('');
+    const searchInputRef = useRef<HTMLInputElement>(null);
     const feedBookmarks = useMemo(
         () => getFeedBookmarks(bookmarkControls.bookmarkTree),
         [bookmarkControls.bookmarkTree]
@@ -161,6 +162,7 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
                         result.id,
                     ]);
                     setQuery('');
+                    searchInputRef.current?.focus();
                 }}
             >
                 <span>
@@ -227,6 +229,7 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
                     <div className='settings-feed-search'>
                         <Search aria-hidden='true' />
                         <input
+                            ref={searchInputRef}
                             id='feed-bookmark-search'
                             type='search'
                             autoComplete='off'
