@@ -1888,6 +1888,11 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                                             t.categoryIconSearch
                                                         }
                                                         value={iconQuery}
+                                                        onPointerDown={(
+                                                            event
+                                                        ) => {
+                                                            event.currentTarget.focus();
+                                                        }}
                                                         onChange={(event) => {
                                                             setIconQuery(
                                                                 event.target
