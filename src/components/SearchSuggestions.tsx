@@ -68,7 +68,7 @@ export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
                         type='button'
                         role='option'
                         aria-selected={isSelected}
-                        onMouseDown={(event) => {
+                        onPointerDown={(event) => {
                             event.preventDefault();
                         }}
                         onFocus={() => {
@@ -105,7 +105,7 @@ export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
                         type='button'
                         role='option'
                         aria-selected={isSelected}
-                        onMouseDown={(event) => {
+                        onPointerDown={(event) => {
                             event.preventDefault();
                         }}
                         onFocus={() => {
@@ -141,7 +141,7 @@ export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
                     aria-selected={
                         highlightedSearchResultIndex === googleSearchResultIndex
                     }
-                    onMouseDown={(event) => {
+                    onPointerDown={(event) => {
                         event.preventDefault();
                     }}
                     onFocus={onHighlightGoogleSearch}

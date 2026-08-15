@@ -434,6 +434,13 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
     const importInputId = useId();
     const dialogRef = useRef<HTMLDivElement>(null);
     const importInputRef = useRef<HTMLInputElement>(null);
+    const queryInputRef = useRef<HTMLInputElement>(null);
+    const addMenuTriggerRef = useRef<HTMLButtonElement>(null);
+    const addMenuRef = useRef<HTMLDivElement>(null);
+    const locationPickerTriggerRef = useRef<HTMLButtonElement>(null);
+    const locationOptionsRef = useRef<HTMLDivElement>(null);
+    const iconPickerTriggerRef = useRef<HTMLButtonElement>(null);
+    const iconSearchInputRef = useRef<HTMLInputElement>(null);
     const [location, setLocation] = useState<BookmarkLocation>(() => ({
         categoryIndex: bookmarkControls.bookmarkTree.length === 0 ? -1 : 0,
         folderPath: [],
@@ -834,6 +841,38 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
     }, []);
 
     useEffect(() => {
+        if (!isAddMenuOpen) {
+            return;
+        }
+
+        addMenuRef.current
+            ?.querySelector<HTMLButtonElement>('button:not(:disabled)')
+            ?.focus();
+    }, [isAddMenuOpen]);
+
+    useEffect(() => {
+        if (!isLocationPickerOpen) {
+            return;
+        }
+
+        const selectedOption =
+            locationOptionsRef.current?.querySelector<HTMLButtonElement>(
+                '[aria-selected="true"]'
+            );
+        const firstOption =
+            locationOptionsRef.current?.querySelector<HTMLButtonElement>(
+                'button'
+            );
+        (selectedOption ?? firstOption)?.focus();
+    }, [isLocationPickerOpen]);
+
+    useEffect(() => {
+        if (isIconPickerOpen) {
+            iconSearchInputRef.current?.focus();
+        }
+    }, [isIconPickerOpen]);
+
+    useEffect(() => {
         if (undoSnapshot === undefined) {
             return undefined;
         }
@@ -862,7 +901,10 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
     }, [undoSnapshot]);
 
     useEffect(() => {
-        if (location.categoryIndex < bookmarkTree.length) {
+        if (
+            location.categoryIndex >= 0 &&
+            location.categoryIndex < bookmarkTree.length
+        ) {
             return;
         }
 
@@ -1093,6 +1135,16 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                 aria-labelledby={titleId}
                 aria-modal='true'
                 tabIndex={-1}
+                onPointerDownCapture={(event) => {
+                    const { target } = event;
+                    if (
+                        isAddMenuOpen &&
+                        target instanceof Element &&
+                        !target.closest('.bookmark-workspace-list-actions')
+                    ) {
+                        setIsAddMenuOpen(false);
+                    }
+                }}
                 onKeyDown={(event) => {
                     if (event.key !== 'Escape') {
                         return;
@@ -1107,12 +1159,16 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                         setDiscardTarget(undefined);
                     } else if (isLocationPickerOpen) {
                         setIsLocationPickerOpen(false);
+                        locationPickerTriggerRef.current?.focus();
                     } else if (isIconPickerOpen) {
                         setIsIconPickerOpen(false);
+                        setIconQuery('');
+                        iconPickerTriggerRef.current?.focus();
                     } else if (editorDraft !== undefined) {
                         cancelEditor();
                     } else if (isAddMenuOpen) {
                         setIsAddMenuOpen(false);
+                        addMenuTriggerRef.current?.focus();
                     } else {
                         requestDialogClose();
                     }
@@ -1204,6 +1260,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                             >
                                 <Search aria-hidden='true' />
                                 <input
+                                    ref={queryInputRef}
                                     type='search'
                                     aria-label={t.bookmarkSearch}
                                     placeholder={t.bookmarkSearch}
@@ -1218,6 +1275,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                         aria-label={t.cancel}
                                         onClick={() => {
                                             setQuery('');
+                                            queryInputRef.current?.focus();
                                         }}
                                     >
                                         <X aria-hidden='true' />
@@ -1396,6 +1454,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                 </div>
                                 <div className='bookmark-workspace-list-actions'>
                                     <button
+                                        ref={addMenuTriggerRef}
                                         className='bookmark-workspace-primary-button'
                                         type='button'
                                         aria-haspopup='menu'
@@ -1411,6 +1470,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                     </button>
                                     {isAddMenuOpen ? (
                                         <div
+                                            ref={addMenuRef}
                                             className='bookmark-workspace-add-menu'
                                             role='menu'
                                         >
@@ -1690,6 +1750,31 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                             role='dialog'
                             aria-label={formTitle}
                             aria-modal='true'
+                            onPointerDownCapture={(event) => {
+                                const { target } = event;
+                                if (!(target instanceof Element)) {
+                                    return;
+                                }
+
+                                if (
+                                    isLocationPickerOpen &&
+                                    !target.closest(
+                                        '.bookmark-workspace-location-trigger, .bookmark-workspace-location-options'
+                                    )
+                                ) {
+                                    setIsLocationPickerOpen(false);
+                                }
+
+                                if (
+                                    isIconPickerOpen &&
+                                    !target.closest(
+                                        '.bookmark-workspace-icon-picker-trigger, .bookmark-workspace-icon-picker'
+                                    )
+                                ) {
+                                    setIsIconPickerOpen(false);
+                                    setIconQuery('');
+                                }
+                            }}
                         >
                             <form
                                 className='bookmark-workspace-form'
@@ -1787,6 +1872,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                         <div className='bookmark-workspace-field'>
                                             <span>{t.location}</span>
                                             <button
+                                                ref={locationPickerTriggerRef}
                                                 className='bookmark-workspace-location-trigger'
                                                 type='button'
                                                 aria-haspopup='listbox'
@@ -1807,6 +1893,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                             </button>
                                             {isLocationPickerOpen ? (
                                                 <div
+                                                    ref={locationOptionsRef}
                                                     className='bookmark-workspace-location-options'
                                                     role='listbox'
                                                     aria-label={t.location}
@@ -1832,6 +1919,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                                                     setIsLocationPickerOpen(
                                                                         false
                                                                     );
+                                                                    locationPickerTriggerRef.current?.focus();
                                                                 }}
                                                             >
                                                                 <FolderOpen aria-hidden='true' />
@@ -1855,13 +1943,15 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                     <div className='bookmark-workspace-field'>
                                         <span>{t.categoryIcon}</span>
                                         <button
+                                            ref={iconPickerTriggerRef}
                                             className='bookmark-workspace-icon-picker-trigger'
                                             type='button'
                                             aria-expanded={isIconPickerOpen}
                                             onClick={() => {
-                                                setIsIconPickerOpen(
-                                                    !isIconPickerOpen
-                                                );
+                                                const nextIsOpen =
+                                                    !isIconPickerOpen;
+                                                setIconQuery('');
+                                                setIsIconPickerOpen(nextIsOpen);
                                             }}
                                         >
                                             {createBookmarkIcon(
@@ -1879,6 +1969,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                                 >
                                                     <Search aria-hidden='true' />
                                                     <input
+                                                        ref={iconSearchInputRef}
                                                         type='text'
                                                         inputMode='search'
                                                         aria-label={
@@ -1888,6 +1979,11 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                                             t.categoryIconSearch
                                                         }
                                                         value={iconQuery}
+                                                        onPointerDown={(
+                                                            event
+                                                        ) => {
+                                                            event.currentTarget.focus();
+                                                        }}
                                                         onChange={(event) => {
                                                             setIconQuery(
                                                                 event.target
@@ -1904,6 +2000,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                                                 setIconQuery(
                                                                     ''
                                                                 );
+                                                                iconSearchInputRef.current?.focus();
                                                             }}
                                                         >
                                                             <X aria-hidden='true' />
@@ -1943,6 +2040,10 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                                                         setIsIconPickerOpen(
                                                                             false
                                                                         );
+                                                                        setIconQuery(
+                                                                            ''
+                                                                        );
+                                                                        iconPickerTriggerRef.current?.focus();
                                                                     }}
                                                                 >
                                                                     <option.Icon aria-hidden='true' />
