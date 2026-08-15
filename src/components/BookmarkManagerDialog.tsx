@@ -862,7 +862,10 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
     }, [undoSnapshot]);
 
     useEffect(() => {
-        if (location.categoryIndex < bookmarkTree.length) {
+        if (
+            location.categoryIndex >= 0 &&
+            location.categoryIndex < bookmarkTree.length
+        ) {
             return;
         }
 
