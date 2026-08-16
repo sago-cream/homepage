@@ -24,7 +24,7 @@ jobs:
             - uses: docker/metadata-action@v6
               id: metadata
               with:
-                  images: ghcr.io/orangesago/homepage
+                  images: ghcr.io/sago-cream/homepage
                   tags: |
                       type=raw,value=main
                       type=sha,prefix=sha-
