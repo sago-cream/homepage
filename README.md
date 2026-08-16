@@ -2,7 +2,7 @@
 
 A personal browser homepage for fast bookmark access across browsers with instant search.
 
-![Homepage](https://raw.githubusercontent.com/orangesago/homepage/main/docs/demo.webp)
+![Homepage](https://raw.githubusercontent.com/sago-cream/homepage/main/docs/demo.webp)
 
 ## Use
 
@@ -12,7 +12,7 @@ A personal browser homepage for fast bookmark access across browsers with instan
 - Sign in to upload a wallpaper; guests keep the default mountain scene.
 - Click the location control to sync the nearest Taiwan weather and AQI station.
 
-> After combining this with [HandyTab](https://github.com/orangesago/handy-tab), opening any tabs feels like a breeze.
+> After combining this with [HandyTab](https://github.com/sago-cream/handy-tab), opening any tabs feels like a breeze.
 
 ## Privacy
 
@@ -30,7 +30,7 @@ storage.
 Requires Node.js 22+ and Bun.
 
 ```bash
-git clone https://github.com/orangesago/homepage.git
+git clone https://github.com/sago-cream/homepage.git
 cd homepage
 bun i
 bun dev
@@ -50,7 +50,7 @@ bun dev
 ### Oracle Deployment
 
 Production runs on the Oracle VM behind Caddy. Every push to `main` publishes
-`ghcr.io/orangesago/homepage` for Linux AMD64 and ARM64. Dependencies and standalone
+`ghcr.io/sago-cream/homepage` for Linux AMD64 and ARM64. Dependencies and standalone
 output are built inside the target Linux image, so production never receives
 native modules from the development Mac.
 
