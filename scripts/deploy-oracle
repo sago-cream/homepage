@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-repository="Hsiii/Homepage"
+repository="orangesago/Homepage"
 workflow="image.yml"
 host="${PLATFORM_HOST:-platform}"
 remote_deploy_script="${PLATFORM_HOMEPAGE_DEPLOY_SCRIPT:-/srv/sago-cloud/operations/scripts/deploy-homepage}"
