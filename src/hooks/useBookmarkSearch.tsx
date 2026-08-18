@@ -43,10 +43,6 @@ const getSearchKeySequenceInput = (
         return keyCodeMatch.groups.key.toLowerCase();
     }
 
-    if (e.key.length === 1) {
-        return e.key.toLowerCase();
-    }
-
     return undefined;
 };
 
@@ -441,6 +437,16 @@ export const useBookmarkSearch = (
 
     const handleSearchKeyDown = useCallback(
         (e: React.KeyboardEvent<HTMLInputElement>) => {
+            const sequenceInput = getSearchKeySequenceInput(e);
+            if (sequenceInput !== undefined) {
+                setSearchKeySequence((value) => value + sequenceInput);
+                return;
+            }
+
+            if (e.nativeEvent.isComposing) {
+                return;
+            }
+
             if (e.key === 'ArrowDown' && searchNavigationItemCount > 0) {
                 e.preventDefault();
                 setRequestedSearchResultIndex((index) => {
@@ -489,10 +495,6 @@ export const useBookmarkSearch = (
             }
 
             if (e.key !== 'Enter') {
-                const sequenceInput = getSearchKeySequenceInput(e);
-                if (sequenceInput !== undefined) {
-                    setSearchKeySequence((value) => value + sequenceInput);
-                }
                 return;
             }
 
