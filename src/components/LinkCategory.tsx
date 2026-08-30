@@ -1,5 +1,4 @@
 import React, { Fragment, useCallback, useEffect, useRef } from 'react';
-import { ChevronRight } from 'lucide-react';
 
 import type {
     BookmarkFolderData,
@@ -195,11 +194,6 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
             >
                 {createBookmarkIcon(node.icon, 'icon folder-icon-display')}
                 <span>{node.title}</span>
-                <ChevronRight
-                    className='icon folder-chevron'
-                    size={16}
-                    aria-hidden
-                />
             </button>
             <div className='bookmark-submenu' ref={submenuRef}>
                 <div className='submenu-panel' />
