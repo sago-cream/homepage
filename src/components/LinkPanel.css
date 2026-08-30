@@ -4,7 +4,9 @@
     --indicator-width: 2.5rem;
     --link-height: 3.5rem;
     --font-size: var(--fs-lg);
-    --bookmark-link-inline-start: 2.5rem;
+    --bookmark-link-inline-start: calc(
+        var(--bookmark-folder-inline-padding) + var(--font-size) + 0.75rem
+    );
     --bookmark-link-inline-end: 1rem;
     --bookmark-folder-inline-padding: 1rem;
     --bookmark-panel-radius: 1rem;
@@ -577,12 +579,6 @@
 
     .folder-link span {
         flex: 1 1 auto;
-    }
-
-    .folder-chevron {
-        flex: 0 0 auto;
-        width: 1rem;
-        height: 1rem;
     }
 
     .bookmark-submenu {
