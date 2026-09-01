@@ -7,13 +7,14 @@ import {
     Bookmark,
     Check,
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     CircleAlert,
     ClipboardPaste,
     Download,
     ExternalLink,
     FolderOpen,
     FolderPlus,
-    GripVertical,
     Link as LinkIcon,
     LoaderCircle,
     MoreHorizontal,
@@ -100,8 +101,15 @@ const getLocationKey = (
     folderPath: readonly string[]
 ): string => JSON.stringify([categoryIndex, ...folderPath]);
 
+const isSameLocation = (
+    first: Readonly<BookmarkLocation>,
+    second: Readonly<BookmarkLocation>
+): boolean =>
+    getLocationKey(first.categoryIndex, first.folderPath) ===
+    getLocationKey(second.categoryIndex, second.folderPath);
+
 interface SortableBookmarkRowProps {
-    children: (handleRef: (element: Element | null) => void) => React.ReactNode;
+    children: (sourceRef: (element: Element | null) => void) => React.ReactNode;
     disabled: boolean;
     isFolder: boolean;
     location: BookmarkLocation;
@@ -131,13 +139,13 @@ const SortableBookmarkRow: React.FC<SortableBookmarkRowProps> = ({
 
     return (
         <div
-            ref={sortable.ref}
+            ref={sortable.targetRef}
             className='bookmark-workspace-list-row'
             data-dragging={sortable.isDragSource ? 'true' : undefined}
             data-drop-position={sortable.isDropTarget ? 'inside' : undefined}
             data-selected={selected}
         >
-            {children(sortable.handleRef)}
+            {children(sortable.sourceRef)}
         </div>
     );
 };
@@ -148,7 +156,6 @@ interface BookmarkLocationDropTargetProps {
     disabled?: boolean;
     idSuffix: string;
     location: BookmarkLocation;
-    style?: React.CSSProperties;
 }
 
 const BookmarkLocationDropTarget: React.FC<BookmarkLocationDropTargetProps> = ({
@@ -157,7 +164,6 @@ const BookmarkLocationDropTarget: React.FC<BookmarkLocationDropTargetProps> = ({
     disabled = false,
     idSuffix,
     location,
-    style,
 }) => {
     const droppable = useDroppable<DropLocationData>({
         accept: 'bookmark-node',
@@ -174,7 +180,6 @@ const BookmarkLocationDropTarget: React.FC<BookmarkLocationDropTargetProps> = ({
             ref={droppable.ref}
             className={className}
             data-drop-target={droppable.isDropTarget ? 'true' : undefined}
-            style={style}
         >
             {children}
         </div>
@@ -445,12 +450,10 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
         categoryIndex: bookmarkControls.bookmarkTree.length === 0 ? -1 : 0,
         folderPath: [],
     }));
-    const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
-        () =>
-            new Set(
-                bookmarkControls.bookmarkTree.slice(0, 1).map((item) => item.id)
-            )
-    );
+    const [backLocations, setBackLocations] = useState<BookmarkLocation[]>([]);
+    const [forwardLocations, setForwardLocations] = useState<
+        BookmarkLocation[]
+    >([]);
     const [query, setQuery] = useState('');
     const [editorDraft, setEditorDraft] = useState<EditorDraft>();
     const [draftBaseline, setDraftBaseline] = useState('');
@@ -492,21 +495,71 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
             : currentNodes.filter((node) =>
                   nodeMatchesSearch(node, normalizedQuery)
               );
-    const visibleCategoryIndexes = bookmarkTree.flatMap(
-        (category, categoryIndex) =>
-            normalizedQuery === '' ||
-            categoryMatchesSearch(category, normalizedQuery)
-                ? [categoryIndex]
-                : []
-    );
     const rootCategoryIndex = bookmarkTree.findIndex(
         (category) =>
             category.category.trim().toLocaleLowerCase(locale) ===
             t.bookmarks.toLocaleLowerCase(locale)
     );
-    const visibleTreeCategoryIndexes = visibleCategoryIndexes.filter(
-        (categoryIndex) => categoryIndex !== rootCategoryIndex
+    const sidebarParentPath = location.folderPath.slice(0, -1);
+    const sidebarParentFolder = getFolderAtPath(
+        currentCategory?.children ?? [],
+        sidebarParentPath
     );
+    const sidebarLayerTitle =
+        location.folderPath.length === 0
+            ? t.folders
+            : (sidebarParentFolder?.title ??
+              currentCategory?.category ??
+              t.folders);
+    const sidebarLocations: BookmarkLocation[] = (() => {
+        if (normalizedQuery !== '') {
+            return destinationOptions.flatMap((option) => {
+                const { location: optionLocation } = option;
+                if (
+                    optionLocation.categoryIndex === rootCategoryIndex &&
+                    optionLocation.folderPath.length === 0
+                ) {
+                    return [];
+                }
+
+                const category = bookmarkTree.at(optionLocation.categoryIndex);
+                const item =
+                    optionLocation.folderPath.length === 0
+                        ? category
+                        : getFolderAtPath(
+                              category?.children ?? [],
+                              optionLocation.folderPath
+                          );
+                const matches =
+                    item !== undefined &&
+                    ('category' in item
+                        ? categoryMatchesSearch(item, normalizedQuery)
+                        : nodeMatchesSearch(item, normalizedQuery));
+
+                return matches ? [optionLocation] : [];
+            });
+        }
+
+        if (location.folderPath.length === 0) {
+            return bookmarkTree.flatMap((_, categoryIndex) =>
+                categoryIndex === rootCategoryIndex
+                    ? []
+                    : [{ categoryIndex, folderPath: [] }]
+            );
+        }
+
+        return getNodesAtPath(currentCategory, sidebarParentPath).flatMap(
+            (node) =>
+                isBookmarkFolder(node)
+                    ? [
+                          {
+                              categoryIndex: location.categoryIndex,
+                              folderPath: [...sidebarParentPath, node.id],
+                          },
+                      ]
+                    : []
+        );
+    })();
     const isDraftDirty =
         editorDraft !== undefined &&
         serializeDraft(editorDraft) !== draftBaseline;
@@ -547,18 +600,48 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
     };
 
     const navigateToLocation = (nextLocation: BookmarkLocation) => {
-        const category = bookmarkTree.at(nextLocation.categoryIndex);
+        if (isSameLocation(location, nextLocation)) {
+            return;
+        }
+
+        setBackLocations((current: readonly BookmarkLocation[]) => [
+            ...current.slice(-49),
+            location,
+        ]);
+        setForwardLocations([]);
         setLocation(nextLocation);
-        setExpandedKeys((current: ReadonlySet<string>) => {
-            const next = new Set(current);
-            if (category !== undefined) {
-                next.add(category.id);
-            }
-            for (const folderId of nextLocation.folderPath) {
-                next.add(folderId);
-            }
-            return next;
-        });
+    };
+
+    const navigateBack = () => {
+        const previousLocation = backLocations.at(-1);
+        if (previousLocation === undefined) {
+            return;
+        }
+
+        setBackLocations((current: readonly BookmarkLocation[]) =>
+            current.slice(0, -1)
+        );
+        setForwardLocations((current: readonly BookmarkLocation[]) => [
+            location,
+            ...current.slice(0, 49),
+        ]);
+        setLocation(previousLocation);
+    };
+
+    const navigateForward = () => {
+        const nextLocation = forwardLocations.at(0);
+        if (nextLocation === undefined) {
+            return;
+        }
+
+        setForwardLocations((current: readonly BookmarkLocation[]) =>
+            current.slice(1)
+        );
+        setBackLocations((current: readonly BookmarkLocation[]) => [
+            ...current.slice(-49),
+            location,
+        ]);
+        setLocation(nextLocation);
     };
 
     const navigateToCategory = (categoryIndex: number) => {
@@ -814,6 +897,8 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
             setUndoSnapshot({ id: trashItemId });
             setEditorDraft(undefined);
             setDraftBaseline('');
+            setBackLocations([]);
+            setForwardLocations([]);
             setLocation({
                 categoryIndex:
                     deleteTarget.kind === 'category'
@@ -912,19 +997,9 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
             categoryIndex: bookmarkTree.length === 0 ? -1 : 0,
             folderPath: [],
         });
+        setBackLocations([]);
+        setForwardLocations([]);
     }, [bookmarkTree.length, location.categoryIndex]);
-
-    const toggleExpanded = (key: string) => {
-        setExpandedKeys((current: ReadonlySet<string>) => {
-            const next = new Set(current);
-            if (next.has(key)) {
-                next.delete(key);
-            } else {
-                next.add(key);
-            }
-            return next;
-        });
-    };
 
     const handleDragEnd = (event: DragEndEvent) => {
         const { source, target } = event.operation;
@@ -945,7 +1020,19 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
         let destination = targetData?.location;
         let destinationIndex: number | undefined;
 
-        if (isSortable(source) && targetData?.kind === 'node') {
+        if (
+            targetData?.kind === 'node' &&
+            targetData.isFolder &&
+            String(source.id) !== String(target.id)
+        ) {
+            destination = {
+                categoryIndex: targetData.location.categoryIndex,
+                folderPath: [
+                    ...targetData.location.folderPath,
+                    String(target.id),
+                ],
+            };
+        } else if (isSortable(source) && targetData?.kind === 'node') {
             const sortableDestination = destinationOptions.find(
                 (option) => option.key === String(source.group)
             );
@@ -969,81 +1056,9 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                 destinationIndex
             )
         ) {
-            setLocation(destination);
             setEditorDraft(undefined);
         }
     };
-
-    const renderFolderTree = (
-        nodes: readonly BookmarkNodeData[],
-        categoryIndex: number,
-        parentPath: readonly string[],
-        depth: number
-    ): React.ReactNode =>
-        nodes.map((node) => {
-            if (
-                !isBookmarkFolder(node) ||
-                (normalizedQuery !== '' &&
-                    !nodeMatchesSearch(node, normalizedQuery))
-            ) {
-                return undefined;
-            }
-
-            const folderPath = [...parentPath, node.id];
-            const folderLocation = { categoryIndex, folderPath };
-            const hasChildFolders = node.children.some(isBookmarkFolder);
-            const isExpanded =
-                normalizedQuery !== '' || expandedKeys.has(node.id);
-            const isSelected =
-                location.categoryIndex === categoryIndex &&
-                getLocationKey(categoryIndex, location.folderPath) ===
-                    getLocationKey(categoryIndex, folderPath);
-
-            return (
-                <React.Fragment key={node.id}>
-                    <BookmarkLocationDropTarget
-                        className='bookmark-workspace-tree-row'
-                        disabled={normalizedQuery !== ''}
-                        idSuffix={`tree:${node.id}`}
-                        location={folderLocation}
-                        style={
-                            {
-                                '--bookmark-tree-depth': depth,
-                            } as React.CSSProperties
-                        }
-                    >
-                        <button
-                            className='bookmark-workspace-tree-item'
-                            type='button'
-                            aria-current={isSelected ? 'page' : undefined}
-                            aria-expanded={
-                                hasChildFolders ? isExpanded : undefined
-                            }
-                            onClick={() => {
-                                setLocation(folderLocation);
-                                if (hasChildFolders) {
-                                    toggleExpanded(node.id);
-                                }
-                            }}
-                        >
-                            {createBookmarkIcon(node.icon, 'icon')}
-                            <span>{node.title}</span>
-                            <small className='bookmark-workspace-count-badge'>
-                                {countBookmarks(node.children)}
-                            </small>
-                        </button>
-                    </BookmarkLocationDropTarget>
-                    {hasChildFolders && isExpanded
-                        ? renderFolderTree(
-                              node.children,
-                              categoryIndex,
-                              folderPath,
-                              depth + 1
-                          )
-                        : undefined}
-                </React.Fragment>
-            );
-        });
 
     const breadcrumbLabels = [currentCategory?.category ?? ''];
     let breadcrumbNodes = currentCategory?.children ?? [];
@@ -1254,6 +1269,27 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                 <DragDropProvider onDragEnd={handleDragEnd}>
                     <div className='bookmark-manager-body bookmark-workspace-grid'>
                         <aside className='bookmark-workspace-tree-pane'>
+                            <div className='bookmark-workspace-layer-header'>
+                                <div className='bookmark-workspace-layer-controls'>
+                                    <button
+                                        type='button'
+                                        aria-label={t.previousFolderLayer}
+                                        disabled={backLocations.length === 0}
+                                        onClick={navigateBack}
+                                    >
+                                        <ChevronLeft aria-hidden='true' />
+                                    </button>
+                                    <button
+                                        type='button'
+                                        aria-label={t.nextFolderLayer}
+                                        disabled={forwardLocations.length === 0}
+                                        onClick={navigateForward}
+                                    >
+                                        <ChevronRight aria-hidden='true' />
+                                    </button>
+                                </div>
+                                <strong>{sidebarLayerTitle}</strong>
+                            </div>
                             <div
                                 className='bookmark-workspace-search quiet'
                                 role='search'
@@ -1298,8 +1334,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                             )
                                         )}
                                     </div>
-                                ) : visibleTreeCategoryIndexes.length === 0 &&
-                                  rootCategoryIndex === -1 ? (
+                                ) : sidebarLocations.length === 0 ? (
                                     <div className='bookmark-workspace-empty compact'>
                                         <Search aria-hidden='true' />
                                         <strong>
@@ -1314,104 +1349,79 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                         </span>
                                     </div>
                                 ) : (
-                                    visibleTreeCategoryIndexes.map(
-                                        (categoryIndex) => {
-                                            const category =
-                                                bookmarkTree.at(categoryIndex);
-                                            const decoratedCategory =
-                                                decoratedTree.at(categoryIndex);
-                                            if (
-                                                category === undefined ||
-                                                decoratedCategory === undefined
-                                            ) {
-                                                return undefined;
-                                            }
-
-                                            const isExpanded =
-                                                normalizedQuery !== '' ||
-                                                expandedKeys.has(category.id);
-                                            const hasChildFolders =
-                                                category.children.some(
-                                                    isBookmarkFolder
-                                                );
-                                            const isSelected =
-                                                location.categoryIndex ===
-                                                    categoryIndex &&
-                                                location.folderPath.length ===
-                                                    0;
-                                            const categoryLocation = {
-                                                categoryIndex,
-                                                folderPath: [],
-                                            };
-                                            return (
-                                                <React.Fragment
-                                                    key={category.id}
-                                                >
-                                                    <BookmarkLocationDropTarget
-                                                        className='bookmark-workspace-tree-row root'
-                                                        disabled={
-                                                            normalizedQuery !==
-                                                            ''
-                                                        }
-                                                        idSuffix={`tree:${category.id}`}
-                                                        location={
-                                                            categoryLocation
-                                                        }
-                                                    >
-                                                        <button
-                                                            className='bookmark-workspace-tree-item'
-                                                            type='button'
-                                                            aria-current={
-                                                                isSelected
-                                                                    ? 'page'
-                                                                    : undefined
-                                                            }
-                                                            aria-expanded={
-                                                                hasChildFolders
-                                                                    ? isExpanded
-                                                                    : undefined
-                                                            }
-                                                            onClick={() => {
-                                                                setLocation(
-                                                                    categoryLocation
-                                                                );
-                                                                if (
-                                                                    hasChildFolders
-                                                                ) {
-                                                                    toggleExpanded(
-                                                                        category.id
-                                                                    );
-                                                                }
-                                                            }}
-                                                        >
-                                                            {
-                                                                decoratedCategory.icon
-                                                            }
-                                                            <span>
-                                                                {
-                                                                    category.category
-                                                                }
-                                                            </span>
-                                                            <small className='bookmark-workspace-count-badge'>
-                                                                {countBookmarks(
-                                                                    category.children
-                                                                )}
-                                                            </small>
-                                                        </button>
-                                                    </BookmarkLocationDropTarget>
-                                                    {hasChildFolders &&
-                                                    isExpanded
-                                                        ? renderFolderTree(
-                                                              category.children,
-                                                              categoryIndex,
-                                                              [],
-                                                              1
-                                                          )
-                                                        : undefined}
-                                                </React.Fragment>
-                                            );
+                                    sidebarLocations.map((sidebarLocation) => {
+                                        const category = bookmarkTree.at(
+                                            sidebarLocation.categoryIndex
+                                        );
+                                        const folder = getFolderAtPath(
+                                            category?.children ?? [],
+                                            sidebarLocation.folderPath
+                                        );
+                                        const isCategory =
+                                            sidebarLocation.folderPath
+                                                .length === 0;
+                                        const label = isCategory
+                                            ? category?.category
+                                            : folder?.title;
+                                        if (
+                                            category === undefined ||
+                                            label === undefined
+                                        ) {
+                                            return undefined;
                                         }
-                                    )
+
+                                        const itemKey = isCategory
+                                            ? category.id
+                                            : (folder?.id ??
+                                              getLocationKey(
+                                                  sidebarLocation.categoryIndex,
+                                                  sidebarLocation.folderPath
+                                              ));
+                                        const icon = isCategory
+                                            ? decoratedTree.at(
+                                                  sidebarLocation.categoryIndex
+                                              )?.icon
+                                            : createBookmarkIcon(
+                                                  folder?.icon,
+                                                  'icon'
+                                              );
+                                        return (
+                                            <BookmarkLocationDropTarget
+                                                key={itemKey}
+                                                className='bookmark-workspace-tree-row'
+                                                disabled={
+                                                    normalizedQuery !== ''
+                                                }
+                                                idSuffix={`layer:${itemKey}`}
+                                                location={sidebarLocation}
+                                            >
+                                                <button
+                                                    className='bookmark-workspace-tree-item'
+                                                    type='button'
+                                                    aria-current={
+                                                        isSameLocation(
+                                                            location,
+                                                            sidebarLocation
+                                                        )
+                                                            ? 'page'
+                                                            : undefined
+                                                    }
+                                                    onClick={() => {
+                                                        navigateToLocation(
+                                                            sidebarLocation
+                                                        );
+                                                    }}
+                                                >
+                                                    {icon}
+                                                    <span>{label}</span>
+                                                    <ChevronRight
+                                                        className='bookmark-workspace-layer-chevron'
+                                                        aria-hidden='true'
+                                                    />
+                                                </button>
+                                            </BookmarkLocationDropTarget>
+                                        );
+                                    })
                                 )}
                             </nav>
                         </aside>
@@ -1622,20 +1632,11 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                                     selectedKey === rowKey
                                                 }
                                             >
-                                                {(handleRef) => (
+                                                {(sourceRef) => (
                                                     <>
-                                                        <button
-                                                            ref={handleRef}
-                                                            className='bookmark-workspace-drag-handle'
-                                                            type='button'
-                                                            aria-label={
-                                                                t.dragBookmark
-                                                            }
-                                                        >
-                                                            <GripVertical aria-hidden='true' />
-                                                        </button>
                                                         {isFolder ? (
                                                             <button
+                                                                ref={sourceRef}
                                                                 className='bookmark-workspace-list-item'
                                                                 type='button'
                                                                 onClick={() => {
@@ -1669,7 +1670,10 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                                                 </span>
                                                             </button>
                                                         ) : (
-                                                            <div className='bookmark-workspace-list-item'>
+                                                            <div
+                                                                ref={sourceRef}
+                                                                className='bookmark-workspace-list-item'
+                                                            >
                                                                 <span
                                                                     className='bookmark-workspace-item-icon'
                                                                     data-kind='bookmark'

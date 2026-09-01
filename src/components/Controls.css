@@ -249,8 +249,83 @@
     border-right: 1px solid var(--bookmark-workspace-column-border);
     background-color: var(--clr-text-alpha-2);
     display: grid;
-    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
     gap: 0.75rem;
+}
+
+.bookmark-workspace-layer-header {
+    min-width: 0;
+    min-height: 2.5rem;
+    padding-inline: 0.25rem;
+    color: var(--clr-text);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.bookmark-workspace-layer-header > strong {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: var(--fontBoldMd);
+}
+
+.bookmark-workspace-layer-controls {
+    flex: 0 0 auto;
+    border-radius: var(--bookmark-workspace-control-radius);
+    background-color: var(--clr-text-alpha-2);
+    box-shadow: inset 0 0 0 1px var(--bookmark-workspace-column-border);
+    display: grid;
+    grid-template-columns: repeat(2, 2.5rem);
+}
+
+.bookmark-workspace-layer-controls button {
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    padding: 0.5rem;
+    background-color: transparent;
+    color: var(--clr-text-alpha);
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+    transition:
+        background-color var(--motion-duration-fast) var(--motion-ease-out),
+        color var(--motion-duration-fast) var(--motion-ease-out),
+        scale var(--motion-duration-fast) var(--motion-ease-out);
+}
+
+.bookmark-workspace-layer-controls button:first-child {
+    border-radius: var(--bookmark-workspace-control-radius) 0 0
+        var(--bookmark-workspace-control-radius);
+    box-shadow: inset -1px 0 var(--bookmark-workspace-column-border);
+}
+
+.bookmark-workspace-layer-controls button:last-child {
+    border-radius: 0 var(--bookmark-workspace-control-radius)
+        var(--bookmark-workspace-control-radius) 0;
+}
+
+.bookmark-workspace-layer-controls button:hover,
+.bookmark-workspace-layer-controls button:focus-visible {
+    background-color: var(--clr-text-alpha-2);
+    color: var(--clr-text);
+    outline: none;
+}
+
+.bookmark-workspace-layer-controls button:active {
+    scale: var(--motion-press-scale);
+}
+
+.bookmark-workspace-layer-controls button:disabled {
+    color: var(--clr-disabled);
+    cursor: default;
+    scale: 1;
+}
+
+.bookmark-workspace-layer-controls svg {
+    width: 1.25rem;
+    height: 1.25rem;
 }
 
 .bookmark-workspace-search {
@@ -439,6 +514,12 @@
 .bookmark-workspace-tree-item svg {
     width: 1.25rem;
     height: 1.25rem;
+}
+
+.bookmark-workspace-tree-item .bookmark-workspace-layer-chevron {
+    width: 1rem;
+    height: 1rem;
+    color: var(--clr-text-alpha);
 }
 
 .bookmark-workspace-tree-item > span {
@@ -687,7 +768,8 @@
     border-radius: var(--bookmark-workspace-control-radius);
     background-color: var(--clr-text-alpha-2);
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
+    cursor: grab;
+    grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     transition:
         background-color var(--motion-duration-fast) var(--motion-ease-out),
@@ -695,12 +777,7 @@
         box-shadow var(--motion-duration-fast) var(--motion-ease-out);
 }
 
-.bookmark-workspace-drag-handle {
-    cursor: grab;
-    user-select: none;
-}
-
-.bookmark-workspace-drag-handle:active {
+.bookmark-workspace-list-row:active {
     cursor: grabbing;
 }
 
@@ -765,7 +842,7 @@
 }
 
 .bookmark-workspace-list-item:not(button) {
-    cursor: default;
+    cursor: inherit;
 }
 
 .bookmark-workspace-list-item:focus-visible {
@@ -1456,6 +1533,12 @@
         padding-inline: 0.5rem;
     }
 
+    .bookmark-workspace-layer-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
     .bookmark-workspace-tree-row {
         padding-left: 0;
     }
@@ -1485,7 +1568,7 @@
     }
 
     .bookmark-workspace-list-row {
-        grid-template-columns: auto minmax(0, 1fr) auto;
+        grid-template-columns: minmax(0, 1fr) auto;
     }
 
     .bookmark-workspace-row-actions .bookmark-workspace-row-link:last-child {
