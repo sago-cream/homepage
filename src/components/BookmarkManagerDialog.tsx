@@ -1155,7 +1155,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                     if (
                         isAddMenuOpen &&
                         target instanceof Element &&
-                        !target.closest('.bookmark-workspace-list-actions')
+                        !target.closest('.bookmark-workspace-add-control')
                     ) {
                         setIsAddMenuOpen(false);
                     }
@@ -1204,6 +1204,46 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                         ) : undefined}
                     </div>
                     <div className='bookmark-workspace-header-actions'>
+                        <div className='bookmark-workspace-add-control'>
+                            <button
+                                ref={addMenuTriggerRef}
+                                className='bookmark-workspace-primary-button'
+                                type='button'
+                                aria-haspopup='menu'
+                                aria-expanded={isAddMenuOpen}
+                                onClick={() => {
+                                    setIsAddMenuOpen((isOpen) => !isOpen);
+                                }}
+                            >
+                                <Plus aria-hidden='true' />
+                                {t.addBookmark}
+                            </button>
+                            {isAddMenuOpen ? (
+                                <div
+                                    ref={addMenuRef}
+                                    className='bookmark-workspace-add-menu'
+                                    role='menu'
+                                >
+                                    <button
+                                        type='button'
+                                        role='menuitem'
+                                        disabled={currentCategory === undefined}
+                                        onClick={beginAddBookmark}
+                                    >
+                                        <Bookmark aria-hidden='true' />
+                                        {t.bookmark}
+                                    </button>
+                                    <button
+                                        type='button'
+                                        role='menuitem'
+                                        onClick={beginAddFolder}
+                                    >
+                                        <FolderPlus aria-hidden='true' />
+                                        {t.folder}
+                                    </button>
+                                </div>
+                            ) : undefined}
+                        </div>
                         <input
                             ref={importInputRef}
                             id={importInputId}
@@ -1461,51 +1501,6 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                             <MoreHorizontal aria-hidden='true' />
                                         </button>
                                     )}
-                                </div>
-                                <div className='bookmark-workspace-list-actions'>
-                                    <button
-                                        ref={addMenuTriggerRef}
-                                        className='bookmark-workspace-primary-button'
-                                        type='button'
-                                        aria-haspopup='menu'
-                                        aria-expanded={isAddMenuOpen}
-                                        onClick={() => {
-                                            setIsAddMenuOpen(
-                                                (isOpen) => !isOpen
-                                            );
-                                        }}
-                                    >
-                                        <Plus aria-hidden='true' />
-                                        {t.addBookmark}
-                                    </button>
-                                    {isAddMenuOpen ? (
-                                        <div
-                                            ref={addMenuRef}
-                                            className='bookmark-workspace-add-menu'
-                                            role='menu'
-                                        >
-                                            <button
-                                                type='button'
-                                                role='menuitem'
-                                                disabled={
-                                                    currentCategory ===
-                                                    undefined
-                                                }
-                                                onClick={beginAddBookmark}
-                                            >
-                                                <Bookmark aria-hidden='true' />
-                                                {t.bookmark}
-                                            </button>
-                                            <button
-                                                type='button'
-                                                role='menuitem'
-                                                onClick={beginAddFolder}
-                                            >
-                                                <FolderPlus aria-hidden='true' />
-                                                {t.folder}
-                                            </button>
-                                        </div>
-                                    ) : undefined}
                                 </div>
                             </div>
                             {breadcrumbLabels.length > 1 ? (
