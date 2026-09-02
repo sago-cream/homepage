@@ -50,7 +50,7 @@
 .bookmark-workspace-header-actions,
 .bookmark-workspace-header-button,
 .bookmark-workspace-operation-status,
-.bookmark-workspace-list-actions,
+.bookmark-workspace-add-control,
 .bookmark-workspace-primary-button,
 .bookmark-workspace-secondary-button,
 .bookmark-workspace-danger-button,
@@ -635,7 +635,7 @@
     pointer-events: none;
 }
 
-.bookmark-workspace-list-actions {
+.bookmark-workspace-add-control {
     position: relative;
     flex: 0 0 auto;
     gap: 0.5rem;
@@ -1556,15 +1556,6 @@
         align-items: flex-start;
         flex-direction: column;
         gap: 0.5rem;
-    }
-
-    .bookmark-workspace-list-actions {
-        width: 100%;
-    }
-
-    .bookmark-workspace-list-actions .bookmark-workspace-primary-button {
-        min-width: 0;
-        flex: 1 1 auto;
     }
 
     .bookmark-workspace-list-row {
