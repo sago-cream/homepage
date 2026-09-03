@@ -198,6 +198,44 @@ const BookmarkLocationDropTarget: React.FC<BookmarkLocationDropTargetProps> = ({
     );
 };
 
+interface BookmarkSidebarDropTargetProps {
+    children: React.ReactNode;
+    disabled: boolean;
+    label: string;
+    location: BookmarkLocation;
+    onClick: React.MouseEventHandler<HTMLElement>;
+}
+
+const BookmarkSidebarDropTarget: React.FC<BookmarkSidebarDropTargetProps> = ({
+    children,
+    disabled,
+    label,
+    location,
+    onClick,
+}) => {
+    const droppable = useDroppable<DropLocationData>({
+        accept: 'bookmark-node',
+        data: { kind: 'location', location },
+        disabled,
+        id: `bookmark-sidebar:${getLocationKey(
+            location.categoryIndex,
+            location.folderPath
+        )}`,
+    });
+
+    return (
+        <nav
+            ref={droppable.ref}
+            className='bookmark-workspace-tree'
+            aria-label={label}
+            data-drop-target={droppable.isDropTarget ? 'true' : undefined}
+            onClick={onClick}
+        >
+            {children}
+        </nav>
+    );
+};
+
 const defaultIconName = 'Folder';
 const folderPathSeparator = ' / ';
 const maxVisibleIconOptions = 40;
@@ -1339,9 +1377,13 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                     </button>
                                 )}
                             </div>
-                            <nav
-                                className='bookmark-workspace-tree'
-                                aria-label={sidebarLayerTitle}
+                            <BookmarkSidebarDropTarget
+                                disabled={
+                                    bookmarkControls.isLoading ||
+                                    normalizedQuery !== ''
+                                }
+                                label={sidebarLayerTitle}
+                                location={location}
                                 onClick={(event) => {
                                     if (event.target === event.currentTarget) {
                                         setSelectedLocation(undefined);
@@ -1453,7 +1495,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                         );
                                     })
                                 )}
-                            </nav>
+                            </BookmarkSidebarDropTarget>
                         </aside>
 
                         <main

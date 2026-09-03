@@ -466,11 +466,20 @@
 .bookmark-workspace-tree {
     min-height: 0;
     padding-bottom: 1rem;
+    border-radius: var(--bookmark-workspace-control-radius);
     overflow-y: auto;
     overscroll-behavior: contain;
     display: grid;
     align-content: start;
     gap: 0.25rem;
+    transition:
+        background-color var(--motion-duration-fast) var(--motion-ease-out),
+        box-shadow var(--motion-duration-fast) var(--motion-ease-out);
+}
+
+.bookmark-workspace-tree[data-drop-target='true'] {
+    background-color: var(--clr-primary-alpha);
+    box-shadow: inset 0 0 0 2px var(--clr-primary);
 }
 
 .bookmark-workspace-tree-row[data-drop-target='true']
