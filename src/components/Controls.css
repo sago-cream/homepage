@@ -244,10 +244,27 @@
     min-height: 0;
 }
 
+.bookmark-workspace-tree-pane,
+.bookmark-workspace-list-pane {
+    background-color: rgb(255 255 255 / 0.04);
+    transition: background-color var(--motion-duration-fast)
+        var(--motion-ease-out);
+}
+
+.bookmark-workspace-tree-pane[data-active='true'],
+.bookmark-workspace-list-pane[data-active='true'] {
+    background-color: rgb(255 255 255 / 0.08);
+}
+
+.bookmark-workspace-tree-pane:focus-visible,
+.bookmark-workspace-list-pane:focus-visible {
+    outline: 2px solid var(--clr-primary-alpha);
+    outline-offset: -2px;
+}
+
 .bookmark-workspace-tree-pane {
     padding: var(--bookmark-workspace-pane-padding) 0.5rem;
     border-right: 1px solid var(--bookmark-workspace-column-border);
-    background-color: var(--clr-text-alpha-2);
     display: grid;
     grid-template-rows: auto auto minmax(0, 1fr);
     gap: 0.75rem;
