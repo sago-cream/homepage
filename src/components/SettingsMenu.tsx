@@ -10,10 +10,14 @@ import {
     ChevronDown,
     ChevronRight,
     Image,
+    LayoutGrid,
     Monitor,
     Moon,
+    Palette,
     Pencil,
+    Rss,
     Settings,
+    SlidersHorizontal,
     Sun,
     Trash2,
     Upload,
@@ -55,6 +59,8 @@ import { BookmarkManagerDialog } from './BookmarkManagerDialog';
 import { FeedSettingsSection } from './FeedSettingsSection';
 
 const myLocationOptionValue = 'my-location';
+
+type SettingsSectionId = 'appearance' | 'preferences' | 'feeds' | 'content';
 
 interface SettingsDropdownOption {
     readonly disabled?: boolean;
@@ -397,6 +403,8 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         initialPreferences.themeColor
     );
     const [openDropdownId, setOpenDropdownId] = useState<string>();
+    const [selectedSection, setSelectedSection] =
+        useState<SettingsSectionId>('appearance');
     const openDropdownIdRef = useRef(openDropdownId);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
     const wallpaperInputRef = useRef<HTMLInputElement>(null);
@@ -582,6 +590,32 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     const settingsMenuStyle = {
         '--settings-select-width': `max(10rem, calc(${maxDropdownValueLength}ch + 3rem))`,
     } as React.CSSProperties & Record<'--settings-select-width', string>;
+    const settingsSections = [
+        {
+            icon: Palette,
+            id: 'appearance',
+            label: t.appearance,
+        },
+        {
+            icon: SlidersHorizontal,
+            id: 'preferences',
+            label: t.preferences,
+        },
+        {
+            icon: Rss,
+            id: 'feeds',
+            label: t.feeds,
+        },
+        {
+            icon: LayoutGrid,
+            id: 'content',
+            label: t.content,
+        },
+    ] satisfies ReadonlyArray<{
+        icon: typeof Palette;
+        id: SettingsSectionId;
+        label: string;
+    }>;
 
     const getDropdownOpenHandler = (id: string) => (nextIsOpen: boolean) => {
         setOpenDropdownId(nextIsOpen ? id : undefined);
@@ -636,7 +670,47 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                           </header>
 
                           <div className='settings-page-content'>
-                              <section className='settings-page-section'>
+                              <nav
+                                  className='settings-page-sidebar'
+                                  aria-label={t.settings}
+                              >
+                                  {settingsSections.map((section) => {
+                                      const Icon = section.icon;
+                                      const isSelected =
+                                          selectedSection === section.id;
+
+                                      return (
+                                          <button
+                                              className='settings-page-sidebar-button'
+                                              key={section.id}
+                                              type='button'
+                                              aria-current={
+                                                  isSelected
+                                                      ? 'page'
+                                                      : undefined
+                                              }
+                                              onClick={() => {
+                                                  setOpenDropdownId(undefined);
+                                                  setSelectedSection(
+                                                      section.id
+                                                  );
+                                              }}
+                                          >
+                                              <Icon
+                                                  className='icon'
+                                                  size={18}
+                                                  aria-hidden
+                                              />
+                                              <span>{section.label}</span>
+                                          </button>
+                                      );
+                                  })}
+                              </nav>
+
+                              <section
+                                  className='settings-page-section'
+                                  hidden={selectedSection !== 'appearance'}
+                              >
                                   <div className='settings-section-heading'>
                                       <h2>{t.appearance}</h2>
                                       <p>{t.appearanceDescription}</p>
@@ -948,15 +1022,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                               )}
                                           </div>
                                       )}
-                                  </div>
-                              </section>
 
-                              <section className='settings-page-section'>
-                                  <div className='settings-section-heading'>
-                                      <h2>{t.preferences}</h2>
-                                      <p>{t.preferencesDescription}</p>
-                                  </div>
-                                  <div className='settings-card'>
                                       <div className='settings-row'>
                                           <div className='settings-row-copy'>
                                               <span className='settings-row-label'>
@@ -995,7 +1061,18 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                               </span>
                                           </button>
                                       </div>
+                                  </div>
+                              </section>
 
+                              <section
+                                  className='settings-page-section'
+                                  hidden={selectedSection !== 'preferences'}
+                              >
+                                  <div className='settings-section-heading'>
+                                      <h2>{t.preferences}</h2>
+                                      <p>{t.preferencesDescription}</p>
+                                  </div>
+                                  <div className='settings-card'>
                                       <div className='settings-row settings-select-row'>
                                           <div className='settings-row-copy'>
                                               <span
@@ -1070,11 +1147,16 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                   </div>
                               </section>
 
-                              <FeedSettingsSection
-                                  bookmarkControls={bookmarkControls}
-                              />
+                              {selectedSection === 'feeds' ? (
+                                  <FeedSettingsSection
+                                      bookmarkControls={bookmarkControls}
+                                  />
+                              ) : undefined}
 
-                              <section className='settings-page-section'>
+                              <section
+                                  className='settings-page-section'
+                                  hidden={selectedSection !== 'content'}
+                              >
                                   <div className='settings-section-heading'>
                                       <h2>{t.content}</h2>
                                       <p>{t.contentDescription}</p>
