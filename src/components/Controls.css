@@ -2437,7 +2437,7 @@
     position: sticky;
     top: 0;
     z-index: 5;
-    width: min(56rem, calc(100% - 3rem));
+    width: min(64rem, calc(100% - 3rem));
     min-height: 6rem;
     margin: 0 auto;
     padding: 1.5rem 0 1rem;
@@ -2510,11 +2510,62 @@
 }
 
 .settings-page-content {
-    width: min(56rem, calc(100% - 3rem));
+    width: min(64rem, calc(100% - 3rem));
     margin: 0 auto;
     padding: 2rem 0 4rem;
     display: grid;
+    grid-template-columns: 12rem minmax(0, 1fr);
     gap: 2rem;
+    align-items: start;
+}
+
+.settings-page-sidebar {
+    position: sticky;
+    top: 8rem;
+    display: grid;
+    gap: 0.25rem;
+}
+
+.settings-page-sidebar-button {
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.625rem 0.75rem;
+    border-radius: 0.75rem;
+    background-color: transparent;
+    color: var(--clr-text-alpha);
+    cursor: pointer;
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    font: var(--fontBoldSm);
+    text-align: left;
+    transition:
+        background-color var(--motion-duration-fast) var(--motion-ease-out),
+        color var(--motion-duration-fast) var(--motion-ease-out),
+        outline-color var(--motion-duration-fast) var(--motion-ease-out),
+        scale var(--motion-duration-fast) var(--motion-ease-out);
+
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.settings-page-sidebar-button:hover,
+.settings-page-sidebar-button[aria-current='page'] {
+    background-color: var(--clr-text-alpha-2);
+    color: var(--clr-text);
+}
+
+.settings-page-sidebar-button[aria-current='page'] {
+    color: var(--clr-primary);
+}
+
+.settings-page-sidebar-button:focus-visible {
+    outline-color: var(--clr-primary-alpha);
+}
+
+.settings-page-sidebar-button:active {
+    scale: var(--motion-press-scale);
 }
 
 .settings-page-section,
@@ -2525,7 +2576,12 @@
 }
 
 .settings-page-section {
+    grid-column: 2;
     gap: 0.75rem;
+}
+
+.settings-page-section[hidden] {
+    display: none;
 }
 
 .settings-section-heading {
@@ -3128,7 +3184,29 @@
 
     .settings-page-content {
         padding: 1.5rem 0 max(2rem, env(safe-area-inset-bottom));
-        gap: 1.5rem;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1rem;
+    }
+
+    .settings-page-sidebar {
+        position: static;
+        margin: 0 -0.25rem;
+        padding: 0.25rem;
+        grid-template-columns: repeat(4, minmax(max-content, 1fr));
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+
+    .settings-page-sidebar::-webkit-scrollbar {
+        display: none;
+    }
+
+    .settings-page-sidebar-button {
+        min-width: max-content;
+    }
+
+    .settings-page-section {
+        grid-column: 1;
     }
 
     .settings-page .settings-row,
