@@ -247,26 +247,17 @@
 .bookmark-workspace-tree-pane,
 .bookmark-workspace-list-pane {
     background-color: rgb(255 255 255 / 0.04);
-    transition: background-color var(--motion-duration-fast)
-        var(--motion-ease-out);
 }
 
-.bookmark-workspace-tree-pane[data-active='true'],
-.bookmark-workspace-list-pane[data-active='true'] {
-    background-color: rgb(255 255 255 / 0.08);
-}
-
-.bookmark-workspace-tree-pane:focus-visible,
-.bookmark-workspace-list-pane:focus-visible {
-    outline: 2px solid var(--clr-primary-alpha);
-    outline-offset: -2px;
+.bookmark-workspace-list-pane[data-empty='true'] > * {
+    display: none;
 }
 
 .bookmark-workspace-tree-pane {
     padding: var(--bookmark-workspace-pane-padding) 0.5rem;
     border-right: 1px solid var(--bookmark-workspace-column-border);
     display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
     gap: 0.75rem;
 }
 
@@ -516,9 +507,13 @@
         scale var(--motion-duration-fast) var(--motion-ease-out);
 }
 
+a.bookmark-workspace-tree-item {
+    text-decoration: none;
+}
+
 .bookmark-workspace-tree-item:hover,
 .bookmark-workspace-tree-item:focus-visible,
-.bookmark-workspace-tree-item[aria-current='page'] {
+.bookmark-workspace-tree-item[aria-pressed='true'] {
     background-color: var(--clr-text-alpha-2);
     color: var(--clr-text);
     outline: none;
@@ -554,10 +549,6 @@
     gap: 0.75rem;
 }
 
-.bookmark-workspace-list-pane.has-breadcrumb {
-    grid-template-rows: auto auto auto minmax(0, 1fr);
-}
-
 .bookmark-workspace-list-header {
     min-width: 0;
     display: flex;
@@ -586,8 +577,7 @@
     font: var(--fontBoldMd);
 }
 
-.bookmark-workspace-list-header span,
-.bookmark-workspace-breadcrumb {
+.bookmark-workspace-list-header span {
     color: var(--clr-text-alpha);
 }
 
@@ -759,13 +749,6 @@
     white-space: nowrap;
 }
 
-.bookmark-workspace-breadcrumb {
-    min-height: 1.25rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
 .bookmark-workspace-list {
     min-height: 0;
     padding-right: 0.25rem;
@@ -853,9 +836,15 @@
     cursor: pointer;
     text-align: left;
     display: grid;
-    grid-template-columns: 2rem minmax(0, 1fr);
+    grid-template-columns: 2rem minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.75rem;
+}
+
+.bookmark-workspace-list-chevron {
+    width: 1rem;
+    height: 1rem;
+    color: var(--clr-text-alpha);
 }
 
 .bookmark-workspace-list-item:not(button) {
