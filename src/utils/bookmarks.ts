@@ -10,6 +10,65 @@ const defaultCategoryName = 'Bookmarks';
 const defaultFolderName = 'Folder';
 const rootWrapperFolderNames = new Set(['bookmarks', 'favorites']);
 
+export const bookmarkRootCategoryId = 'bookmark-root';
+
+export const isBookmarkRootCategory = (
+    category: BookmarkCategoryData
+): boolean =>
+    category.id === bookmarkRootCategoryId ||
+    category.category.trim().toLowerCase() ===
+        defaultCategoryName.toLowerCase();
+
+export const getBookmarkRootNodes = (
+    bookmarkTree: readonly BookmarkCategoryData[]
+): BookmarkNodeData[] => {
+    const rootCategory = bookmarkTree.find(isBookmarkRootCategory);
+    const categories = bookmarkTree
+        .filter((category) => !isBookmarkRootCategory(category))
+        .map(
+            (category): BookmarkFolderData => ({
+                children: category.children,
+                id: category.id,
+                ...(category.icon === undefined ? {} : { icon: category.icon }),
+                title: category.category,
+                type: 'folder',
+            })
+        );
+
+    return [...(rootCategory?.children ?? []), ...categories];
+};
+
+export const replaceBookmarkRootNodes = (
+    bookmarkTree: readonly BookmarkCategoryData[],
+    nodes: readonly BookmarkNodeData[]
+): BookmarkCategoryData[] => {
+    const existingRoot = bookmarkTree.find(isBookmarkRootCategory);
+    const rootLinks = nodes.filter(isBookmarkLink);
+    const categories = nodes.filter(isBookmarkFolder).map(
+        (folder): BookmarkCategoryData => ({
+            category: folder.title,
+            children: folder.children,
+            id: folder.id,
+            ...(folder.icon === undefined ? {} : { icon: folder.icon }),
+            links: getBookmarkLinks(folder.children),
+        })
+    );
+
+    return [
+        ...(rootLinks.length === 0
+            ? []
+            : [
+                  {
+                      category: defaultCategoryName,
+                      children: rootLinks,
+                      id: existingRoot?.id ?? bookmarkRootCategoryId,
+                      links: rootLinks,
+                  },
+              ]),
+        ...categories,
+    ];
+};
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null;
 
