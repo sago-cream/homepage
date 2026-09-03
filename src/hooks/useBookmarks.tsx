@@ -10,7 +10,9 @@ import type {
 import {
     coerceBookmarkTrash,
     coerceBookmarkTree,
+    getBookmarkRootNodes,
     parseBrowserBookmarks,
+    replaceBookmarkRootNodes,
     serializeBrowserBookmarks,
 } from '@/utils/bookmarks';
 import { isBrowser } from '@/utils/browserEnv';
@@ -918,6 +920,17 @@ export const useBookmarks = (
                 nodes: readonly BookmarkNodeData[]
             ) => BookmarkNodeData[] | undefined
         ) => {
+            if (location.categoryIndex === -1) {
+                const nextRootNodes = updateNodes(
+                    getBookmarkRootNodes(bookmarkTree)
+                );
+                return nextRootNodes === undefined
+                    ? false
+                    : commitBookmarkTree(
+                          replaceBookmarkRootNodes(bookmarkTree, nextRootNodes)
+                      );
+            }
+
             const categoryData = bookmarkTree.at(location.categoryIndex);
             if (categoryData === undefined) {
                 return false;
@@ -1087,7 +1100,8 @@ export const useBookmarks = (
             );
             if (
                 sourceCategory === undefined ||
-                destinationCategory === undefined
+                (destination.categoryIndex !== -1 &&
+                    destinationCategory === undefined)
             ) {
                 return false;
             }
@@ -1158,6 +1172,22 @@ export const useBookmarks = (
                     ? { ...category, children: sourceChildren }
                     : category
             );
+            if (destination.categoryIndex === -1) {
+                const rootNodes = getBookmarkRootNodes(withoutSource);
+                const nextRootNodes = [...rootNodes];
+                const insertionIndex = Math.max(
+                    0,
+                    Math.min(
+                        destinationIndex ?? nextRootNodes.length,
+                        nextRootNodes.length
+                    )
+                );
+                nextRootNodes.splice(insertionIndex, 0, movedNode);
+                return commitBookmarkTree(
+                    replaceBookmarkRootNodes(withoutSource, nextRootNodes)
+                );
+            }
+
             const nextDestinationCategory = withoutSource.at(
                 destination.categoryIndex
             );
@@ -1294,7 +1324,8 @@ export const useBookmarks = (
                 title === '' ||
                 url === '' ||
                 sourceCategory === undefined ||
-                targetCategory === undefined ||
+                (nextLocation.categoryIndex !== -1 &&
+                    targetCategory === undefined) ||
                 bookmark === undefined
             ) {
                 return false;
@@ -1307,6 +1338,30 @@ export const useBookmarks = (
                 title,
                 url,
             };
+
+            if (nextLocation.categoryIndex === -1) {
+                const sourceChildren = updateNodesAtFolderPath(
+                    sourceCategory.children,
+                    sourceFolderPath,
+                    (nodes) => deleteBookmarkNodes(nodes, bookmarkId)
+                );
+                if (sourceChildren === undefined) {
+                    return false;
+                }
+
+                const withoutBookmark = bookmarkTree.map(
+                    (categoryData, currentIndex) =>
+                        currentIndex === location.categoryIndex
+                            ? { ...categoryData, children: sourceChildren }
+                            : categoryData
+                );
+                return commitBookmarkTree(
+                    replaceBookmarkRootNodes(withoutBookmark, [
+                        ...getBookmarkRootNodes(withoutBookmark),
+                        nextBookmark,
+                    ])
+                );
+            }
 
             if (
                 location.categoryIndex === nextLocation.categoryIndex &&
