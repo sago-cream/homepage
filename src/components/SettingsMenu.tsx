@@ -9,7 +9,6 @@ import {
     Check,
     ChevronDown,
     ChevronRight,
-    Image,
     LayoutGrid,
     MapPin,
     MapPinOff,
@@ -892,49 +891,26 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                           }
                                                       }}
                                                   />
-                                                  <button
-                                                      className={[
-                                                          'settings-wallpaper-preview',
-                                                          wallpaperControls.wallpaper !==
-                                                              undefined &&
-                                                              'has-wallpaper',
-                                                      ]
-                                                          .filter(Boolean)
-                                                          .join(' ')}
-                                                      type='button'
-                                                      aria-label={
-                                                          t.uploadWallpaper
-                                                      }
-                                                      style={
-                                                          wallpaperControls.wallpaper ===
-                                                          undefined
-                                                              ? undefined
-                                                              : ({
-                                                                    '--settings-wallpaper-preview':
-                                                                        getCssUrlValue(
-                                                                            wallpaperControls
-                                                                                .wallpaper
-                                                                                .url
-                                                                        ),
-                                                                } as React.CSSProperties &
-                                                                    Record<
-                                                                        '--settings-wallpaper-preview',
-                                                                        string
-                                                                    >)
-                                                      }
-                                                      disabled={
-                                                          !wallpaperControls.isAvailable ||
-                                                          wallpaperControls.isBusy
-                                                      }
-                                                      onClick={() => {
-                                                          wallpaperInputRef.current?.click();
-                                                      }}
-                                                  >
-                                                      <Image
-                                                          className='icon'
-                                                          size={20}
+                                                  {wallpaperControls.wallpaper ===
+                                                  undefined ? undefined : (
+                                                      <span
+                                                          className='settings-wallpaper-preview has-wallpaper'
+                                                          role='img'
+                                                          aria-label={
+                                                              t.wallpaper
+                                                          }
+                                                          style={
+                                                              {
+                                                                  '--settings-wallpaper-preview':
+                                                                      getCssUrlValue(
+                                                                          wallpaperControls
+                                                                              .wallpaper
+                                                                              .url
+                                                                      ),
+                                                              } as React.CSSProperties
+                                                          }
                                                       />
-                                                  </button>
+                                                  )}
                                                   <button
                                                       className='settings-action-button'
                                                       type='button'
@@ -1019,13 +995,12 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                       <div className='settings-row'>
                                           <div className='settings-row-copy'>
                                               <span className='settings-row-label'>
-                                                  {t.animations}
+                                                  {t.skipRiseAnimations}
                                               </span>
                                               <span className='settings-row-description'>
-                                                  {animationMode ===
-                                                  normalAnimationMode
-                                                      ? t.useNormalAnimations
-                                                      : t.skipRiseAnimations}
+                                                  {
+                                                      t.skipLoadingAnimationDescription
+                                                  }
                                               </span>
                                           </div>
                                           <button
@@ -1034,9 +1009,9 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                               role='switch'
                                               aria-checked={
                                                   animationMode ===
-                                                  normalAnimationMode
+                                                  skipAnimationMode
                                               }
-                                              aria-label={t.animations}
+                                              aria-label={t.skipRiseAnimations}
                                               onClick={() => {
                                                   updateAnimationMode(
                                                       animationMode ===
