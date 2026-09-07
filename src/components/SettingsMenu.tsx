@@ -6,9 +6,9 @@ import React, {
     useState,
 } from 'react';
 import {
+    Bookmark,
     Check,
     ChevronDown,
-    LayoutGrid,
     Mailbox,
     MapPin,
     MapPinOff,
@@ -613,7 +613,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             label: t.feeds,
         },
         {
-            icon: LayoutGrid,
+            icon: Bookmark,
             id: 'content',
             label: t.bookmarks,
         },
