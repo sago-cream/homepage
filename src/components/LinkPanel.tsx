@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PanelLeft, PanelLeftClose } from 'lucide-react';
+import { PanelLeft, PanelLeftClose, Sun } from 'lucide-react';
 
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useLinkNavigation } from '@/hooks/useLinkNavigation';
@@ -7,6 +7,7 @@ import { useLocale } from '@/hooks/useLocale';
 import type { InitialAppPreferences } from '@/types/preferences';
 import { decorateBookmarkTree } from '@/utils/bookmarkPresentation';
 import { isBrowser } from '@/utils/browserEnv';
+import { runThemeTransition } from '@/utils/themeTransition';
 import type { WallpaperAsset } from '../../shared/wallpaper';
 import { BookmarkEmptyState } from './BookmarkEmptyState';
 import { LinkCategory } from './LinkCategory';
@@ -202,7 +203,12 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                 showSettingsInMenu
             />
             <div className={`trigger ${hidden && 'hidden'}`} />
-            <div className='panel-lock-control'>
+            <div
+                className='panel-lock-control'
+                onMouseMove={(event) => {
+                    event.stopPropagation();
+                }}
+            >
                 <button
                     className='panel-lock-trigger'
                     type='button'
@@ -220,6 +226,27 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                         <PanelLeft className='icon' size={20} />
                     )}
                 </button>
+                {!isLockedOpen &&
+                    !isExpanded &&
+                    !isMobileOpen &&
+                    !isMouseNav && (
+                        <button
+                            className='panel-lock-trigger theme-toggle-trigger'
+                            type='button'
+                            aria-label={t.theme}
+                            title={t.theme}
+                            onClick={(event) => {
+                                runThemeTransition({
+                                    button: event.currentTarget,
+                                    isDarkMode:
+                                        globalThis.document.documentElement
+                                            .dataset.theme === 'dark',
+                                });
+                            }}
+                        >
+                            <Sun className='icon' size={20} aria-hidden />
+                        </button>
+                    )}
             </div>
             <div
                 className={[

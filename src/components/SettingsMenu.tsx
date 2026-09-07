@@ -23,7 +23,7 @@ import {
     Upload,
     X,
 } from 'lucide-react';
-import { createPortal, flushSync } from 'react-dom';
+import { createPortal } from 'react-dom';
 
 import { isAppLocale, localeOptions } from '@/constants/i18n';
 import { getLocationLabel, taiwanLocations } from '@/constants/taiwanLocations';
@@ -52,7 +52,6 @@ import {
     clearPreferenceCookie,
     writePreferenceCookie,
 } from '@/utils/preferenceCookies';
-import { runThemeTransition } from '@/utils/themeTransition';
 import { getCssUrlValue } from '@/utils/wallpaperStyle';
 import { wallpaperAcceptedContentTypes } from '../../shared/wallpaper';
 import { BookmarkManagerDialog } from './BookmarkManagerDialog';
@@ -499,40 +498,26 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         };
     }, [hasHydratedThemePreferences, themeMode]);
 
-    const updateThemeMode = useCallback(
-        (nextThemeMode: ThemeMode, button?: HTMLButtonElement) => {
-            const root = globalThis.document.documentElement;
-            const currentDarkMode =
-                (root.dataset.theme ?? resolveThemeMode(themeMode)) === 'dark';
-            const nextDarkMode = resolveThemeMode(nextThemeMode) === 'dark';
-            let hasCommittedThemeMode = false;
-
-            const commitThemeModeState = () => {
-                if (hasCommittedThemeMode) {
-                    return;
-                }
-
-                hasCommittedThemeMode = true;
-                flushSync(() => {
-                    setThemeMode(nextThemeMode);
-                });
-            };
-
-            if (button !== undefined && currentDarkMode !== nextDarkMode) {
-                runThemeTransition({
-                    button,
-                    isDarkMode: currentDarkMode,
-                    nextDarkMode,
-                    onCommit: commitThemeModeState,
-                    themeMode: nextThemeMode,
-                });
-            } else {
-                applyThemeMode(nextThemeMode);
-                setThemeMode(nextThemeMode);
+    useEffect(() => {
+        const root = globalThis.document.documentElement;
+        const observer = new MutationObserver(() => {
+            if (isThemeMode(root.dataset.themeMode)) {
+                setThemeMode(root.dataset.themeMode);
             }
-        },
-        [themeMode]
-    );
+        });
+        observer.observe(root, {
+            attributes: true,
+            attributeFilter: ['data-theme-mode'],
+        });
+        return () => {
+            observer.disconnect();
+        };
+    }, []);
+
+    const updateThemeMode = useCallback((nextThemeMode: ThemeMode) => {
+        applyThemeMode(nextThemeMode);
+        setThemeMode(nextThemeMode);
+    }, []);
 
     const selectThemeColor = useCallback((themeColor: ThemeColor) => {
         applyThemeColor(themeColor);
@@ -753,17 +738,14 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                               aria-checked={
                                                                   isSelected
                                                               }
-                                                              onClick={(
-                                                                  event
-                                                              ) => {
+                                                              onClick={() => {
                                                                   if (
                                                                       isThemeMode(
                                                                           option.value
                                                                       )
                                                                   ) {
                                                                       updateThemeMode(
-                                                                          option.value,
-                                                                          event.currentTarget
+                                                                          option.value
                                                                       );
                                                                   }
                                                               }}

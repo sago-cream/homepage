@@ -1,4 +1,6 @@
 .panel-lock-control {
+    display: flex;
+    gap: 0.25rem;
     position: absolute;
     top: 0.5rem;
     left: 0.5rem;
@@ -4389,4 +4391,8 @@ a.bookmark-workspace-tree-item {
     .bookmark-workspace-grid.bookmark-manager-body {
         grid-template-columns: 9rem minmax(0, 1fr);
     }
+}
+
+.link-panel:has(.link-tree:focus-within) .theme-toggle-trigger {
+    visibility: hidden;
 }
