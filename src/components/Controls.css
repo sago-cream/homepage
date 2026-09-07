@@ -2921,18 +2921,29 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-feed-card {
-    overflow: hidden;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 1rem;
 }
 
 .settings-feed-selected,
 .settings-feed-search-area {
+    min-width: 0;
     padding: 1rem;
     display: grid;
-    gap: 0.75rem;
+    align-content: start;
+    gap: 1rem;
 }
 
-.settings-feed-search-area {
-    border-top: 1px solid var(--clr-text-alpha-2);
+.settings-feed-selected {
+    min-height: 14rem;
+}
+
+@media (width < 48rem) {
+    .settings-feed-card {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
 .settings-feed-subheading {
@@ -3062,7 +3073,7 @@ a.bookmark-workspace-tree-item {
 
 .settings-feed-results strong,
 .settings-feed-results small {
-    line-height: 1rem;
+    line-height: 1.5;
 }
 
 .settings-feed-remove {
@@ -3070,15 +3081,23 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-feed-empty {
-    min-height: 4.5rem;
+    min-height: 9rem;
     padding: 1rem;
     border-radius: 0.75rem;
-    background-color: var(--clr-text-alpha-2);
     color: var(--clr-text-alpha);
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 0.75rem;
+    text-align: center;
+}
+
+.settings-feed-empty strong,
+.settings-feed-empty small {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
 }
 
 .settings-feed-empty > svg {
@@ -3126,10 +3145,8 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-feed-results {
-    --settings-feed-result-height: 3.5rem;
-    --settings-feed-results-height: 17.75rem;
-
-    height: var(--settings-feed-results-height);
+    min-height: 6rem;
+    max-height: 24rem;
     display: grid;
     align-content: start;
     gap: 0.5rem;
@@ -3140,7 +3157,7 @@ a.bookmark-workspace-tree-item {
 
 .settings-feed-results button {
     width: 100%;
-    height: var(--settings-feed-result-height);
+    min-height: 3.5rem;
     padding: 0.5rem 0.75rem;
     border-radius: 0.75rem;
     background-color: transparent;
@@ -3185,10 +3202,9 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-feed-search-empty {
-    height: 100%;
-    padding: 0.75rem;
-    border-radius: 0.75rem;
-    background-color: var(--clr-text-alpha-2);
+    min-height: 6rem;
+    padding: 1rem;
+    line-height: 1.5;
     color: var(--clr-text-alpha);
     font: var(--fontBaseSm);
     display: flex;

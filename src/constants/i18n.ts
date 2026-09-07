@@ -86,7 +86,7 @@ const messages = {
         folders: 'Folders',
         feedBookmarks: 'Bookmarks in /feeds',
         feedEmpty: 'No feed bookmarks',
-        feedEmptyDescription: 'Search below to add your first bookmark.',
+        feedEmptyDescription: 'Search to add your first bookmark.',
         feedSearchPrompt: 'Search your bookmarks to add one.',
         feeds: 'Feeds',
         feedsDescription:
@@ -220,7 +220,7 @@ const messages = {
         folders: '資料夾',
         feedBookmarks: '/feeds 中的書籤',
         feedEmpty: '尚無動態書籤',
-        feedEmptyDescription: '在下方搜尋並新增第一個書籤。',
+        feedEmptyDescription: '搜尋並新增第一個書籤。',
         feedSearchPrompt: '搜尋書籤以新增至動態。',
         feeds: '動態',
         feedsDescription: '選擇並排序執行 /feeds 指令時要開啟的書籤。',
