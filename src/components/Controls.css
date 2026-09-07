@@ -2585,6 +2585,9 @@ a.bookmark-workspace-tree-item {
 
 .settings-page-section {
     grid-column: 2;
+    width: 100%;
+    max-width: 800px;
+    justify-self: center;
     gap: 0.75rem;
 }
 
