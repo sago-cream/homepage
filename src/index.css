@@ -68,3 +68,13 @@ html[data-animation-mode='skip'] .trigger {
         animation: none;
     }
 }
+
+/* Keep the view-transition animation, but settle the live page immediately. */
+:root[data-theme-transition='active'],
+:root[data-theme-transition='active'] *,
+:root[data-theme-transition='active']::before,
+:root[data-theme-transition='active']::after,
+:root[data-theme-transition='active'] *::before,
+:root[data-theme-transition='active'] *::after {
+    transition: none !important;
+}
