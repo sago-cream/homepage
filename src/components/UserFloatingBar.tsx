@@ -11,7 +11,6 @@ import { useHomepageAuth } from '@/auth/AuthProvider';
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useLocale } from '@/hooks/useLocale';
 import type { InitialAppPreferences } from '@/types/preferences';
-import type { WallpaperAsset } from '../../shared/wallpaper';
 import { SettingsMenu } from './SettingsMenu';
 import { WallpaperSettingsMenu } from './WallpaperSettingsMenu';
 
@@ -20,9 +19,7 @@ interface UserFloatingBarProps {
     className?: string;
     closeMenusSignal?: number;
     initialPreferences: InitialAppPreferences;
-    initialWallpaper: WallpaperAsset | undefined;
     isSupabaseEnabled: boolean;
-    onWallpaperChange: (wallpaper: WallpaperAsset | undefined) => void;
     settingsPlacement?: 'above' | 'mobile';
     showSettingsInMenu?: boolean;
 }
@@ -32,8 +29,6 @@ interface CloseableMenuProps {
     className?: string;
     closeMenusSignal?: number;
     initialPreferences: InitialAppPreferences;
-    initialWallpaper?: WallpaperAsset | undefined;
-    onWallpaperChange?: (wallpaper: WallpaperAsset | undefined) => void;
     settingsPlacement?: 'above' | 'mobile';
     showSettingsInMenu?: boolean;
 }
@@ -55,8 +50,6 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
     className,
     closeMenusSignal,
     initialPreferences,
-    initialWallpaper,
-    onWallpaperChange,
     settingsPlacement = 'above',
     showSettingsInMenu = false,
 }) => {
@@ -210,11 +203,9 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                 isOpen={showSettingsInMenu ? isSettingsOpen : undefined}
                 isTriggerHidden={showSettingsInMenu}
                 initialPreferences={initialPreferences}
-                initialWallpaper={initialWallpaper}
                 onOpenChange={
                     showSettingsInMenu ? setIsSettingsOpen : undefined
                 }
-                onWallpaperChange={onWallpaperChange}
                 placement={settingsPlacement}
             />
         </div>
@@ -326,9 +317,7 @@ export const UserFloatingBar: React.FC<UserFloatingBarProps> = ({
     className,
     closeMenusSignal,
     initialPreferences,
-    initialWallpaper,
     isSupabaseEnabled,
-    onWallpaperChange,
     settingsPlacement,
     showSettingsInMenu,
 }) => {
@@ -339,8 +328,6 @@ export const UserFloatingBar: React.FC<UserFloatingBarProps> = ({
                 className={className}
                 closeMenusSignal={closeMenusSignal}
                 initialPreferences={initialPreferences}
-                initialWallpaper={initialWallpaper}
-                onWallpaperChange={onWallpaperChange}
                 settingsPlacement={settingsPlacement}
                 showSettingsInMenu={showSettingsInMenu}
             />

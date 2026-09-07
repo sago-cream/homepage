@@ -11,7 +11,6 @@ export default function Page(): ReactNode {
         <HomePageClient
             initialAqi={undefined}
             initialPreferences={defaultInitialAppPreferences}
-            initialWallpaper={undefined}
             initialWeather={undefined}
             isSupabaseEnabled={isSupabaseConfigured()}
         />

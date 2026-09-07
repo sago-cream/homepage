@@ -9,7 +9,6 @@ import { useHideLinks } from '@/hooks/useHideLinks';
 import { useTime } from '@/hooks/useTime';
 import type { AqiData, WeatherData } from '@/types/environment';
 import type { InitialAppPreferences } from '@/types/preferences';
-import type { WallpaperAsset } from '../../shared/wallpaper';
 import { Mountains } from './Mountains';
 import { SearchSuggestions } from './SearchSuggestions';
 
@@ -47,10 +46,8 @@ const timeBootstrapScript = `
 interface CoverProps {
     initialAqi: AqiData | undefined;
     initialPreferences: InitialAppPreferences;
-    initialWallpaper: WallpaperAsset | undefined;
     initialWeather: WeatherData | undefined;
     isSupabaseEnabled: boolean;
-    onWallpaperChange: (wallpaper: WallpaperAsset | undefined) => void;
 }
 
 interface CoverContentProps extends CoverProps {
@@ -61,10 +58,8 @@ const CoverContent: React.FC<CoverContentProps> = ({
     bookmarkControls,
     initialAqi,
     initialPreferences,
-    initialWallpaper,
     initialWeather,
     isSupabaseEnabled,
-    onWallpaperChange,
 }) => {
     const { time } = useTime();
     const { hideLinks } = useHideLinks();
@@ -107,7 +102,7 @@ const CoverContent: React.FC<CoverContentProps> = ({
 
     return (
         <section className='cover'>
-            <Mountains initialWallpaper={initialWallpaper} />
+            <Mountains />
             <div className={`cover-content ${inputFocused ? 'focused' : ''}`}>
                 <div className='title-container'>
                     <div className='weather-slot'>
@@ -221,7 +216,6 @@ const CoverContent: React.FC<CoverContentProps> = ({
                     bookmarkControls={bookmarkControls}
                     hidden={hideLinks}
                     initialPreferences={initialPreferences}
-                    initialWallpaper={initialWallpaper}
                     isSupabaseEnabled={isSupabaseEnabled}
                     isLockedOpen={isLinkPanelLocked}
                     isSearchNav={inputFocused}
@@ -232,7 +226,6 @@ const CoverContent: React.FC<CoverContentProps> = ({
                     onToggleLockedOpen={() => {
                         setIsLinkPanelLocked((current) => !current);
                     }}
-                    onWallpaperChange={onWallpaperChange}
                 />
             </Suspense>
         </section>

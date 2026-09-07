@@ -1,4 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+'use client';
+
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useEffectEvent,
+    useRef,
+    useState,
+} from 'react';
+import type { ReactNode } from 'react';
 
 import { useHomepageAuth } from '@/auth/AuthProvider';
 import { getCssUrlValue } from '@/utils/wallpaperStyle';
@@ -231,25 +242,23 @@ const readWallpaperResponse = async (
     return payload as WallpaperApiResponse;
 };
 
-export const useWallpaper = (
-    initialWallpaper?: WallpaperAsset,
-    onWallpaperChange?: (wallpaper: WallpaperAsset | undefined) => void
-): WallpaperControls => {
+const useWallpaperController = (): WallpaperControls => {
     const { getToken, isLoaded, isSignedIn, userId } = useHomepageAuth();
-    const [wallpaper, setWallpaper] = useState<WallpaperAsset | undefined>(
-        initialWallpaper
-    );
+    const [wallpaper, setWallpaper] = useState<WallpaperAsset>();
     const [error, setError] = useState<string>();
     const [isBusy, setIsBusy] = useState(false);
     const [progress, setProgress] = useState<number>();
+    const revision = useRef(0);
+    const mutationPending = useRef(false);
     const isAvailable = isLoaded && isSignedIn && typeof userId === 'string';
 
     const updateWallpaper = useCallback(
-        (nextWallpaper: WallpaperAsset | undefined) => {
+        (ownerId: string, nextWallpaper: WallpaperAsset | undefined) => {
+            writeCachedWallpaper(ownerId, nextWallpaper);
             setWallpaper(nextWallpaper);
-            onWallpaperChange?.(nextWallpaper);
+            applyWallpaper(nextWallpaper);
         },
-        [onWallpaperChange]
+        []
     );
 
     const getAuthHeaders = useCallback(async (): Promise<
@@ -266,40 +275,46 @@ export const useWallpaper = (
         };
     }, [getToken]);
 
+    const getLoadAuthHeaders = useEffectEvent(getAuthHeaders);
+
     useEffect(() => {
-        if (!isLoaded) {
+        revision.current++;
+        const currentRevision = revision.current;
+        mutationPending.current = false;
+        setIsBusy(false);
+        setProgress(undefined);
+        setError(undefined);
+        setWallpaper(undefined);
+        applyWallpaper(undefined);
+
+        if (!isLoaded || !isSignedIn || typeof userId !== 'string') {
             return undefined;
         }
 
-        if (!isSignedIn || typeof userId !== 'string') {
-            updateWallpaper(undefined);
-            applyWallpaper(undefined);
-            return undefined;
-        }
-
-        const cached = readCachedWallpaper(userId) ?? initialWallpaper;
-        updateWallpaper(cached);
+        const cached = readCachedWallpaper(userId);
+        setWallpaper(cached);
         applyWallpaper(cached);
-
-        let isCurrent = true;
+        const controller = new AbortController();
 
         const loadWallpaper = async () => {
             try {
                 const response = await fetch(wallpaperApiPath, {
-                    headers: await getAuthHeaders(),
+                    cache: 'no-store',
+                    headers: await getLoadAuthHeaders(),
+                    signal: AbortSignal.any([
+                        controller.signal,
+                        AbortSignal.timeout(30_000),
+                    ]),
                 });
                 const payload = await readWallpaperResponse(response);
 
-                if (!isCurrent) {
+                if (revision.current !== currentRevision) {
                     return;
                 }
 
-                updateWallpaper(payload.wallpaper);
-                writeCachedWallpaper(userId, payload.wallpaper);
-                applyWallpaper(payload.wallpaper);
-                setError(undefined);
+                updateWallpaper(userId, payload.wallpaper);
             } catch (loadError) {
-                if (!isCurrent) {
+                if (revision.current !== currentRevision) {
                     return;
                 }
 
@@ -314,16 +329,11 @@ export const useWallpaper = (
         loadWallpaper().catch(() => undefined);
 
         return () => {
-            isCurrent = false;
+            revision.current++;
+            controller.abort();
+            applyWallpaper(undefined);
         };
-    }, [
-        getAuthHeaders,
-        initialWallpaper,
-        isLoaded,
-        isSignedIn,
-        updateWallpaper,
-        userId,
-    ]);
+    }, [isLoaded, isSignedIn, updateWallpaper, userId]);
 
     const uploadWallpaper = useCallback(
         async (file: File) => {
@@ -332,12 +342,21 @@ export const useWallpaper = (
                 return;
             }
 
+            if (mutationPending.current) {
+                return;
+            }
+            mutationPending.current = true;
+            revision.current++;
+            const currentRevision = revision.current;
             setError(undefined);
             setIsBusy(true);
             setProgress(0);
 
             try {
                 const processed = await processWallpaperFile(file);
+                if (revision.current !== currentRevision) {
+                    return;
+                }
                 const assetId = globalThis.crypto.randomUUID();
                 const pathname = getWallpaperUploadPath(
                     userId,
@@ -345,6 +364,9 @@ export const useWallpaper = (
                     processed.contentType
                 );
                 const headers = await getAuthHeaders();
+                if (revision.current !== currentRevision) {
+                    return;
+                }
                 const formData = new FormData();
                 formData.set(
                     'file',
@@ -360,21 +382,27 @@ export const useWallpaper = (
                     headers,
                     method: 'POST',
                 });
-                setProgress(100);
                 const payload = await readWallpaperResponse(response);
 
-                updateWallpaper(payload.wallpaper);
-                writeCachedWallpaper(userId, payload.wallpaper);
-                applyWallpaper(payload.wallpaper);
+                if (revision.current !== currentRevision) {
+                    return;
+                }
+                updateWallpaper(userId, payload.wallpaper);
             } catch (uploadError) {
+                if (revision.current !== currentRevision) {
+                    return;
+                }
                 setError(
                     uploadError instanceof Error
                         ? uploadError.message
                         : 'Wallpaper upload failed.'
                 );
             } finally {
-                setIsBusy(false);
-                setProgress(undefined);
+                if (revision.current === currentRevision) {
+                    mutationPending.current = false;
+                    setIsBusy(false);
+                    setProgress(undefined);
+                }
             }
         },
         [getAuthHeaders, isAvailable, updateWallpaper, userId]
@@ -386,12 +414,23 @@ export const useWallpaper = (
             return;
         }
 
+        if (mutationPending.current) {
+            return;
+        }
+        mutationPending.current = true;
+        revision.current++;
+        const currentRevision = revision.current;
         setError(undefined);
         setIsBusy(true);
 
         try {
+            const headers = await getAuthHeaders();
+            if (revision.current !== currentRevision) {
+                return;
+            }
             const response = await fetch(wallpaperApiPath, {
-                headers: await getAuthHeaders(),
+                headers,
+                signal: AbortSignal.timeout(30_000),
                 method: 'DELETE',
             });
 
@@ -399,17 +438,24 @@ export const useWallpaper = (
                 await readWallpaperResponse(response);
             }
 
-            updateWallpaper(undefined);
-            writeCachedWallpaper(userId, undefined);
-            applyWallpaper(undefined);
+            if (revision.current !== currentRevision) {
+                return;
+            }
+            updateWallpaper(userId, undefined);
         } catch (clearError) {
+            if (revision.current !== currentRevision) {
+                return;
+            }
             setError(
                 clearError instanceof Error
                     ? clearError.message
                     : 'Wallpaper remove failed.'
             );
         } finally {
-            setIsBusy(false);
+            if (revision.current === currentRevision) {
+                mutationPending.current = false;
+                setIsBusy(false);
+            }
         }
     }, [getAuthHeaders, isAvailable, updateWallpaper, userId]);
 
@@ -423,3 +469,21 @@ export const useWallpaper = (
         wallpaper,
     };
 };
+
+const WallpaperContext = createContext<WallpaperControls | undefined>(
+    undefined
+);
+
+export const WallpaperProvider: React.FC<{ children: ReactNode }> = ({
+    children,
+}) => {
+    const controls = useWallpaperController();
+    return (
+        <WallpaperContext.Provider value={controls}>
+            {children}
+        </WallpaperContext.Provider>
+    );
+};
+
+export const useWallpaper = (): WallpaperControls | undefined =>
+    useContext(WallpaperContext);

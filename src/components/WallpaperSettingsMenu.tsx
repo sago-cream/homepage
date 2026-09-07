@@ -3,7 +3,6 @@ import React from 'react';
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useWallpaper } from '@/hooks/useWallpaper';
 import type { InitialAppPreferences } from '@/types/preferences';
-import type { WallpaperAsset } from '../../shared/wallpaper';
 import { SettingsMenu } from './SettingsMenu';
 
 interface WallpaperSettingsMenuProps {
@@ -13,8 +12,6 @@ interface WallpaperSettingsMenuProps {
     isTriggerHidden?: boolean;
     initialPreferences: InitialAppPreferences;
     onOpenChange?: (isOpen: boolean) => void;
-    initialWallpaper: WallpaperAsset | undefined;
-    onWallpaperChange?: (wallpaper: WallpaperAsset | undefined) => void;
     placement?: 'above' | 'below' | 'mobile';
 }
 
@@ -25,11 +22,9 @@ export const WallpaperSettingsMenu: React.FC<WallpaperSettingsMenuProps> = ({
     bookmarkControls,
     initialPreferences,
     onOpenChange,
-    initialWallpaper,
-    onWallpaperChange,
     placement,
 }) => {
-    const wallpaperControls = useWallpaper(initialWallpaper, onWallpaperChange);
+    const wallpaperControls = useWallpaper();
 
     return (
         <SettingsMenu
