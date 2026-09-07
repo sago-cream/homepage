@@ -995,10 +995,12 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                       <div className='settings-row'>
                                           <div className='settings-row-copy'>
                                               <span className='settings-row-label'>
-                                                  {t.animations}
+                                                  {t.skipRiseAnimations}
                                               </span>
                                               <span className='settings-row-description'>
-                                                  {t.useNormalAnimations}
+                                                  {
+                                                      t.skipLoadingAnimationDescription
+                                                  }
                                               </span>
                                           </div>
                                           <button
@@ -1007,9 +1009,9 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                               role='switch'
                                               aria-checked={
                                                   animationMode ===
-                                                  normalAnimationMode
+                                                  skipAnimationMode
                                               }
-                                              aria-label={t.animations}
+                                              aria-label={t.skipRiseAnimations}
                                               onClick={() => {
                                                   updateAnimationMode(
                                                       animationMode ===
