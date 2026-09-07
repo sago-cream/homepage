@@ -102,6 +102,13 @@ const messages = {
         manageBookmarks: 'Manage bookmarks',
         moreActions: 'More actions',
         myLocation: 'My location',
+        locationTracking: 'Track current location',
+        enableLocationTracking: 'Turn on location tracking',
+        disableLocationTracking: 'Turn off location tracking',
+        locationTrackingDescription:
+            'Automatically follows your location for weather and air quality.',
+        locationTrackingFailed:
+            'Location unavailable. Check browser permissions or choose a location manually.',
         newBookmark: 'New bookmark',
         newCategory: 'New category',
         newFolder: 'New folder',
@@ -226,6 +233,12 @@ const messages = {
         manageBookmarks: '管理書籤',
         moreActions: '更多操作',
         myLocation: '我的位置',
+        locationTracking: '追蹤目前位置',
+        enableLocationTracking: '開啟位置追蹤',
+        disableLocationTracking: '關閉位置追蹤',
+        locationTrackingDescription: '自動依目前位置更新天氣與空氣品質。',
+        locationTrackingFailed:
+            '無法取得位置。請檢查瀏覽器權限或手動選擇位置。',
         newBookmark: '新增書籤',
         newCategory: '新增分類',
         newFolder: '新增資料夾',

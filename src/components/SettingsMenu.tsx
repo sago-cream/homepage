@@ -11,6 +11,8 @@ import {
     ChevronRight,
     Image,
     LayoutGrid,
+    MapPin,
+    MapPinOff,
     Monitor,
     Moon,
     Palette,
@@ -58,8 +60,6 @@ import { wallpaperAcceptedContentTypes } from '../../shared/wallpaper';
 import { BookmarkManagerDialog } from './BookmarkManagerDialog';
 import { FeedSettingsSection } from './FeedSettingsSection';
 
-const myLocationOptionValue = 'my-location';
-
 type SettingsSectionId = 'appearance' | 'preferences' | 'feeds' | 'content';
 
 interface SettingsDropdownOption {
@@ -74,6 +74,7 @@ interface ThemeHydrationRoot extends HTMLElement {
 }
 
 interface SettingsDropdownProps {
+    disabled?: boolean;
     id: string;
     isOpen: boolean;
     labelledBy: string;
@@ -186,6 +187,7 @@ const releaseThemeHydrationGuard = () => {
 };
 
 const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
+    disabled = false,
     id,
     isOpen,
     labelledBy,
@@ -262,6 +264,7 @@ const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
             <button
                 ref={triggerRef}
                 className='settings-select'
+                disabled={disabled}
                 type='button'
                 id={id}
                 aria-haspopup='listbox'
@@ -381,7 +384,10 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         isSyncingLocation,
         selectLocationId,
         selectedLocation,
-        syncCurrentLocation,
+        isTrackingLocation,
+        isGeolocationAvailable,
+        locationTrackingFailed,
+        toggleLocationTracking,
     } = useTaiwanLocation({
         hasInitialLocationCookie: initialPreferences.hasLocationCookie,
         initialLocationId: initialPreferences.locationId,
@@ -559,19 +565,24 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         { label: t.dark, value: 'dark' },
     ];
 
-    const locationOptions: SettingsDropdownOption[] = [
-        {
-            disabled: isSyncingLocation,
-            label: isSyncingLocation ? t.syncing : t.myLocation,
-            searchText: 'my location',
-            value: myLocationOptionValue,
-        },
-        ...taiwanLocations.map((location) => ({
+    let locationDescription = t.locationDescription as string;
+    if (isTrackingLocation) {
+        locationDescription = t.locationTrackingDescription;
+    }
+    if (isSyncingLocation) {
+        locationDescription = t.syncing;
+    }
+    if (locationTrackingFailed) {
+        locationDescription = t.locationTrackingFailed;
+    }
+
+    const locationOptions: SettingsDropdownOption[] = taiwanLocations.map(
+        (location) => ({
             label: getLocationLabel(location, locale),
             searchText: getLocationLabel(location, 'en'),
             value: location.id,
-        })),
-    ];
+        })
+    );
 
     const languageOptions: SettingsDropdownOption[] = localeOptions.map(
         (option) => ({
@@ -1082,35 +1093,63 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                   {t.location}
                                               </span>
                                               <span className='settings-row-description'>
-                                                  {t.locationDescription}
+                                                  {locationDescription}
                                               </span>
                                           </div>
-                                          <SettingsDropdown
-                                              id='location-picker'
-                                              labelledBy='location-picker-label'
-                                              value={selectedLocation.id}
-                                              options={locationOptions}
-                                              isOpen={
-                                                  openDropdownId ===
-                                                  'location-picker'
-                                              }
-                                              onOpenChange={getDropdownOpenHandler(
-                                                  'location-picker'
-                                              )}
-                                              onChange={(nextLocationId) => {
-                                                  if (
-                                                      nextLocationId ===
-                                                      myLocationOptionValue
-                                                  ) {
-                                                      syncCurrentLocation();
-                                                      return;
+                                          <div className='settings-location-controls'>
+                                              <button
+                                                  type='button'
+                                                  className='settings-location-tracking'
+                                                  aria-label={
+                                                      t.locationTracking
                                                   }
-
-                                                  selectLocationId(
-                                                      nextLocationId
-                                                  );
-                                              }}
-                                          />
+                                                  aria-pressed={
+                                                      isTrackingLocation
+                                                  }
+                                                  title={
+                                                      isTrackingLocation
+                                                          ? t.disableLocationTracking
+                                                          : t.enableLocationTracking
+                                                  }
+                                                  disabled={
+                                                      !isGeolocationAvailable
+                                                  }
+                                                  onClick={() => {
+                                                      setOpenDropdownId(
+                                                          undefined
+                                                      );
+                                                      toggleLocationTracking();
+                                                  }}
+                                              >
+                                                  {isTrackingLocation ? (
+                                                      <MapPin
+                                                          size={20}
+                                                          aria-hidden
+                                                      />
+                                                  ) : (
+                                                      <MapPinOff
+                                                          size={20}
+                                                          aria-hidden
+                                                      />
+                                                  )}
+                                              </button>
+                                              <SettingsDropdown
+                                                  id='location-picker'
+                                                  labelledBy='location-picker-label'
+                                                  disabled={isTrackingLocation}
+                                                  value={selectedLocation.id}
+                                                  options={locationOptions}
+                                                  isOpen={
+                                                      !isTrackingLocation &&
+                                                      openDropdownId ===
+                                                          'location-picker'
+                                                  }
+                                                  onOpenChange={getDropdownOpenHandler(
+                                                      'location-picker'
+                                                  )}
+                                                  onChange={selectLocationId}
+                                              />
+                                          </div>
                                       </div>
 
                                       <div className='settings-row settings-select-row'>

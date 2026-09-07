@@ -2838,6 +2838,43 @@ a.bookmark-workspace-tree-item {
         minmax(12rem, var(--settings-select-width, 12rem));
 }
 
+.settings-location-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.settings-location-tracking {
+    display: grid;
+    place-items: center;
+    flex: 0 0 2.5rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    background: transparent;
+    color: var(--clr-text);
+    cursor: pointer;
+}
+
+.settings-location-tracking[aria-pressed='true'] {
+    color: var(--clr-primary);
+    background: var(--clr-neutral-light);
+}
+
+.settings-location-tracking:hover:not(:disabled) {
+    box-shadow: var(--shadow-panel-hover);
+}
+
+.settings-location-tracking:focus-visible {
+    outline: 2px solid var(--clr-text-alpha);
+    outline-offset: 2px;
+}
+
+.settings-location-tracking:active:not(:disabled) {
+    scale: 0.96;
+}
+
 .settings-page .settings-select {
     background-color: var(--clr-neutral-light);
 }
