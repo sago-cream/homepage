@@ -1421,11 +1421,20 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                         <aside
                             className='bookmark-workspace-tree-pane'
                             tabIndex={0}
-                            onPointerDownCapture={() => {
-                                setFocusedPane('left');
+                            onPointerDownCapture={(event) => {
+                                if (
+                                    event.target instanceof Element &&
+                                    !event.target.closest(
+                                        '.bookmark-workspace-list-row'
+                                    )
+                                ) {
+                                    setFocusedPane('left');
+                                }
                             }}
-                            onFocusCapture={() => {
-                                setFocusedPane('left');
+                            onFocusCapture={(event) => {
+                                if (event.target === event.currentTarget) {
+                                    setFocusedPane('left');
+                                }
                             }}
                             aria-label={sidebarLayerTitle}
                         >
