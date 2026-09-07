@@ -2981,7 +2981,7 @@ a.bookmark-workspace-tree-item {
     border-radius: 0.75rem;
     background-color: var(--clr-text-alpha-2);
     display: grid;
-    grid-template-columns: 2.5rem 2rem minmax(0, 1fr) 2.5rem;
+    grid-template-columns: 2.5rem minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.5rem;
     transition:
@@ -4564,7 +4564,7 @@ a.bookmark-workspace-tree-item {
     min-height: 3.5rem;
 }
 
-.bookmark-settings .bookmark-workspace-tree-item {
+:is(.bookmark-settings, .bookmark-card-list) .bookmark-workspace-tree-item {
     min-height: 3.5rem;
     padding: 0.75rem;
 }
@@ -4781,28 +4781,32 @@ a.bookmark-workspace-tree-item {
 }
 
 /* One row surface in both panes; selection uses only its background. */
-.bookmark-settings .bookmark-workspace-list-row {
+:is(.bookmark-settings, .bookmark-card-list) .bookmark-workspace-list-row {
     min-height: 3.5rem;
     background: transparent;
     border-color: transparent;
     box-shadow: none;
 }
-.bookmark-settings .bookmark-workspace-list-row:hover,
-.bookmark-settings .bookmark-workspace-list-row[data-selected='true'] {
+:is(.bookmark-settings, .bookmark-card-list) .bookmark-workspace-list-row:hover,
+:is(.bookmark-settings, .bookmark-card-list)
+    .bookmark-workspace-list-row[data-selected='true'] {
     background: var(--clr-text-alpha-2);
     border-color: transparent;
     box-shadow: none;
 }
-.bookmark-settings .bookmark-workspace-tree-item,
+:is(.bookmark-settings, .bookmark-card-list) .bookmark-workspace-tree-item,
 .bookmark-settings .bookmark-workspace-row-link,
-.bookmark-settings .bookmark-workspace-tree-item:hover,
-.bookmark-settings .bookmark-workspace-tree-item[aria-pressed='true'],
+:is(.bookmark-settings, .bookmark-card-list)
+    .bookmark-workspace-tree-item:hover,
+:is(.bookmark-settings, .bookmark-card-list)
+    .bookmark-workspace-tree-item[aria-pressed='true'],
 .bookmark-settings .bookmark-workspace-row-link:hover {
     background: transparent;
     box-shadow: none;
     color: var(--clr-text);
 }
-.bookmark-settings .bookmark-workspace-tree-item:focus-visible,
+:is(.bookmark-settings, .bookmark-card-list)
+    .bookmark-workspace-tree-item:focus-visible,
 .bookmark-settings .bookmark-workspace-row-link:focus-visible {
     outline: 2px solid var(--clr-primary);
     outline-offset: -2px;
@@ -4823,12 +4827,12 @@ a.bookmark-workspace-tree-item {
     margin-left: 0.25rem;
 }
 
-.bookmark-settings .bookmark-workspace-tree-item {
+:is(.bookmark-settings, .bookmark-card-list) .bookmark-workspace-tree-item {
     grid-template-columns: 1.5rem minmax(0, 1fr);
     gap: 0.75rem;
 }
 
-.bookmark-settings .bookmark-workspace-tree-item svg,
+:is(.bookmark-settings, .bookmark-card-list) .bookmark-workspace-tree-item svg,
 .bookmark-settings
     .bookmark-workspace-trash-list
     .bookmark-workspace-item-icon
@@ -4941,16 +4945,17 @@ a.bookmark-workspace-tree-item {
 .bookmark-edit-dialog .bookmark-workspace-form-spacer {
     display: none;
 }
-.bookmark-settings .bookmark-workspace-tree-item:active {
+:is(.bookmark-settings, .bookmark-card-list)
+    .bookmark-workspace-tree-item:active {
     scale: 1;
 }
 
 /* Keep the same row geometry in either pane, for folders and links. */
-.bookmark-settings .bookmark-workspace-list-row {
+:is(.bookmark-settings, .bookmark-card-list) .bookmark-workspace-list-row {
     height: 4rem;
     min-height: 4rem;
 }
-.bookmark-settings .bookmark-workspace-tree-item {
+:is(.bookmark-settings, .bookmark-card-list) .bookmark-workspace-tree-item {
     height: 100%;
     min-height: 0;
     padding: 0.5rem 0.75rem;
@@ -4958,12 +4963,18 @@ a.bookmark-workspace-tree-item {
 .bookmark-settings .bookmark-workspace-folder-label {
     padding-block: 0;
 }
-.bookmark-settings .bookmark-workspace-tree-item small {
+:is(.bookmark-settings, .bookmark-card-list)
+    .bookmark-workspace-tree-item
+    small {
     display: block;
 }
 .bookmark-settings .bookmark-workspace-folder-label strong,
-.bookmark-settings .bookmark-settings-link-copy strong,
-.bookmark-settings .bookmark-settings-link-copy small {
+:is(.bookmark-settings, .bookmark-card-list)
+    .bookmark-settings-link-copy
+    strong,
+:is(.bookmark-settings, .bookmark-card-list)
+    .bookmark-settings-link-copy
+    small {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
