@@ -88,11 +88,12 @@ export const useAqiWithInitialData = ({
               }
     );
     const [aqi, setAqi] = useState<AqiData | undefined>(
-        () =>
-            initialCachedAqiRef.current?.data ??
-            getCachedAqi(selectedLocation.id)
+        () => initialCachedAqiRef.current?.data
     );
     const [isLoading, setIsLoading] = useState(false);
+
+    const selectedLocationIdRef = useRef(selectedLocation.id);
+    selectedLocationIdRef.current = selectedLocation.id;
 
     const fetchAqi = useCallback(async () => {
         setIsLoading(true);
@@ -101,6 +102,10 @@ export const useAqiWithInitialData = ({
                 site: selectedLocation.aqiSiteName,
             });
             const res = await fetch(`${BASE_API_URL}?${params.toString()}`);
+
+            if (selectedLocationIdRef.current !== selectedLocation.id) {
+                return;
+            }
 
             if (res.status === 204) {
                 const cached = getCachedAqi(selectedLocation.id, {
@@ -119,6 +124,9 @@ export const useAqiWithInitialData = ({
             }
 
             const data = (await res.json()) as AqiData;
+            if (selectedLocationIdRef.current !== selectedLocation.id) {
+                return;
+            }
             const cache: CachedAqi = {
                 data,
                 locationId: selectedLocation.id,
@@ -132,7 +140,9 @@ export const useAqiWithInitialData = ({
         } catch (error) {
             console.error(error);
         } finally {
-            setIsLoading(false);
+            if (selectedLocationIdRef.current === selectedLocation.id) {
+                setIsLoading(false);
+            }
         }
     }, [selectedLocation]);
 

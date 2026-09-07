@@ -10,14 +10,16 @@ A personal browser homepage for fast bookmark access across browsers with instan
 - Press <kbd>Space</kbd> to start searching, and <kbd>Enter</kbd> to
   open.
 - Sign in to upload a wallpaper; guests keep the default mountain scene.
-- Click the location control to sync the nearest Taiwan weather and AQI station.
+- Turn on the map pin in Preferences to follow your location, or turn it off to choose a Taiwan weather and AQI location.
 
 > After combining this with [HandyTab](https://github.com/sago-cream/handy-tab), opening any tabs feels like a breeze.
 
 ## Privacy
 
-Core features work without an account. Location is requested only after clicking the
-location control. The selected Taiwan location is stored in a same-site cookie for
+Core features work without an account. Location tracking is off by default. Enabling the map pin requests browser permission
+and remembers the preference; while the homepage is open, it follows movement and
+updates the nearest supported Taiwan location. Turning the pin off stops tracking
+and keeps the last location available for manual selection. The selected Taiwan location is stored in a same-site cookie for
 SSR and mirrored in browser storage with weather/AQI caches. Guest bookmarks stay in
 browser local storage; signed-in bookmarks sync to PostgreSQL under the Clerk
 account. Wallpaper sync requires sign-in and uses private, authenticated object
