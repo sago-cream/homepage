@@ -9,7 +9,7 @@ import React, {
 } from 'react';
 import { DragDropProvider, useDroppable } from '@dnd-kit/react';
 import type { DragEndEvent } from '@dnd-kit/react';
-import { isSortable, useSortable } from '@dnd-kit/react/sortable';
+import { useSortable } from '@dnd-kit/react/sortable';
 import {
     Bookmark,
     Check,
@@ -19,12 +19,11 @@ import {
     CircleAlert,
     ClipboardPaste,
     Download,
-    ExternalLink,
     FolderOpen,
     FolderPlus,
-    Link as LinkIcon,
+    Link2,
     LoaderCircle,
-    MoreHorizontal,
+    MoreVertical,
     Plus,
     Search,
     Trash2,
@@ -70,9 +69,14 @@ interface BookmarkLocation {
     folderPath: string[];
 }
 
+interface NavigationSnapshot {
+    location: BookmarkLocation;
+    selectedLocation?: BookmarkLocation;
+    focusedPane: 'left' | 'right';
+}
+
 interface EditorDraft extends BookmarkLocation {
     bookmarkId?: string;
-    destinationKey: string;
     icon: string;
     kind: 'bookmark' | 'category' | 'folder';
     mode: 'add' | 'edit';
@@ -83,12 +87,6 @@ interface EditorDraft extends BookmarkLocation {
 interface DeleteTarget extends BookmarkLocation {
     bookmarkId?: string;
     kind: EditorDraft['kind'];
-}
-
-interface DestinationOption {
-    key: string;
-    label: string;
-    location: BookmarkLocation;
 }
 
 interface NavigationItem {
@@ -103,12 +101,8 @@ interface FormErrors {
     url?: string;
 }
 
-interface PastedBookmark {
-    title: string;
-    url: string;
-}
-
 interface DragNodeData {
+    nodeIndex: number;
     isFolder: boolean;
     kind: 'node';
     location: BookmarkLocation;
@@ -152,7 +146,7 @@ const SortableBookmarkRow: React.FC<SortableBookmarkRowProps> = ({
 }) => {
     const sortable = useSortable<DragNodeData>({
         accept: 'bookmark-node',
-        data: { isFolder, kind: 'node', location },
+        data: { isFolder, kind: 'node', location, nodeIndex },
         disabled,
         group: getLocationKey(location.categoryIndex, location.folderPath),
         id: nodeId,
@@ -170,6 +164,77 @@ const SortableBookmarkRow: React.FC<SortableBookmarkRowProps> = ({
         >
             {children(sortable.sourceRef)}
         </div>
+    );
+};
+
+const BookmarkActions: React.FC<{
+    bookmark: { title: string; url?: string };
+    onEdit: () => void;
+    onDelete?: () => void;
+    labels: { edit: string; open: string; delete: string };
+}> = ({ bookmark, onEdit, onDelete, labels }) => {
+    const menuRef = useRef<HTMLDetailsElement>(null);
+    const close = () => {
+        if (menuRef.current) {
+            menuRef.current.open = false;
+        }
+    };
+    return (
+        <details
+            ref={menuRef}
+            className='bookmark-row-menu'
+            onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget)) {
+                    close();
+                }
+            }}
+            onKeyDown={(event) => {
+                if (event.key === 'Escape') {
+                    event.stopPropagation();
+                    close();
+                    menuRef.current?.querySelector('summary')?.focus();
+                }
+            }}
+        >
+            <summary
+                aria-label={`${bookmark.title}: ${labels.edit}${bookmark.url ? `, ${labels.open}` : ''}${onDelete ? `, ${labels.delete}` : ''}`}
+            >
+                <MoreVertical aria-hidden='true' />
+            </summary>
+            <div className='bookmark-row-menu-content'>
+                <button
+                    type='button'
+                    onClick={() => {
+                        close();
+                        onEdit();
+                    }}
+                >
+                    {labels.edit}
+                </button>
+                {bookmark.url && (
+                    <a
+                        href={bookmark.url}
+                        target='_blank'
+                        rel='noreferrer'
+                        onClick={close}
+                    >
+                        {labels.open}
+                    </a>
+                )}
+                {onDelete && (
+                    <button
+                        type='button'
+                        className='danger'
+                        onClick={() => {
+                            close();
+                            onDelete();
+                        }}
+                    >
+                        {labels.delete}
+                    </button>
+                )}
+            </div>
+        </details>
     );
 };
 
@@ -208,6 +273,10 @@ const BookmarkLocationDropTarget: React.FC<BookmarkLocationDropTargetProps> = ({
         </div>
     );
 };
+
+const FolderLabel: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <span className='bookmark-workspace-folder-label'>{children}</span>
+);
 
 interface BookmarkSidebarDropTargetProps {
     children: React.ReactNode;
@@ -248,7 +317,6 @@ const BookmarkSidebarDropTarget: React.FC<BookmarkSidebarDropTargetProps> = ({
 };
 
 const defaultIconName = 'Folder';
-const folderPathSeparator = ' / ';
 const maxVisibleIconOptions = 40;
 const bookmarkRootLocation: BookmarkLocation = {
     categoryIndex: -1,
@@ -308,13 +376,6 @@ const getNodesAtPath = (
         : (getFolderAtPath(category.children, folderPath)?.children ?? []);
 };
 
-const countBookmarks = (nodes: readonly BookmarkNodeData[]): number =>
-    nodes.reduce(
-        (count, node) =>
-            count + (isBookmarkLink(node) ? 1 : countBookmarks(node.children)),
-        0
-    );
-
 const nodeMatchesSearch = (
     node: BookmarkNodeData,
     normalizedQuery: string
@@ -331,65 +392,8 @@ const nodeMatchesSearch = (
     );
 };
 
-const collectDestinations = (
-    nodes: readonly BookmarkNodeData[],
-    categoryIndex: number,
-    parentLabel: string,
-    folderPath: readonly string[] = []
-): DestinationOption[] =>
-    nodes.flatMap((node) => {
-        if (!isBookmarkFolder(node)) {
-            return [];
-        }
-
-        const nextPath = [...folderPath, node.id];
-        const label = `${parentLabel}${folderPathSeparator}${node.title}`;
-
-        return [
-            {
-                key: getLocationKey(categoryIndex, nextPath),
-                label,
-                location: { categoryIndex, folderPath: nextPath },
-            },
-            ...collectDestinations(
-                node.children,
-                categoryIndex,
-                label,
-                nextPath
-            ),
-        ];
-    });
-
-const getDestinationOptions = (
-    bookmarkTree: readonly BookmarkCategoryData[],
-    rootLabel: string
-): DestinationOption[] => [
-    {
-        key: getLocationKey(-1, []),
-        label: rootLabel,
-        location: bookmarkRootLocation,
-    },
-    ...bookmarkTree.flatMap((category, categoryIndex) =>
-        isBookmarkRootCategory(category)
-            ? []
-            : [
-                  {
-                      key: getLocationKey(categoryIndex, []),
-                      label: category.category,
-                      location: { categoryIndex, folderPath: [] },
-                  },
-                  ...collectDestinations(
-                      category.children,
-                      categoryIndex,
-                      category.category
-                  ),
-              ]
-    ),
-];
-
 const serializeDraft = (draft: EditorDraft): string =>
     JSON.stringify({
-        destinationKey: draft.destinationKey,
         icon: draft.icon,
         title: draft.title,
         url: draft.url,
@@ -402,6 +406,11 @@ const getBookmarkHost = (url: string): string => {
         return url;
     }
 };
+
+interface PastedBookmark {
+    title: string;
+    url: string;
+}
 
 const getBookmarkTitleFromUrl = (url: string): string => {
     try {
@@ -510,27 +519,30 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     const dialogRef = useRef<HTMLDivElement>(null);
     const importInputRef = useRef<HTMLInputElement>(null);
     const queryInputRef = useRef<HTMLInputElement>(null);
-    const addMenuTriggerRef = useRef<HTMLButtonElement>(null);
-    const addMenuRef = useRef<HTMLDivElement>(null);
-    const locationPickerTriggerRef = useRef<HTMLButtonElement>(null);
-    const locationOptionsRef = useRef<HTMLDivElement>(null);
     const iconPickerTriggerRef = useRef<HTMLButtonElement>(null);
     const iconSearchInputRef = useRef<HTMLInputElement>(null);
     const [location, setLocation] =
         useState<BookmarkLocation>(bookmarkRootLocation);
+    const [focusedPane, setFocusedPane] = useState<'left' | 'right'>('left');
     const [selectedLocation, setSelectedLocation] =
         useState<BookmarkLocation>();
-    const [backLocations, setBackLocations] = useState<BookmarkLocation[]>([]);
+    const [backLocations, setBackLocations] = useState<NavigationSnapshot[]>(
+        []
+    );
     const [forwardLocations, setForwardLocations] = useState<
-        BookmarkLocation[]
+        NavigationSnapshot[]
     >([]);
     const [query, setQuery] = useState('');
+    const [pasteMessage, setPasteMessage] = useState('');
+    const [isAppleDevice, setIsAppleDevice] = useState(false);
+    useEffect(() => {
+        setIsAppleDevice(/mac|iphone|ipad|ipod/i.test(navigator.userAgent));
+    }, []);
+    const pasteShortcut = isAppleDevice ? '⌘V' : 'Ctrl+V';
     const [editorDraft, setEditorDraft] = useState<EditorDraft>();
     const [draftBaseline, setDraftBaseline] = useState('');
     const [formErrors, setFormErrors] = useState<FormErrors>({});
-    const [isAddMenuOpen, setIsAddMenuOpen] = useState(false);
     const [isIconPickerOpen, setIsIconPickerOpen] = useState(false);
-    const [isLocationPickerOpen, setIsLocationPickerOpen] = useState(false);
     const [iconQuery, setIconQuery] = useState('');
     const [isTrashOpen, setIsTrashOpen] = useState(false);
     const [isEmptyTrashConfirmOpen, setIsEmptyTrashConfirmOpen] =
@@ -540,26 +552,16 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         id: string;
     }>();
     const undoToastRef = useRef<HTMLDivElement>(null);
-    const [quickAddValue, setQuickAddValue] = useState('');
-    const [quickAddMessage, setQuickAddMessage] = useState('');
 
     const { bookmarkTree } = bookmarkControls;
     const decoratedTree = useMemo(
         () => decorateBookmarkTree(bookmarkTree),
         [bookmarkTree]
     );
-    const destinationOptions = useMemo(
-        () => getDestinationOptions(bookmarkTree, t.bookmarks),
-        [bookmarkTree, t.bookmarks]
-    );
     const currentCategory =
         selectedLocation === undefined
             ? undefined
             : bookmarkTree.at(selectedLocation.categoryIndex);
-    const currentFolder = getFolderAtPath(
-        currentCategory?.children ?? [],
-        selectedLocation?.folderPath ?? []
-    );
     const currentNodes =
         selectedLocation === undefined
             ? []
@@ -572,7 +574,8 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                   nodeMatchesSearch(node, normalizedQuery)
               );
     const rootCategoryIndex = bookmarkTree.findIndex(isBookmarkRootCategory);
-    const activeAddLocation = selectedLocation ?? location;
+    const activeAddLocation =
+        focusedPane === 'right' ? (selectedLocation ?? location) : location;
     const rightLocation = selectedLocation ?? bookmarkRootLocation;
     const getLocationTitle = (target: BookmarkLocation): string => {
         if (target.categoryIndex === -1) {
@@ -588,6 +591,15 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                   category.category);
     };
     const sidebarLayerTitle = getLocationTitle(location);
+    const activeCategory =
+        activeAddLocation.categoryIndex === -1
+            ? undefined
+            : bookmarkTree.at(activeAddLocation.categoryIndex);
+    const activeFolder = getFolderAtPath(
+        activeCategory?.children ?? [],
+        activeAddLocation.folderPath
+    );
+    const activeIcon = activeFolder?.icon ?? activeCategory?.icon ?? 'Folder';
     const sidebarItems: NavigationItem[] = (() => {
         if (location.categoryIndex === -1) {
             return getBookmarkRootNodes(bookmarkTree).flatMap(
@@ -655,29 +667,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         editorDraft !== undefined &&
         serializeDraft(editorDraft) !== draftBaseline;
 
-    const addPastedBookmarks = (bookmarks: readonly PastedBookmark[]) => {
-        if (currentCategory === undefined || bookmarks.length === 0) {
-            setQuickAddMessage(t.bookmarkUrlInvalid);
-            return;
-        }
-
-        if (selectedLocation === undefined) {
-            return;
-        }
-        const addedCount = bookmarkControls.addBookmarksToLocation(
-            selectedLocation,
-            bookmarks
-        );
-        setQuickAddValue('');
-        setQuickAddMessage(
-            addedCount === 0
-                ? t.bookmarksAlreadySaved
-                : locale === 'zh-TW'
-                  ? `已新增 ${addedCount} 個連結`
-                  : `${addedCount} ${addedCount === 1 ? 'link' : 'links'} added`
-        );
-    };
-
     const itemCountLabel = (count: number) =>
         locale === 'zh-TW'
             ? `${count} 個項目`
@@ -689,52 +678,76 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         setFormErrors({});
         setIsIconPickerOpen(false);
         setIconQuery('');
-        setIsLocationPickerOpen(false);
-        setIsAddMenuOpen(false);
     };
 
-    const enterFolder = (nextLocation: BookmarkLocation) => {
-        setBackLocations((current: readonly BookmarkLocation[]) => [
+    const navigationSnapshot: NavigationSnapshot = {
+        location,
+        selectedLocation,
+        focusedPane,
+    };
+    const restoreNavigation = (snapshot: NavigationSnapshot) => {
+        setLocation(snapshot.location);
+        setSelectedLocation(snapshot.selectedLocation);
+        setFocusedPane(snapshot.focusedPane);
+        setEditorDraft(undefined);
+        setQuery('');
+    };
+    const navigateTo = (snapshot: NavigationSnapshot) => {
+        setBackLocations((current: readonly NavigationSnapshot[]) => [
             ...current.slice(-49),
-            location,
+            navigationSnapshot,
         ]);
         setForwardLocations([]);
-        setLocation(selectedLocation ?? location);
-        setSelectedLocation(nextLocation);
+        restoreNavigation(snapshot);
     };
-
-    const navigateBack = () => {
-        const previousLocation = backLocations.at(-1);
-        if (previousLocation === undefined) {
+    const selectSidebarFolder = (nextLocation: BookmarkLocation) => {
+        if (
+            selectedLocation !== undefined &&
+            isSameLocation(selectedLocation, nextLocation)
+        ) {
+            setFocusedPane('right');
             return;
         }
-
-        setBackLocations((current: readonly BookmarkLocation[]) =>
+        navigateTo({
+            location,
+            selectedLocation: nextLocation,
+            focusedPane: 'right',
+        });
+    };
+    const enterFolder = (nextLocation: BookmarkLocation) => {
+        navigateTo({
+            location: selectedLocation ?? location,
+            selectedLocation: nextLocation,
+            focusedPane: 'right',
+        });
+    };
+    const navigateBack = () => {
+        const previous = backLocations.at(-1);
+        if (!previous) {
+            return;
+        }
+        setBackLocations((current: readonly NavigationSnapshot[]) =>
             current.slice(0, -1)
         );
-        setForwardLocations((current: readonly BookmarkLocation[]) => [
-            location,
+        setForwardLocations((current: readonly NavigationSnapshot[]) => [
+            navigationSnapshot,
             ...current.slice(0, 49),
         ]);
-        setLocation(previousLocation);
-        setSelectedLocation(undefined);
+        restoreNavigation(previous);
     };
-
     const navigateForward = () => {
-        const nextLocation = forwardLocations.at(0);
-        if (nextLocation === undefined) {
+        const next = forwardLocations.at(0);
+        if (!next) {
             return;
         }
-
-        setForwardLocations((current: readonly BookmarkLocation[]) =>
+        setForwardLocations((current: readonly NavigationSnapshot[]) =>
             current.slice(1)
         );
-        setBackLocations((current: readonly BookmarkLocation[]) => [
+        setBackLocations((current: readonly NavigationSnapshot[]) => [
             ...current.slice(-49),
-            location,
+            navigationSnapshot,
         ]);
-        setLocation(nextLocation);
-        setSelectedLocation(undefined);
+        restoreNavigation(next);
     };
 
     const editCategory = (categoryIndex: number) => {
@@ -746,7 +759,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
 
         openDraft({
             categoryIndex,
-            destinationKey: '',
             folderPath: [],
             icon: decoratedCategory.iconName,
             kind: 'category',
@@ -768,7 +780,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
 
         openDraft({
             ...nextLocation,
-            destinationKey: '',
             icon: resolveFolderIconName(folder),
             kind: 'folder',
             mode: 'edit',
@@ -784,10 +795,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         openDraft({
             ...nextLocation,
             bookmarkId: bookmark.id,
-            destinationKey: getLocationKey(
-                nextLocation.categoryIndex,
-                nextLocation.folderPath
-            ),
             icon: '',
             kind: 'bookmark',
             mode: 'edit',
@@ -799,7 +806,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     const beginAddFolder = () => {
         openDraft({
             ...activeAddLocation,
-            destinationKey: '',
             icon: defaultIconName,
             kind: 'folder',
             mode: 'add',
@@ -811,16 +817,49 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     const beginAddBookmark = () => {
         openDraft({
             ...activeAddLocation,
-            destinationKey: getLocationKey(
-                activeAddLocation.categoryIndex,
-                activeAddLocation.folderPath
-            ),
             icon: '',
             kind: 'bookmark',
             mode: 'add',
             title: '',
             url: '',
         });
+    };
+
+    const bookmarkActionLabels = {
+        edit: locale === 'zh-TW' ? '編輯' : 'Edit',
+        open: locale === 'zh-TW' ? '開啟' : 'Open',
+        delete: locale === 'zh-TW' ? '刪除' : 'Delete',
+    };
+    const pasteLinks = (text: string, clipboardData?: DataTransfer) => {
+        const links = clipboardData
+            ? parseClipboardBookmarks(clipboardData)
+            : parsePastedBookmarkText(text);
+        if (links.length === 0) {
+            setPasteMessage(t.bookmarkUrlInvalid);
+            return;
+        }
+        const count = bookmarkControls.addBookmarksToLocation(
+            activeAddLocation,
+            links
+        );
+        setPasteMessage(
+            count === 0
+                ? t.bookmarksAlreadySaved
+                : locale === 'zh-TW'
+                  ? `已新增 ${count} 個連結`
+                  : `${count} ${count === 1 ? 'link' : 'links'} added`
+        );
+    };
+    const pasteFromClipboard = async () => {
+        try {
+            pasteLinks(await navigator.clipboard.readText());
+        } catch {
+            setPasteMessage(
+                locale === 'zh-TW'
+                    ? `請在面板中按 ${pasteShortcut} 貼上連結。`
+                    : `Press ${pasteShortcut} in the panel to paste links.`
+            );
+        }
     };
 
     const saveDraft = () => {
@@ -866,23 +905,17 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                     ? bookmarkControls.addFolder(editorDraft, folder)
                     : bookmarkControls.updateFolder(editorDraft, folder);
         } else if (normalizedUrl !== undefined) {
-            const destination = destinationOptions.find(
-                (option) => option.key === editorDraft.destinationKey
-            )?.location;
-            if (destination !== undefined) {
-                didSave =
-                    editorDraft.mode === 'add'
-                        ? bookmarkControls.addBookmarkToLocation(destination, {
-                              title,
-                              url: normalizedUrl,
-                          })
-                        : bookmarkControls.updateBookmarkInLocation(
-                              editorDraft,
-                              editorDraft.bookmarkId ?? '',
-                              { title, url: normalizedUrl },
-                              destination
-                          );
-            }
+            didSave =
+                editorDraft.mode === 'add'
+                    ? bookmarkControls.addBookmarkToLocation(editorDraft, {
+                          title,
+                          url: normalizedUrl,
+                      })
+                    : bookmarkControls.updateBookmarkInLocation(
+                          editorDraft,
+                          editorDraft.bookmarkId ?? '',
+                          { title, url: normalizedUrl }
+                      );
         }
 
         if (!didSave) {
@@ -977,32 +1010,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     }, []);
 
     useEffect(() => {
-        if (!isAddMenuOpen) {
-            return;
-        }
-
-        addMenuRef.current
-            ?.querySelector<HTMLButtonElement>('button:not(:disabled)')
-            ?.focus();
-    }, [isAddMenuOpen]);
-
-    useEffect(() => {
-        if (!isLocationPickerOpen) {
-            return;
-        }
-
-        const selectedOption =
-            locationOptionsRef.current?.querySelector<HTMLButtonElement>(
-                '[aria-selected="true"]'
-            );
-        const firstOption =
-            locationOptionsRef.current?.querySelector<HTMLButtonElement>(
-                'button'
-            );
-        (selectedOption ?? firstOption)?.focus();
-    }, [isLocationPickerOpen]);
-
-    useEffect(() => {
         if (isIconPickerOpen) {
             iconSearchInputRef.current?.focus();
         }
@@ -1070,30 +1077,40 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         let destination = targetData?.location;
         let destinationIndex: number | undefined;
 
-        if (
-            targetData?.kind === 'node' &&
-            targetData.isFolder &&
-            String(source.id) !== String(target.id)
-        ) {
-            destination = {
-                categoryIndex: targetData.location.categoryIndex,
-                folderPath: [
-                    ...targetData.location.folderPath,
-                    String(target.id),
-                ],
-            };
-        } else if (isSortable(source) && targetData?.kind === 'node') {
-            const sortableDestination = destinationOptions.find(
-                (option) => option.key === String(source.group)
-            );
-            destination = sortableDestination?.location ?? destination;
-            destinationIndex = source.index;
-
-            if (
-                source.initialGroup === source.group &&
-                source.initialIndex < source.index
-            ) {
-                destinationIndex++;
+        if (targetData?.kind === 'node') {
+            if (String(source.id) === String(target.id)) {
+                return;
+            }
+            const bounds = target.element?.getBoundingClientRect();
+            const pointerY = event.operation.position.current.y;
+            // Middle of a folder opens it as a destination; its edges reorder siblings.
+            const insideFolder =
+                targetData.isFolder &&
+                bounds !== undefined &&
+                pointerY > bounds.top + bounds.height * 0.25 &&
+                pointerY < bounds.bottom - bounds.height * 0.25;
+            if (insideFolder) {
+                destination =
+                    targetData.location.categoryIndex === -1
+                        ? {
+                              categoryIndex: bookmarkTree.findIndex(
+                                  (category) =>
+                                      category.id === String(target.id)
+                              ),
+                              folderPath: [],
+                          }
+                        : {
+                              categoryIndex: targetData.location.categoryIndex,
+                              folderPath: [
+                                  ...targetData.location.folderPath,
+                                  String(target.id),
+                              ],
+                          };
+            } else {
+                const after =
+                    bounds !== undefined &&
+                    pointerY > bounds.top + bounds.height / 2;
+                destinationIndex = targetData.nodeIndex + (after ? 1 : 0);
             }
         }
 
@@ -1107,6 +1124,16 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             )
         ) {
             setEditorDraft(undefined);
+            if (
+                sourceData.location.categoryIndex === -1 ||
+                destination.categoryIndex === -1
+            ) {
+                setLocation(bookmarkRootLocation);
+                setSelectedLocation(undefined);
+                setFocusedPane('left');
+                setBackLocations([]);
+                setForwardLocations([]);
+            }
         }
     };
 
@@ -1140,10 +1167,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             option.searchText.includes(normalizeCategoryIconSearch(iconQuery))
         )
         .slice(0, maxVisibleIconOptions);
-    const selectedDestination = destinationOptions.find(
-        (option) => option.key === editorDraft?.destinationKey
-    );
-
     const saveStatus = bookmarkControls.isLoading
         ? {
               icon: <LoaderCircle aria-hidden='true' className='is-spinning' />,
@@ -1179,19 +1202,26 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                 ref={dialogRef}
                 className='bookmark-workspace bookmark-settings'
                 data-editing={editorDraft !== undefined}
-                data-browsing={selectedLocation !== undefined}
                 role='region'
                 aria-labelledby={titleId}
                 tabIndex={-1}
-                onPointerDownCapture={(event) => {
-                    const { target } = event;
+                onPaste={(event) => {
                     if (
-                        isAddMenuOpen &&
-                        target instanceof Element &&
-                        !target.closest('.bookmark-workspace-add-control')
+                        editorDraft !== undefined ||
+                        isTrashOpen ||
+                        (event.target instanceof Element &&
+                            event.target.closest(
+                                'input, textarea, [contenteditable="true"]'
+                            ))
                     ) {
-                        setIsAddMenuOpen(false);
+                        return;
                     }
+                    event.preventDefault();
+                    event.stopPropagation();
+                    pasteLinks(
+                        event.clipboardData.getData('text/plain'),
+                        event.clipboardData
+                    );
                 }}
                 onKeyDown={(event) => {
                     if (event.key !== 'Escape') {
@@ -1206,20 +1236,14 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                         setIsTrashOpen(false);
                     } else if (discardTarget !== undefined) {
                         setDiscardTarget(undefined);
-                    } else if (isLocationPickerOpen) {
-                        setIsLocationPickerOpen(false);
-                        locationPickerTriggerRef.current?.focus();
                     } else if (isIconPickerOpen) {
                         setIsIconPickerOpen(false);
                         setIconQuery('');
                         iconPickerTriggerRef.current?.focus();
-                    } else if (editorDraft !== undefined) {
-                        cancelEditor();
-                    } else if (isAddMenuOpen) {
-                        setIsAddMenuOpen(false);
-                        addMenuTriggerRef.current?.focus();
-                    } else {
+                    } else if (editorDraft === undefined) {
                         requestDialogClose();
+                    } else {
+                        cancelEditor();
                     }
                 }}
             >
@@ -1232,6 +1256,9 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                             <h2 id={titleId}>{t.bookmarks}</h2>
                             <p>{t.bookmarksDescription}</p>
                         </div>
+                        <span role='status' aria-live='polite'>
+                            {pasteMessage}
+                        </span>
                         {bookmarkControls.status?.type === 'error' ? (
                             <span
                                 className={`bookmark-workspace-operation-status ${bookmarkControls.status.type}`}
@@ -1243,45 +1270,36 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                         ) : undefined}
                     </div>
                     <div className='bookmark-workspace-header-actions'>
-                        <div className='bookmark-workspace-add-control'>
-                            <button
-                                ref={addMenuTriggerRef}
-                                className='bookmark-workspace-primary-button'
-                                type='button'
-                                aria-haspopup='menu'
-                                aria-expanded={isAddMenuOpen}
-                                onClick={() => {
-                                    setIsAddMenuOpen((isOpen) => !isOpen);
-                                }}
-                            >
-                                <Plus aria-hidden='true' />
-                                {t.addBookmark}
-                            </button>
-                            {isAddMenuOpen ? (
-                                <div
-                                    ref={addMenuRef}
-                                    className='bookmark-workspace-add-menu'
-                                    role='menu'
-                                >
-                                    <button
-                                        type='button'
-                                        role='menuitem'
-                                        onClick={beginAddBookmark}
-                                    >
-                                        <Bookmark aria-hidden='true' />
-                                        {t.bookmark}
-                                    </button>
-                                    <button
-                                        type='button'
-                                        role='menuitem'
-                                        onClick={beginAddFolder}
-                                    >
-                                        <FolderPlus aria-hidden='true' />
-                                        {t.folder}
-                                    </button>
-                                </div>
-                            ) : undefined}
-                        </div>
+                        <button
+                            className='bookmark-workspace-secondary-button'
+                            type='button'
+                            aria-keyshortcuts={
+                                isAppleDevice ? 'Meta+V' : 'Control+V'
+                            }
+                            onClick={() => {
+                                pasteFromClipboard().catch(() => undefined);
+                            }}
+                        >
+                            <ClipboardPaste aria-hidden='true' />
+                            {locale === 'zh-TW' ? '貼上連結' : 'Paste link'}
+                            <kbd>{pasteShortcut}</kbd>
+                        </button>
+                        <button
+                            className='bookmark-workspace-secondary-button'
+                            type='button'
+                            onClick={beginAddBookmark}
+                        >
+                            <Plus aria-hidden='true' />
+                            {locale === 'zh-TW' ? '新增連結' : 'Add link'}
+                        </button>
+                        <button
+                            className='bookmark-workspace-secondary-button'
+                            type='button'
+                            onClick={beginAddFolder}
+                        >
+                            <FolderPlus aria-hidden='true' />
+                            {t.newFolder}
+                        </button>
                         <input
                             ref={importInputRef}
                             id={importInputId}
@@ -1361,7 +1379,10 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                 <ChevronRight aria-hidden='true' />
                             </button>
                         </div>
-                        <span>{sidebarLayerTitle}</span>
+                        <div className='bookmark-settings-current-location'>
+                            {createBookmarkIcon(activeIcon, 'icon')}
+                            <span>{getLocationTitle(activeAddLocation)}</span>
+                        </div>
                     </div>
                     <div
                         className='bookmark-workspace-search quiet'
@@ -1399,6 +1420,13 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                     >
                         <aside
                             className='bookmark-workspace-tree-pane'
+                            tabIndex={0}
+                            onPointerDownCapture={() => {
+                                setFocusedPane('left');
+                            }}
+                            onFocusCapture={() => {
+                                setFocusedPane('left');
+                            }}
                             aria-label={sidebarLayerTitle}
                         >
                             <BookmarkSidebarDropTarget
@@ -1410,8 +1438,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                 location={location}
                                 onClick={(event) => {
                                     if (event.target === event.currentTarget) {
-                                        setSelectedLocation(undefined);
-                                        setEditorDraft(undefined);
+                                        setFocusedPane('left');
                                     }
                                 }}
                             >
@@ -1442,103 +1469,200 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                         </span>
                                     </div>
                                 ) : (
-                                    visibleSidebarItems.map((item) => {
-                                        const folder = isBookmarkFolder(
-                                            item.node
-                                        )
-                                            ? item.node
-                                            : undefined;
-                                        const bookmark = isBookmarkLink(
-                                            item.node
-                                        )
-                                            ? item.node
-                                            : undefined;
-                                        const itemKey = item.node.id;
-                                        const isSelected =
-                                            item.folderLocation !== undefined &&
-                                            selectedLocation !== undefined &&
-                                            isSameLocation(
-                                                item.folderLocation,
-                                                selectedLocation
+                                    visibleSidebarItems.map(
+                                        (item, nodeIndex) => {
+                                            const folder = isBookmarkFolder(
+                                                item.node
+                                            )
+                                                ? item.node
+                                                : undefined;
+                                            const bookmark = isBookmarkLink(
+                                                item.node
+                                            )
+                                                ? item.node
+                                                : undefined;
+                                            const itemKey = item.node.id;
+                                            const isSelected =
+                                                item.folderLocation !==
+                                                    undefined &&
+                                                selectedLocation !==
+                                                    undefined &&
+                                                isSameLocation(
+                                                    item.folderLocation,
+                                                    selectedLocation
+                                                );
+                                            return (
+                                                <SortableBookmarkRow
+                                                    key={itemKey}
+                                                    nodeId={itemKey}
+                                                    nodeIndex={nodeIndex}
+                                                    isFolder={
+                                                        folder !== undefined
+                                                    }
+                                                    selected={isSelected}
+                                                    disabled={
+                                                        normalizedQuery !== ''
+                                                    }
+                                                    location={location}
+                                                >
+                                                    {(sourceRef) => (
+                                                        <>
+                                                            {folder ? (
+                                                                <>
+                                                                    <button
+                                                                        ref={
+                                                                            sourceRef
+                                                                        }
+                                                                        className='bookmark-workspace-tree-item'
+                                                                        type='button'
+                                                                        aria-pressed={
+                                                                            isSelected
+                                                                        }
+                                                                        onClick={() => {
+                                                                            if (
+                                                                                item.folderLocation
+                                                                            ) {
+                                                                                selectSidebarFolder(
+                                                                                    item.folderLocation
+                                                                                );
+                                                                            }
+                                                                        }}
+                                                                    >
+                                                                        {createBookmarkIcon(
+                                                                            folder.icon,
+                                                                            'icon'
+                                                                        )}
+                                                                        <FolderLabel>
+                                                                            <strong>
+                                                                                {
+                                                                                    folder.title
+                                                                                }
+                                                                            </strong>
+                                                                            <small>
+                                                                                {itemCountLabel(
+                                                                                    folder
+                                                                                        .children
+                                                                                        .length
+                                                                                )}
+                                                                            </small>
+                                                                        </FolderLabel>
+                                                                    </button>
+                                                                    <BookmarkActions
+                                                                        bookmark={
+                                                                            folder
+                                                                        }
+                                                                        labels={
+                                                                            bookmarkActionLabels
+                                                                        }
+                                                                        onDelete={() => {
+                                                                            if (
+                                                                                item.folderLocation
+                                                                            ) {
+                                                                                deleteItem(
+                                                                                    {
+                                                                                        ...item.folderLocation,
+                                                                                        kind: item.isCategory
+                                                                                            ? 'category'
+                                                                                            : 'folder',
+                                                                                    }
+                                                                                );
+                                                                            }
+                                                                        }}
+                                                                        onEdit={() => {
+                                                                            if (
+                                                                                item.folderLocation
+                                                                            ) {
+                                                                                if (
+                                                                                    item.isCategory
+                                                                                ) {
+                                                                                    editCategory(
+                                                                                        item
+                                                                                            .folderLocation
+                                                                                            .categoryIndex
+                                                                                    );
+                                                                                } else {
+                                                                                    editFolder(
+                                                                                        item.folderLocation
+                                                                                    );
+                                                                                }
+                                                                            }
+                                                                        }}
+                                                                    />
+                                                                </>
+                                                            ) : bookmark ? (
+                                                                <>
+                                                                    <button
+                                                                        ref={
+                                                                            sourceRef
+                                                                        }
+                                                                        type='button'
+                                                                        className='bookmark-workspace-tree-item bookmark-link-item'
+                                                                        onClick={() => {
+                                                                            editBookmark(
+                                                                                item.containerLocation,
+                                                                                bookmark
+                                                                            );
+                                                                        }}
+                                                                    >
+                                                                        <Link2 aria-hidden='true' />
+                                                                        <span className='bookmark-settings-link-copy'>
+                                                                            <strong>
+                                                                                {
+                                                                                    bookmark.title
+                                                                                }
+                                                                            </strong>
+                                                                            <small>
+                                                                                {getBookmarkHost(
+                                                                                    bookmark.url
+                                                                                )}
+                                                                            </small>
+                                                                        </span>
+                                                                    </button>
+                                                                    <BookmarkActions
+                                                                        bookmark={
+                                                                            bookmark
+                                                                        }
+                                                                        labels={
+                                                                            bookmarkActionLabels
+                                                                        }
+                                                                        onEdit={() => {
+                                                                            editBookmark(
+                                                                                item.containerLocation,
+                                                                                bookmark
+                                                                            );
+                                                                        }}
+                                                                        onDelete={() => {
+                                                                            deleteItem(
+                                                                                {
+                                                                                    ...item.containerLocation,
+                                                                                    kind: 'bookmark',
+                                                                                    bookmarkId:
+                                                                                        bookmark.id,
+                                                                                }
+                                                                            );
+                                                                        }}
+                                                                    />
+                                                                </>
+                                                            ) : undefined}
+                                                        </>
+                                                    )}
+                                                </SortableBookmarkRow>
                                             );
-                                        return (
-                                            <BookmarkLocationDropTarget
-                                                key={itemKey}
-                                                className='bookmark-workspace-tree-row'
-                                                disabled={
-                                                    normalizedQuery !== ''
-                                                }
-                                                idSuffix={`layer:${itemKey}`}
-                                                location={
-                                                    item.folderLocation ??
-                                                    item.containerLocation
-                                                }
-                                            >
-                                                {folder ? (
-                                                    <button
-                                                        className='bookmark-workspace-tree-item'
-                                                        type='button'
-                                                        aria-pressed={
-                                                            isSelected
-                                                        }
-                                                        onClick={() => {
-                                                            setSelectedLocation(
-                                                                item.folderLocation
-                                                            );
-                                                            setEditorDraft(
-                                                                undefined
-                                                            );
-                                                        }}
-                                                    >
-                                                        {createBookmarkIcon(
-                                                            folder.icon,
-                                                            'icon'
-                                                        )}
-                                                        <span>
-                                                            {folder.title}
-                                                        </span>
-                                                        <ChevronRight
-                                                            className='bookmark-workspace-layer-chevron'
-                                                            aria-hidden='true'
-                                                        />
-                                                    </button>
-                                                ) : bookmark ? (
-                                                    <button
-                                                        className='bookmark-workspace-tree-item'
-                                                        type='button'
-                                                        onClick={() => {
-                                                            editBookmark(
-                                                                item.containerLocation,
-                                                                bookmark
-                                                            );
-                                                        }}
-                                                    >
-                                                        <LinkIcon aria-hidden='true' />
-                                                        <span className='bookmark-settings-link-copy'>
-                                                            <strong>
-                                                                {bookmark.title}
-                                                            </strong>
-                                                            <small>
-                                                                {getBookmarkHost(
-                                                                    bookmark.url
-                                                                )}
-                                                            </small>
-                                                        </span>
-                                                        <MoreHorizontal
-                                                            className='bookmark-workspace-layer-chevron'
-                                                            aria-hidden='true'
-                                                        />
-                                                    </button>
-                                                ) : undefined}
-                                            </BookmarkLocationDropTarget>
-                                        );
-                                    })
+                                        }
+                                    )
                                 )}
                             </BookmarkSidebarDropTarget>
                         </aside>
 
                         <main
                             className='bookmark-workspace-list-pane'
+                            tabIndex={0}
+                            onPointerDownCapture={() => {
+                                setFocusedPane('right');
+                            }}
+                            onFocusCapture={() => {
+                                setFocusedPane('right');
+                            }}
                             data-empty={selectedLocation === undefined}
                             aria-label={
                                 selectedLocation === undefined
@@ -1546,82 +1670,11 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                     : getLocationTitle(selectedLocation)
                             }
                         >
-                            <div className='bookmark-workspace-list-header'>
-                                <div className='bookmark-workspace-list-title'>
-                                    <h3>
-                                        {currentFolder?.title ??
-                                            currentCategory?.category ??
-                                            t.bookmarks}
-                                    </h3>
-                                    {currentCategory ===
-                                    undefined ? undefined : (
-                                        <button
-                                            className='bookmark-workspace-icon-button'
-                                            type='button'
-                                            aria-label={t.folderSettings}
-                                            onClick={() => {
-                                                if (
-                                                    currentFolder === undefined
-                                                ) {
-                                                    editCategory(
-                                                        rightLocation.categoryIndex
-                                                    );
-                                                } else {
-                                                    editFolder(rightLocation);
-                                                }
-                                            }}
-                                        >
-                                            <MoreHorizontal aria-hidden='true' />
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                            <form
-                                className='bookmark-workspace-quick-add'
-                                onSubmit={(event) => {
-                                    event.preventDefault();
-                                    addPastedBookmarks(
-                                        parsePastedBookmarkText(quickAddValue)
-                                    );
-                                }}
-                            >
-                                <ClipboardPaste aria-hidden='true' />
-                                <input
-                                    type='text'
-                                    aria-label={t.pasteLinks}
-                                    placeholder={t.pasteLinks}
-                                    value={quickAddValue}
-                                    disabled={currentCategory === undefined}
-                                    onPointerDown={(event) => {
-                                        event.currentTarget.focus();
-                                    }}
-                                    onChange={(event) => {
-                                        setQuickAddValue(event.target.value);
-                                        setQuickAddMessage('');
-                                    }}
-                                    onPaste={(event) => {
-                                        const bookmarks =
-                                            parseClipboardBookmarks(
-                                                event.clipboardData
-                                            );
-                                        if (bookmarks.length === 0) {
-                                            return;
-                                        }
-
-                                        event.preventDefault();
-                                        addPastedBookmarks(bookmarks);
-                                    }}
-                                />
-                                <span aria-live='polite'>
-                                    {quickAddMessage}
-                                </span>
-                            </form>
                             <BookmarkLocationDropTarget
                                 className='bookmark-workspace-list'
                                 disabled={
                                     currentCategory === undefined ||
-                                    normalizedQuery !== '' ||
-                                    visibleNodes.length > 0
+                                    normalizedQuery !== ''
                                 }
                                 idSuffix='content'
                                 location={rightLocation}
@@ -1700,7 +1753,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                         {isFolder ? (
                                                             <button
                                                                 ref={sourceRef}
-                                                                className='bookmark-workspace-list-item'
+                                                                className='bookmark-workspace-tree-item'
                                                                 type='button'
                                                                 onClick={() => {
                                                                     enterFolder(
@@ -1717,7 +1770,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                         'icon'
                                                                     )}
                                                                 </span>
-                                                                <span className='bookmark-workspace-item-copy'>
+                                                                <FolderLabel>
                                                                     <strong>
                                                                         {
                                                                             node.title
@@ -1725,29 +1778,27 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                     </strong>
                                                                     <small>
                                                                         {itemCountLabel(
-                                                                            countBookmarks(
-                                                                                node.children
-                                                                            )
+                                                                            node
+                                                                                .children
+                                                                                .length
                                                                         )}
                                                                     </small>
-                                                                </span>
-                                                                <ChevronRight
-                                                                    className='bookmark-workspace-list-chevron'
-                                                                    aria-hidden='true'
-                                                                />
+                                                                </FolderLabel>
                                                             </button>
                                                         ) : (
-                                                            <div
+                                                            <button
                                                                 ref={sourceRef}
-                                                                className='bookmark-workspace-list-item'
+                                                                type='button'
+                                                                className='bookmark-workspace-tree-item bookmark-link-item'
+                                                                onClick={() => {
+                                                                    editBookmark(
+                                                                        rightLocation,
+                                                                        node
+                                                                    );
+                                                                }}
                                                             >
-                                                                <span
-                                                                    className='bookmark-workspace-item-icon'
-                                                                    data-kind='bookmark'
-                                                                >
-                                                                    <LinkIcon aria-hidden='true' />
-                                                                </span>
-                                                                <span className='bookmark-workspace-item-copy'>
+                                                                <Link2 aria-hidden='true' />
+                                                                <span className='bookmark-settings-link-copy'>
                                                                     <strong>
                                                                         {
                                                                             node.title
@@ -1759,42 +1810,47 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                         )}
                                                                     </small>
                                                                 </span>
-                                                            </div>
+                                                            </button>
                                                         )}
-                                                        {isFolder ? undefined : (
-                                                            <div className='bookmark-workspace-row-actions'>
-                                                                <button
-                                                                    className='bookmark-workspace-row-link'
-                                                                    type='button'
-                                                                    aria-label={
-                                                                        t.bookmarkSettings
-                                                                    }
-                                                                    onClick={() => {
-                                                                        editBookmark(
-                                                                            rightLocation,
-                                                                            node
-                                                                        );
-                                                                    }}
-                                                                >
-                                                                    <MoreHorizontal aria-hidden='true' />
-                                                                </button>
-                                                                <a
-                                                                    className='bookmark-workspace-row-link'
-                                                                    href={
-                                                                        node.url
-                                                                    }
-                                                                    draggable={
-                                                                        false
-                                                                    }
-                                                                    target='_blank'
-                                                                    rel='noreferrer'
-                                                                    aria-label={
-                                                                        node.title
-                                                                    }
-                                                                >
-                                                                    <ExternalLink aria-hidden='true' />
-                                                                </a>
-                                                            </div>
+                                                        {isFolder ? (
+                                                            <BookmarkActions
+                                                                bookmark={node}
+                                                                labels={
+                                                                    bookmarkActionLabels
+                                                                }
+                                                                onDelete={() => {
+                                                                    deleteItem({
+                                                                        ...folderLocation,
+                                                                        kind: 'folder',
+                                                                    });
+                                                                }}
+                                                                onEdit={() => {
+                                                                    editFolder(
+                                                                        folderLocation
+                                                                    );
+                                                                }}
+                                                            />
+                                                        ) : (
+                                                            <BookmarkActions
+                                                                bookmark={node}
+                                                                labels={
+                                                                    bookmarkActionLabels
+                                                                }
+                                                                onEdit={() => {
+                                                                    editBookmark(
+                                                                        rightLocation,
+                                                                        node
+                                                                    );
+                                                                }}
+                                                                onDelete={() => {
+                                                                    deleteItem({
+                                                                        ...rightLocation,
+                                                                        kind: 'bookmark',
+                                                                        bookmarkId:
+                                                                            node.id,
+                                                                    });
+                                                                }}
+                                                            />
                                                         )}
                                                     </>
                                                 )}
@@ -1808,7 +1864,19 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                 </DragDropProvider>
 
                 {editorDraft === undefined ? undefined : (
-                    <aside className='bookmark-settings-editor'>
+                    <dialog
+                        className='bookmark-settings-editor bookmark-edit-dialog'
+                        aria-label={formTitle}
+                        ref={(element) => {
+                            if (element && !element.open) {
+                                element.showModal();
+                            }
+                        }}
+                        onCancel={(event) => {
+                            event.preventDefault();
+                            cancelEditor();
+                        }}
+                    >
                         <div
                             className='bookmark-settings-editor-content'
                             role='region'
@@ -1817,15 +1885,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                 const { target } = event;
                                 if (!(target instanceof Element)) {
                                     return;
-                                }
-
-                                if (
-                                    isLocationPickerOpen &&
-                                    !target.closest(
-                                        '.bookmark-workspace-location-trigger, .bookmark-workspace-location-options'
-                                    )
-                                ) {
-                                    setIsLocationPickerOpen(false);
                                 }
 
                                 if (
@@ -1932,75 +1991,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                 </small>
                                             )}
                                         </label>
-                                        <div className='bookmark-workspace-field'>
-                                            <span>{t.location}</span>
-                                            <button
-                                                ref={locationPickerTriggerRef}
-                                                className='bookmark-workspace-location-trigger'
-                                                type='button'
-                                                aria-haspopup='listbox'
-                                                aria-expanded={
-                                                    isLocationPickerOpen
-                                                }
-                                                onClick={() => {
-                                                    setIsLocationPickerOpen(
-                                                        (isOpen) => !isOpen
-                                                    );
-                                                }}
-                                            >
-                                                <span>
-                                                    {selectedDestination?.label ??
-                                                        t.bookmarks}
-                                                </span>
-                                                <ChevronDown aria-hidden='true' />
-                                            </button>
-                                            {isLocationPickerOpen ? (
-                                                <div
-                                                    ref={locationOptionsRef}
-                                                    className='bookmark-workspace-location-options'
-                                                    role='listbox'
-                                                    aria-label={t.location}
-                                                >
-                                                    {destinationOptions.map(
-                                                        (option) => (
-                                                            <button
-                                                                key={option.key}
-                                                                type='button'
-                                                                role='option'
-                                                                aria-selected={
-                                                                    editorDraft.destinationKey ===
-                                                                    option.key
-                                                                }
-                                                                onClick={() => {
-                                                                    setEditorDraft(
-                                                                        {
-                                                                            ...editorDraft,
-                                                                            destinationKey:
-                                                                                option.key,
-                                                                        }
-                                                                    );
-                                                                    setIsLocationPickerOpen(
-                                                                        false
-                                                                    );
-                                                                    locationPickerTriggerRef.current?.focus();
-                                                                }}
-                                                            >
-                                                                <FolderOpen aria-hidden='true' />
-                                                                <span>
-                                                                    {
-                                                                        option.label
-                                                                    }
-                                                                </span>
-                                                                {editorDraft.destinationKey ===
-                                                                option.key ? (
-                                                                    <Check aria-hidden='true' />
-                                                                ) : undefined}
-                                                            </button>
-                                                        )
-                                                    )}
-                                                </div>
-                                            ) : undefined}
-                                        </div>
                                     </>
                                 ) : (
                                     <div className='bookmark-workspace-field'>
@@ -2135,22 +2125,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                     className='bookmark-workspace-form-actions'
                                     data-editing={editorDraft.mode === 'edit'}
                                 >
-                                    {editorDraft.mode === 'edit' ? (
-                                        <button
-                                            className='bookmark-workspace-danger-button'
-                                            type='button'
-                                            onClick={() => {
-                                                deleteItem({
-                                                    ...editorDraft,
-                                                });
-                                            }}
-                                        >
-                                            <Trash2 aria-hidden='true' />
-                                            {editorDraft.kind === 'bookmark'
-                                                ? t.deleteBookmark
-                                                : t.deleteFolder}
-                                        </button>
-                                    ) : undefined}
                                     <span />
                                     <button
                                         className='bookmark-workspace-secondary-button'
@@ -2178,7 +2152,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                 </div>
                             </form>
                         </div>
-                    </aside>
+                    </dialog>
                 )}
 
                 {isTrashOpen ? (
@@ -2222,7 +2196,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                 <span className='bookmark-workspace-item-icon'>
                                                     {trashItem.kind ===
                                                     'bookmark' ? (
-                                                        <Bookmark aria-hidden='true' />
+                                                        <Link2 aria-hidden='true' />
                                                     ) : (
                                                         <FolderOpen aria-hidden='true' />
                                                     )}
@@ -2323,7 +2297,21 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                 ) : undefined}
 
                 {discardTarget === undefined ? undefined : (
-                    <div className='bookmark-workspace-confirm-backdrop'>
+                    <dialog
+                        className='bookmark-workspace-confirm-backdrop bookmark-discard-dialog'
+                        ref={(element) => {
+                            if (element && !element.open) {
+                                element.showModal();
+                            }
+                        }}
+                        onCancel={(event) => {
+                            event.preventDefault();
+                            setDiscardTarget(undefined);
+                        }}
+                        onKeyDown={(event) => {
+                            event.stopPropagation();
+                        }}
+                    >
                         <div
                             className='bookmark-workspace-confirm'
                             role='alertdialog'
@@ -2354,7 +2342,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </dialog>
                 )}
 
                 {undoSnapshot === undefined ? undefined : (

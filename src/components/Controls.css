@@ -4478,7 +4478,7 @@ a.bookmark-workspace-tree-item {
 }
 
 .bookmark-settings[data-editing='true'] {
-    grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .bookmark-settings-heading,
@@ -4506,11 +4506,22 @@ a.bookmark-workspace-tree-item {
     min-width: 0;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1.5rem;
     font: var(--fontBoldSm);
 }
 
-.bookmark-settings-path > span {
+.bookmark-settings-current-location {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 0.375rem;
+}
+
+.bookmark-settings-current-location > svg {
+    flex-shrink: 0;
+}
+
+.bookmark-settings-current-location > span {
     overflow-wrap: anywhere;
 }
 
@@ -4531,7 +4542,7 @@ a.bookmark-workspace-tree-item {
     align-items: start;
 }
 
-.bookmark-settings[data-browsing='true'] .bookmark-settings-browser {
+.bookmark-settings .bookmark-settings-browser {
     grid-template-columns: minmax(12rem, 0.35fr) minmax(0, 1fr);
 }
 
@@ -4542,10 +4553,6 @@ a.bookmark-workspace-tree-item {
     overflow: visible;
     border: 0;
     background: transparent;
-}
-
-.bookmark-settings .bookmark-workspace-list-pane[data-empty='true'] {
-    display: none;
 }
 
 .bookmark-settings .bookmark-workspace-tree {
@@ -4598,10 +4605,6 @@ a.bookmark-workspace-tree-item {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .bookmark-settings[data-editing='true'] .bookmark-settings-browser {
-        display: none;
-    }
-
     .bookmark-settings-editor {
         grid-column: 1;
         position: static;
@@ -4609,7 +4612,7 @@ a.bookmark-workspace-tree-item {
 }
 
 @media (width < 48rem) {
-    .bookmark-settings[data-browsing='true'] .bookmark-settings-browser {
+    .bookmark-settings .bookmark-settings-browser {
         grid-template-columns: minmax(0, 1fr);
     }
 
@@ -4676,4 +4679,292 @@ a.bookmark-workspace-tree-item {
         right: 0;
         bottom: calc(100% + 0.5rem);
     }
+}
+
+/* Keep the bookmark browser within the settings viewport. */
+.settings-page:has(.settings-page-section:not([hidden]) .bookmark-settings) {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+.settings-page:has(.settings-page-section:not([hidden]) .bookmark-settings)
+    .settings-page-content {
+    flex: 1;
+    min-height: 0;
+    padding-bottom: 1.5rem;
+    align-items: stretch;
+}
+.settings-page-section:has(.bookmark-settings),
+.bookmark-workspace-embedded-shell {
+    min-height: 0;
+    height: 100%;
+}
+.bookmark-settings {
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    align-items: stretch;
+}
+.bookmark-settings-browser {
+    min-height: 0;
+    height: 100%;
+    align-items: stretch;
+    overflow: hidden;
+}
+.bookmark-settings .bookmark-workspace-tree-pane,
+.bookmark-settings .bookmark-workspace-list-pane {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    padding: 0.25rem;
+    outline: none;
+}
+.bookmark-settings .bookmark-workspace-tree {
+    min-height: 100%;
+}
+.bookmark-settings-editor {
+    position: static;
+    min-height: 0;
+    overflow: auto;
+    padding: 0 0 0 1.5rem;
+    border-left: 1px solid var(--clr-text-alpha-2);
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+}
+@media (width < 48rem) {
+    .bookmark-settings .bookmark-settings-browser {
+        grid-template-columns: minmax(7rem, 0.35fr) minmax(0, 1fr);
+    }
+    .bookmark-settings-editor {
+        padding: 0;
+        border: 0;
+    }
+}
+
+.bookmark-settings .bookmark-workspace-tree-pane {
+    display: block;
+}
+.bookmark-settings .bookmark-workspace-list-pane {
+    grid-template-rows: minmax(0, 1fr);
+    align-content: start;
+}
+.bookmark-settings .bookmark-workspace-list {
+    overflow: visible;
+    align-content: start;
+}
+
+.settings-page-sidebar {
+    align-self: start;
+}
+.bookmark-settings .bookmark-workspace-tree .bookmark-workspace-list-row {
+    background: transparent;
+}
+
+.bookmark-workspace-folder-label {
+    display: grid;
+    min-width: 0;
+    gap: 0.25rem;
+    padding-block: 0.25rem;
+}
+.bookmark-workspace-folder-label small {
+    color: var(--clr-text-alpha);
+    font: var(--fontBaseSm);
+}
+
+@media (width < 48rem) {
+    .settings-page:has(.settings-page-section:not([hidden]) .bookmark-settings)
+        .settings-page-content {
+        grid-template-rows: auto minmax(0, 1fr);
+    }
+}
+
+/* One row surface in both panes; selection uses only its background. */
+.bookmark-settings .bookmark-workspace-list-row {
+    min-height: 3.5rem;
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+}
+.bookmark-settings .bookmark-workspace-list-row:hover,
+.bookmark-settings .bookmark-workspace-list-row[data-selected='true'] {
+    background: var(--clr-text-alpha-2);
+    border-color: transparent;
+    box-shadow: none;
+}
+.bookmark-settings .bookmark-workspace-tree-item,
+.bookmark-settings .bookmark-workspace-row-link,
+.bookmark-settings .bookmark-workspace-tree-item:hover,
+.bookmark-settings .bookmark-workspace-tree-item[aria-pressed='true'],
+.bookmark-settings .bookmark-workspace-row-link:hover {
+    background: transparent;
+    box-shadow: none;
+    color: var(--clr-text);
+}
+.bookmark-settings .bookmark-workspace-tree-item:focus-visible,
+.bookmark-settings .bookmark-workspace-row-link:focus-visible {
+    outline: 2px solid var(--clr-primary);
+    outline-offset: -2px;
+}
+.bookmark-settings .bookmark-workspace-item-icon {
+    width: 1.5rem;
+    height: 1.5rem;
+    background: transparent;
+    border: 0;
+}
+.bookmark-settings .bookmark-workspace-list {
+    gap: 0.25rem;
+}
+
+.bookmark-settings .bookmark-workspace-header-actions kbd {
+    font: var(--fontBaseSm);
+    opacity: 0.7;
+    margin-left: 0.25rem;
+}
+
+.bookmark-settings .bookmark-workspace-tree-item {
+    grid-template-columns: 1.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+}
+
+.bookmark-settings .bookmark-workspace-tree-item svg,
+.bookmark-settings
+    .bookmark-workspace-trash-list
+    .bookmark-workspace-item-icon
+    svg {
+    width: 1.5rem;
+    height: 1.5rem;
+}
+.bookmark-row-menu {
+    position: relative;
+}
+.bookmark-row-menu summary {
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    cursor: pointer;
+    list-style: none;
+}
+.bookmark-row-menu summary::-webkit-details-marker {
+    display: none;
+}
+.bookmark-row-menu summary svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+.bookmark-row-menu[open] {
+    z-index: 5;
+}
+.bookmark-row-menu-content {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    min-width: 9rem;
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+    background: var(--clr-neutral-light);
+    box-shadow: var(--shadow-panel-hover);
+    display: grid;
+}
+.bookmark-row-menu-content button,
+.bookmark-row-menu-content a {
+    min-height: 2.5rem;
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    color: var(--clr-text);
+    background: transparent;
+    text-decoration: none;
+    cursor: pointer;
+}
+.bookmark-row-menu-content .danger {
+    color: var(--clr-aqi-unhealthy);
+}
+.bookmark-row-menu-content :is(button, a):hover {
+    color: var(--clr-primary);
+}
+.bookmark-settings .bookmark-edit-dialog {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: min(30rem, calc(100vw - 2rem));
+    max-height: calc(100dvh - 3rem);
+    height: fit-content;
+    padding: 1.5rem;
+    border: 0;
+    border-radius: 1rem;
+    background: var(--clr-neutral-light);
+    color: var(--clr-text);
+    box-shadow: var(--shadow-panel-hover);
+    overflow: auto;
+}
+.bookmark-edit-dialog::backdrop {
+    background: rgb(0 0 0 / 0.45);
+}
+
+.bookmark-discard-dialog {
+    border: 0;
+    margin: auto;
+    color: var(--clr-text);
+}
+
+.bookmark-row-menu summary {
+    color: var(--clr-text-alpha);
+    transition: color var(--motion-duration-fast) var(--motion-ease-out);
+}
+.bookmark-row-menu summary:hover,
+.bookmark-row-menu summary:focus-visible,
+.bookmark-row-menu[open] > summary {
+    color: var(--clr-primary);
+}
+.bookmark-settings .bookmark-workspace-row-link:hover,
+.bookmark-settings .bookmark-workspace-row-link:focus-visible {
+    color: var(--clr-primary);
+}
+
+.bookmark-edit-dialog .bookmark-workspace-form-heading {
+    align-items: center;
+}
+
+.bookmark-edit-dialog .bookmark-workspace-form-actions {
+    margin-top: 0.75rem;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0;
+    background: transparent;
+}
+.bookmark-edit-dialog .bookmark-workspace-form-actions > span {
+    flex: 1;
+}
+.bookmark-edit-dialog .bookmark-workspace-form-spacer {
+    display: none;
+}
+.bookmark-settings .bookmark-workspace-tree-item:active {
+    scale: 1;
+}
+
+/* Keep the same row geometry in either pane, for folders and links. */
+.bookmark-settings .bookmark-workspace-list-row {
+    height: 4rem;
+    min-height: 4rem;
+}
+.bookmark-settings .bookmark-workspace-tree-item {
+    height: 100%;
+    min-height: 0;
+    padding: 0.5rem 0.75rem;
+}
+.bookmark-settings .bookmark-workspace-folder-label {
+    padding-block: 0;
+}
+.bookmark-settings .bookmark-workspace-tree-item small {
+    display: block;
+}
+.bookmark-settings .bookmark-workspace-folder-label strong,
+.bookmark-settings .bookmark-settings-link-copy strong,
+.bookmark-settings .bookmark-settings-link-copy small {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

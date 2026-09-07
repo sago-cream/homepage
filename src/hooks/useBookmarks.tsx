@@ -7,6 +7,7 @@ import type {
     BookmarkNodeData,
     BookmarkTrashItemData,
 } from '@/types/bookmarks';
+import { moveBookmarkTreeNode } from '@/utils/bookmarkMove';
 import {
     coerceBookmarkTrash,
     coerceBookmarkTree,
@@ -335,24 +336,6 @@ const deleteBookmarkNodes = (
 
 const normalizeFolderPath = (location: BookmarkLocationInput): string[] =>
     location.folderPath ?? [];
-
-const getNodesAtFolderPath = (
-    nodes: readonly BookmarkNodeData[],
-    folderPath: readonly string[]
-): readonly BookmarkNodeData[] | undefined => {
-    if (folderPath.length === 0) {
-        return nodes;
-    }
-
-    const folder = nodes.find(
-        (node): node is BookmarkFolderData =>
-            node.type === 'folder' && node.id === folderPath[0]
-    );
-
-    return folder === undefined
-        ? undefined
-        : getNodesAtFolderPath(folder.children, folderPath.slice(1));
-};
 
 const getFolderAtPath = (
     nodes: readonly BookmarkNodeData[],
@@ -1084,146 +1067,16 @@ export const useBookmarks = (
             destination: BookmarkLocationInput,
             destinationIndex?: number
         ) => {
-            const sourceFolderPath = normalizeFolderPath(source);
-            const destinationFolderPath = normalizeFolderPath(destination);
-            const isSameLocation =
-                source.categoryIndex === destination.categoryIndex &&
-                sourceFolderPath.join('\n') ===
-                    destinationFolderPath.join('\n');
-            if (isSameLocation && destinationIndex === undefined) {
-                return false;
-            }
-
-            const sourceCategory = bookmarkTree.at(source.categoryIndex);
-            const destinationCategory = bookmarkTree.at(
-                destination.categoryIndex
+            const moved = moveBookmarkTreeNode(
+                bookmarkTree,
+                source,
+                nodeId,
+                destination,
+                destinationIndex
             );
-            if (
-                sourceCategory === undefined ||
-                (destination.categoryIndex !== -1 &&
-                    destinationCategory === undefined)
-            ) {
-                return false;
-            }
-
-            const movedNode = getNodesAtFolderPath(
-                sourceCategory.children,
-                sourceFolderPath
-            )?.find((node) => node.id === nodeId);
-            if (
-                movedNode === undefined ||
-                (movedNode.type === 'folder' &&
-                    destinationFolderPath.includes(movedNode.id))
-            ) {
-                return false;
-            }
-
-            if (isSameLocation) {
-                const sourceNodes = getNodesAtFolderPath(
-                    sourceCategory.children,
-                    sourceFolderPath
-                );
-                const sourceIndex = sourceNodes?.findIndex(
-                    (node) => node.id === nodeId
-                );
-                if (
-                    sourceNodes === undefined ||
-                    sourceIndex === undefined ||
-                    sourceIndex < 0
-                ) {
-                    return false;
-                }
-
-                let insertionIndex = Math.max(
-                    0,
-                    Math.min(
-                        destinationIndex ?? sourceNodes.length,
-                        sourceNodes.length
-                    )
-                );
-                if (sourceIndex < insertionIndex) {
-                    insertionIndex--;
-                }
-                if (insertionIndex === sourceIndex) {
-                    return false;
-                }
-
-                return updateBookmarkLocation(source, (nodes) => {
-                    const nextNodes = nodes.filter(
-                        (node) => node.id !== nodeId
-                    );
-                    nextNodes.splice(insertionIndex, 0, movedNode);
-                    return nextNodes;
-                });
-            }
-
-            const sourceChildren = updateNodesAtFolderPath(
-                sourceCategory.children,
-                sourceFolderPath,
-                (nodes) => nodes.filter((node) => node.id !== nodeId)
-            );
-
-            if (sourceChildren === undefined) {
-                return false;
-            }
-
-            const withoutSource = bookmarkTree.map((category, categoryIndex) =>
-                categoryIndex === source.categoryIndex
-                    ? { ...category, children: sourceChildren }
-                    : category
-            );
-            if (destination.categoryIndex === -1) {
-                const rootNodes = getBookmarkRootNodes(withoutSource);
-                const nextRootNodes = [...rootNodes];
-                const insertionIndex = Math.max(
-                    0,
-                    Math.min(
-                        destinationIndex ?? nextRootNodes.length,
-                        nextRootNodes.length
-                    )
-                );
-                nextRootNodes.splice(insertionIndex, 0, movedNode);
-                return commitBookmarkTree(
-                    replaceBookmarkRootNodes(withoutSource, nextRootNodes)
-                );
-            }
-
-            const nextDestinationCategory = withoutSource.at(
-                destination.categoryIndex
-            );
-            if (nextDestinationCategory === undefined) {
-                return false;
-            }
-
-            const destinationChildren = updateNodesAtFolderPath(
-                nextDestinationCategory.children,
-                destinationFolderPath,
-                (nodes) => {
-                    const nextNodes = [...nodes];
-                    const insertionIndex = Math.max(
-                        0,
-                        Math.min(
-                            destinationIndex ?? nextNodes.length,
-                            nextNodes.length
-                        )
-                    );
-                    nextNodes.splice(insertionIndex, 0, movedNode);
-                    return nextNodes;
-                }
-            );
-            if (destinationChildren === undefined) {
-                return false;
-            }
-
-            return commitBookmarkTree(
-                withoutSource.map((category, categoryIndex) =>
-                    categoryIndex === destination.categoryIndex
-                        ? { ...category, children: destinationChildren }
-                        : category
-                )
-            );
+            return moved !== undefined && commitBookmarkTree(moved);
         },
-        [bookmarkTree, commitBookmarkTree, updateBookmarkLocation]
+        [bookmarkTree, commitBookmarkTree]
     );
 
     const addBookmarkToLocation = useCallback(
