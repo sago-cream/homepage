@@ -67,4 +67,9 @@ html[data-animation-mode='skip'] .trigger {
     ::view-transition-new(root) {
         animation: none;
     }
+
+    ::view-transition-new(root) {
+        /* Avoid stale composited clip masks during the theme reveal. */
+        will-change: contents;
+    }
 }
