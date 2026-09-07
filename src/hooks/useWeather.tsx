@@ -20,7 +20,7 @@ interface UseWeatherOptions {
 
 const BASE_API_URL = '/api/weather';
 const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
-const WEATHER_CACHE_KEY_PREFIX = 'weather_cache';
+const WEATHER_CACHE_KEY_PREFIX = 'weather_cache_cwa_v1';
 const weatherRequests = new Map<string, Promise<WeatherData | undefined>>();
 
 function readJson(key: string): unknown {

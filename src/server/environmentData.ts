@@ -1,25 +1,10 @@
 import 'server-only';
 
 import type { TaiwanLocation } from '@/constants/taiwanLocations';
+import { selectCwaWeather } from '@/server/cwaWeather';
 import type { AqiData, WeatherData } from '@/types/environment';
 
 type AqiRecord = Readonly<Record<string, unknown>>;
-
-interface WeatherPayload {
-    main?: {
-        temp?: number;
-    };
-    weather?: Array<{
-        main?: string;
-    }>;
-}
-
-interface OpenMeteoWeatherPayload {
-    current?: {
-        temperature_2m?: number;
-        weather_code?: number;
-    };
-}
 
 interface CachedData<T> {
     updatedAt: number;
@@ -27,15 +12,12 @@ interface CachedData<T> {
 }
 
 const moenvAqiUrl = 'https://data.moenv.gov.tw/api/v2/aqx_p_432';
-const openMeteoUrl = 'https://api.open-meteo.com/v1/forecast';
-const openWeatherUrl = 'https://api.openweathermap.org/data/2.5/weather';
+const cwaWeatherUrl =
+    'https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0003-001';
 const sharedDataRevalidateSeconds = 300;
 const staleCacheMaxAgeMs = 30 * 60 * 1000;
 const weatherCache = new Map<string, CachedData<WeatherData>>();
 const aqiCache = new Map<string, CachedData<AqiData>>();
-
-const getOpenWeatherApiKey = (): string | undefined =>
-    process.env.OPENWEATHERMAP_API_KEY ?? process.env.OPENWEATHER_API_KEY;
 
 const getMoenvApiKey = (): string | undefined => process.env.MOENV_API_KEY;
 
@@ -134,135 +116,30 @@ const mapAqiRecord = (record: AqiRecord): AqiData => ({
     status: readString(record, 'status'),
 });
 
-const mapOpenMeteoWeatherCode = (weatherCode: number | undefined): string => {
-    if (weatherCode === 0) {
-        return 'Clear';
-    }
-
-    if (
-        weatherCode === 71 ||
-        weatherCode === 73 ||
-        weatherCode === 75 ||
-        weatherCode === 77 ||
-        weatherCode === 85 ||
-        weatherCode === 86
-    ) {
-        return 'Snow';
-    }
-
-    if (
-        weatherCode === 51 ||
-        weatherCode === 53 ||
-        weatherCode === 55 ||
-        weatherCode === 56 ||
-        weatherCode === 57
-    ) {
-        return 'Drizzle';
-    }
-
-    if (
-        weatherCode === 61 ||
-        weatherCode === 63 ||
-        weatherCode === 65 ||
-        weatherCode === 66 ||
-        weatherCode === 67 ||
-        weatherCode === 80 ||
-        weatherCode === 81 ||
-        weatherCode === 82
-    ) {
-        return 'Rain';
-    }
-
-    if (weatherCode === 95 || weatherCode === 96 || weatherCode === 99) {
-        return 'Thunderstorm';
-    }
-
-    return 'Clouds';
-};
-
-const fetchOpenMeteoWeatherByCoordinates = async (
-    lat: number,
-    lon: number
-): Promise<WeatherData> => {
-    const url = new URL(openMeteoUrl);
-    url.searchParams.set('latitude', lat.toFixed(4));
-    url.searchParams.set('longitude', lon.toFixed(4));
-    url.searchParams.set('current', 'temperature_2m,weather_code');
-    url.searchParams.set('timezone', 'Asia/Taipei');
-
-    const response = await fetch(url, {
-        next: { revalidate: sharedDataRevalidateSeconds },
-    });
-
-    if (!response.ok) {
-        throw new Error(
-            `Open-Meteo API responded with status ${response.status}`
-        );
-    }
-
-    const payload = (await response.json()) as OpenMeteoWeatherPayload;
-    const temp = payload.current?.temperature_2m;
-
-    if (typeof temp !== 'number') {
-        throw new TypeError('Open-Meteo API returned an unexpected payload.');
-    }
-
-    return {
-        temp,
-        weatherType: mapOpenMeteoWeatherCode(payload.current?.weather_code),
-    };
-};
-
 export const fetchWeatherByCoordinates = async (
     lat: number,
     lon: number
 ): Promise<WeatherData | undefined> => {
     const cacheKey = getWeatherCacheKey(lat, lon);
-    const apiKey = getOpenWeatherApiKey();
+    const apiKey = process.env.CWA_API_KEY?.trim();
+
+    if (!apiKey) {
+        return undefined;
+    }
 
     try {
-        if (apiKey === undefined || apiKey.trim() === '') {
-            const openMeteoWeather = await fetchOpenMeteoWeatherByCoordinates(
-                lat,
-                lon
-            );
-
-            const cachedOpenMeteoWeather = createCachedData(openMeteoWeather);
-            if (cachedOpenMeteoWeather !== undefined) {
-                weatherCache.set(cacheKey, cachedOpenMeteoWeather);
-            }
-
-            return openMeteoWeather;
-        }
-
-        const url = new URL(openWeatherUrl);
-        url.searchParams.set('lat', lat.toFixed(4));
-        url.searchParams.set('lon', lon.toFixed(4));
-        url.searchParams.set('units', 'metric');
-        url.searchParams.set('appid', apiKey);
-
-        const response = await fetch(url, {
+        const response = await fetch(cwaWeatherUrl, {
+            headers: { Authorization: apiKey },
             next: { revalidate: sharedDataRevalidateSeconds },
+            signal: AbortSignal.timeout(10_000),
         });
 
         if (!response.ok) {
-            throw new Error(
-                `Weather API responded with status ${response.status}`
-            );
+            throw new Error(`CWA API responded with status ${response.status}`);
         }
 
-        const payload = (await response.json()) as WeatherPayload;
-        const temp = payload.main?.temp;
-        const weatherType = payload.weather?.at(0)?.main;
-
-        if (typeof temp !== 'number' || typeof weatherType !== 'string') {
-            throw new TypeError('Weather API returned an unexpected payload.');
-        }
-
-        const weather = {
-            temp,
-            weatherType,
-        };
+        const payload: unknown = await response.json();
+        const weather = selectCwaWeather(payload, lat, lon);
 
         const cachedWeather = createCachedData(weather);
         if (cachedWeather !== undefined) {
