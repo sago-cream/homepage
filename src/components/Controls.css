@@ -2445,7 +2445,7 @@ a.bookmark-workspace-tree-item {
     position: sticky;
     top: 0;
     z-index: 5;
-    width: min(64rem, calc(100% - 3rem));
+    width: calc(100% - 3rem);
     min-height: 6rem;
     margin: 0 auto;
     padding: 1.5rem 0 1rem;
@@ -2518,7 +2518,7 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-page-content {
-    width: min(64rem, calc(100% - 3rem));
+    width: calc(100% - 3rem);
     margin: 0 auto;
     padding: 2rem 0 4rem;
     display: grid;
@@ -3219,7 +3219,7 @@ a.bookmark-workspace-tree-item {
 @media (width < 48rem) {
     .settings-page-header,
     .settings-page-content {
-        width: min(100% - 2rem, 36rem);
+        width: calc(100% - 2rem);
     }
 
     .settings-page-header {
@@ -4432,4 +4432,32 @@ a.bookmark-workspace-tree-item {
 
 .link-panel:has(.link-tree:focus-within) .theme-toggle-trigger {
     visibility: hidden;
+}
+
+.bookmark-workspace.bookmark-workspace-embedded {
+    position: relative;
+    width: 100%;
+    height: max(32rem, calc(100svh - 17rem));
+    max-height: none;
+    min-width: 0;
+    border: 1px solid var(--bookmark-workspace-column-border);
+    border-radius: 1rem;
+    box-shadow: none;
+    animation: none;
+}
+
+.bookmark-workspace-embedded .bookmark-workspace-grid {
+    grid-template-columns: minmax(12rem, 0.8fr) minmax(0, 1fr);
+}
+
+@media (width < 48rem) {
+    .bookmark-workspace-embedded .bookmark-workspace-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .bookmark-workspace-embedded .bookmark-workspace-tree-pane {
+        max-height: 18rem;
+        border-right: 0;
+        border-bottom: 1px solid var(--bookmark-workspace-column-border);
+    }
 }

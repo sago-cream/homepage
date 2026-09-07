@@ -1,5 +1,12 @@
 /* eslint-disable no-nested-ternary -- Visual state branches are clearest inline in this workspace. */
-import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, {
+    useEffect,
+    useId,
+    useImperativeHandle,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { DragDropProvider, useDroppable } from '@dnd-kit/react';
 import type { DragEndEvent } from '@dnd-kit/react';
 import { isSortable, useSortable } from '@dnd-kit/react/sortable';
@@ -25,7 +32,6 @@ import {
     Upload,
     X,
 } from 'lucide-react';
-import { createPortal } from 'react-dom';
 
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useLocale } from '@/hooks/useLocale';
@@ -49,8 +55,13 @@ import {
     isBookmarkRootCategory,
 } from '@/utils/bookmarks';
 
-interface BookmarkManagerDialogProps {
+export interface BookmarkManagerHandle {
+    requestClose: () => boolean;
+}
+
+interface BookmarkManagerProps {
     bookmarkControls: BookmarkControls;
+    ref?: React.Ref<BookmarkManagerHandle>;
     onClose: () => void;
 }
 
@@ -488,8 +499,9 @@ const parseClipboardBookmarks = (
     return bookmarks;
 };
 
-export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
+export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     bookmarkControls,
+    ref,
     onClose,
 }) => {
     const { locale, t } = useLocale();
@@ -905,11 +917,14 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
     const requestDialogClose = () => {
         if (isDraftDirty) {
             setDiscardTarget('dialog');
-            return;
+            return false;
         }
 
         onClose();
+        return true;
     };
+
+    useImperativeHandle(ref, () => ({ requestClose: requestDialogClose }));
 
     const confirmDiscard = () => {
         const target = discardTarget;
@@ -1155,21 +1170,16 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                   tone: 'success',
               };
 
-    return createPortal(
+    return (
         <div
-            className='bookmark-manager-backdrop'
-            onMouseDown={(event) => {
-                if (event.target === event.currentTarget) {
-                    requestDialogClose();
-                }
-            }}
+            className='bookmark-workspace-embedded-shell'
+            inert={!bookmarkControls.canEdit}
         >
             <div
                 ref={dialogRef}
-                className='bookmark-manager-dialog bookmark-workspace'
-                role='dialog'
+                className='bookmark-manager-dialog bookmark-workspace bookmark-workspace-embedded'
+                role='region'
                 aria-labelledby={titleId}
-                aria-modal='true'
                 tabIndex={-1}
                 onPointerDownCapture={(event) => {
                     const { target } = event;
@@ -1187,6 +1197,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                     }
 
                     event.preventDefault();
+                    event.stopPropagation();
                     if (isEmptyTrashConfirmOpen) {
                         setIsEmptyTrashConfirmOpen(false);
                     } else if (isTrashOpen) {
@@ -1331,14 +1342,6 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                     {bookmarkControls.bookmarkTrash.length}
                                 </small>
                             )}
-                        </button>
-                        <button
-                            className='bookmark-workspace-icon-button'
-                            type='button'
-                            aria-label={t.cancel}
-                            onClick={requestDialogClose}
-                        >
-                            <X aria-hidden='true' />
                         </button>
                     </div>
                 </header>
@@ -2339,7 +2342,6 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                     </div>
                 )}
             </div>
-        </div>,
-        globalThis.document.body
+        </div>
     );
 };
