@@ -36,6 +36,14 @@ bun i
 bun dev
 ```
 
+Weather requires a server-side `CWA_API_KEY` in `.env.local` (see `.env.example`).
+Production must set the same variable in the container environment. The key is
+never sent to the browser. Weather uses CWA's
+[10-minute station observations (O-A0003-001)](https://opendata.cwa.gov.tw/dataset/observation/O-A0003-001),
+selecting the nearest WGS84 station with valid observations from the past hour.
+Requests are cached for five minutes, with up to 30 minutes of stale weather on
+upstream failure. Without a key, the weather metric is omitted.
+
 ### Stack Map
 
 - **Runtime:** Bun, Next.js 16 App Router, React 19, TypeScript, Turbopack in dev,
@@ -45,7 +53,7 @@ bun dev
 - **Storage:** Standard PostgreSQL for bookmarks and wallpaper metadata; local files
   in development, Cloudflare R2 in production, and Vercel Blob as a migration-only
   compatibility provider.
-- **External data:** OpenWeatherMap or Open-Meteo for weather; Taiwan MOENV for AQI.
+- **External data:** Taiwan CWA for weather; Taiwan MOENV for AQI.
 
 ### Oracle Deployment
 
