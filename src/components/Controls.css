@@ -4626,3 +4626,54 @@ a.bookmark-workspace-tree-item {
         display: inline;
     }
 }
+
+.settings-location-controls {
+    position: relative;
+}
+.settings-location-controls .settings-location-tracking {
+    position: absolute;
+    right: calc(100% + 0.5rem);
+}
+.settings-location-controls .settings-select-control {
+    width: 100%;
+}
+.settings-feed-selected {
+    padding: 0;
+}
+.settings-feed-dialog {
+    margin: auto;
+    width: min(32rem, calc(100vw - 2rem));
+    max-height: min(38rem, calc(100svh - 2rem));
+    border: 1px solid var(--clr-text-alpha-2);
+    border-radius: 1rem;
+    background: var(--clr-neutral-light);
+    color: var(--clr-text);
+    box-shadow: var(--shadow-panel);
+    overflow: auto;
+}
+.settings-feed-dialog::backdrop {
+    background: var(--clr-overlay);
+}
+.settings-feed-dialog .settings-feed-subheading {
+    justify-content: space-between;
+}
+.settings-feed-dialog .settings-feed-results {
+    max-height: 24rem;
+}
+.settings-feed-heading {
+    --bookmark-workspace-control-radius: 0.75rem;
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+.settings-feed-heading .settings-section-heading {
+    flex: 1 1 18rem;
+}
+@media (width < 48rem) {
+    .settings-location-controls .settings-location-tracking {
+        right: 0;
+        bottom: calc(100% + 0.5rem);
+    }
+}

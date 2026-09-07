@@ -84,6 +84,7 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
     bookmarkControls,
 }) => {
     const { t } = useLocale();
+    const dialogRef = useRef<HTMLDialogElement>(null);
     const [query, setQuery] = useState('');
     const searchInputRef = useRef<HTMLInputElement>(null);
     const feedBookmarks = useMemo(
@@ -176,24 +177,56 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
 
     return (
         <section className='settings-page-section'>
-            <div className='settings-section-heading'>
-                <h2>{t.feeds}</h2>
-                <p>{t.feedsDescription}</p>
+            <div className='settings-feed-heading'>
+                <div className='settings-section-heading'>
+                    <h2>{t.feeds}</h2>
+                    <p>{t.feedsDescription}</p>
+                </div>
+                <button
+                    className='bookmark-workspace-primary-button'
+                    type='button'
+                    disabled={!bookmarkControls.canEdit}
+                    onClick={() => {
+                        dialogRef.current?.showModal();
+                        searchInputRef.current?.focus();
+                    }}
+                >
+                    <Plus aria-hidden='true' />
+                    {t.addFeedBookmark}
+                </button>
             </div>
-            <div className='settings-feed-card'>
-                <div className='settings-card settings-feed-search-area'>
-                    <label
-                        className='settings-feed-subheading'
-                        htmlFor='feed-bookmark-search'
-                    >
-                        {t.addFeedBookmark}
-                    </label>
+            <dialog
+                ref={dialogRef}
+                className='settings-feed-dialog'
+                aria-labelledby='feed-dialog-title'
+                onClick={(event) => {
+                    if (event.target === event.currentTarget) {
+                        dialogRef.current?.close();
+                    }
+                }}
+                onKeyDown={(event) => {
+                    event.stopPropagation();
+                }}
+            >
+                <div className='settings-feed-search-area'>
+                    <div className='settings-feed-subheading'>
+                        <h3 id='feed-dialog-title'>{t.addFeedBookmark}</h3>
+                        <button
+                            type='button'
+                            className='settings-icon-button'
+                            aria-label={t.cancel}
+                            onClick={() => dialogRef.current?.close()}
+                        >
+                            <X aria-hidden='true' />
+                        </button>
+                    </div>
                     <div className='settings-feed-search'>
                         <Search aria-hidden='true' />
                         <input
                             ref={searchInputRef}
                             id='feed-bookmark-search'
                             type='search'
+                            aria-label={t.bookmarkSearch}
                             autoComplete='off'
                             placeholder={t.bookmarkSearch}
                             value={query}
@@ -207,44 +240,43 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
                         {searchResultsContent}
                     </div>
                 </div>
-
-                <div className='settings-card settings-feed-selected'>
-                    <div className='settings-feed-subheading'>
-                        <span>{t.feedBookmarks}</span>
-                        <small>{feedBookmarks.length}</small>
-                    </div>
-                    {feedBookmarks.length === 0 ? (
-                        <div className='settings-feed-empty'>
-                            <LinkIcon aria-hidden='true' />
-                            <span>
-                                <strong>{t.feedEmpty}</strong>
-                                <small>{t.feedEmptyDescription}</small>
-                            </span>
-                        </div>
-                    ) : (
-                        <DragDropProvider onDragEnd={handleDragEnd}>
-                            <div className='settings-feed-list'>
-                                {feedBookmarks.map((bookmark, index) => (
-                                    <FeedBookmarkRow
-                                        key={bookmark.id}
-                                        bookmark={bookmark}
-                                        disabled={!bookmarkControls.canEdit}
-                                        index={index}
-                                        onRemove={() => {
-                                            saveFeedBookmarkIds(
-                                                feedBookmarks.flatMap((item) =>
-                                                    item.id === bookmark.id
-                                                        ? []
-                                                        : [item.id]
-                                                )
-                                            );
-                                        }}
-                                    />
-                                ))}
-                            </div>
-                        </DragDropProvider>
-                    )}
+            </dialog>
+            <div className='settings-feed-selected'>
+                <div className='settings-feed-subheading'>
+                    <span>{t.feedBookmarks}</span>
+                    <small>{feedBookmarks.length}</small>
                 </div>
+                {feedBookmarks.length === 0 ? (
+                    <div className='settings-feed-empty'>
+                        <LinkIcon aria-hidden='true' />
+                        <span>
+                            <strong>{t.feedEmpty}</strong>
+                            <small>{t.feedEmptyDescription}</small>
+                        </span>
+                    </div>
+                ) : (
+                    <DragDropProvider onDragEnd={handleDragEnd}>
+                        <div className='settings-feed-list'>
+                            {feedBookmarks.map((bookmark, index) => (
+                                <FeedBookmarkRow
+                                    key={bookmark.id}
+                                    bookmark={bookmark}
+                                    disabled={!bookmarkControls.canEdit}
+                                    index={index}
+                                    onRemove={() => {
+                                        saveFeedBookmarkIds(
+                                            feedBookmarks.flatMap((item) =>
+                                                item.id === bookmark.id
+                                                    ? []
+                                                    : [item.id]
+                                            )
+                                        );
+                                    }}
+                                />
+                            ))}
+                        </div>
+                    </DragDropProvider>
+                )}
             </div>
         </section>
     );

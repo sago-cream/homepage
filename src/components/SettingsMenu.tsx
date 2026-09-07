@@ -9,12 +9,12 @@ import {
     Check,
     ChevronDown,
     LayoutGrid,
+    Mailbox,
     MapPin,
     MapPinOff,
     Monitor,
     Moon,
     Palette,
-    Rss,
     Settings,
     SlidersHorizontal,
     Sun,
@@ -80,6 +80,10 @@ interface SettingsDropdownProps {
     options: SettingsDropdownOption[];
     value: string;
 }
+
+const SettingsChoice: React.FC<
+    React.ButtonHTMLAttributes<HTMLButtonElement>
+> = (props) => <button {...props} type='button' role='radio' />;
 
 const getInitialAnimationMode = (
     initialAnimationMode: AnimationMode
@@ -604,7 +608,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             label: t.preferences,
         },
         {
-            icon: Rss,
+            icon: Mailbox,
             id: 'feeds',
             label: t.feeds,
         },
@@ -739,7 +743,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                           themeMode;
 
                                                       return (
-                                                          <button
+                                                          <SettingsChoice
                                                               className={[
                                                                   'settings-theme-choice',
                                                                   isSelected &&
@@ -773,7 +777,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                               <span>
                                                                   {option.label}
                                                               </span>
-                                                          </button>
+                                                          </SettingsChoice>
                                                       );
                                                   }
                                               )}
@@ -801,9 +805,9 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                           selectedThemeColor;
 
                                                       return (
-                                                          <button
+                                                          <SettingsChoice
                                                               className={[
-                                                                  'settings-accent-choice',
+                                                                  'settings-theme-choice',
                                                                   `settings-swatch-${option.value}`,
                                                                   isSelected &&
                                                                       'selected',
@@ -836,14 +840,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                                       ]
                                                                   }
                                                               </span>
-                                                              {isSelected ? (
-                                                                  <Check
-                                                                      className='icon'
-                                                                      size={16}
-                                                                      aria-hidden
-                                                                  />
-                                                              ) : undefined}
-                                                          </button>
+                                                          </SettingsChoice>
                                                       );
                                                   }
                                               )}
