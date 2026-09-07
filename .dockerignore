@@ -1,9 +1,0 @@
-.git
-.next
-dist
-node_modules
-.env
-.env.*
-!.env.example
-Dockerfile
-ux-audit

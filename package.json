@@ -10,9 +10,7 @@
         "node": ">=22"
     },
     "scripts": {
-        "build": "next build",
-        "build:oracle": "next build --webpack",
-        "deploy": "scripts/deploy-oracle",
+        "build": "next build --webpack",
         "dev": "next dev --turbopack",
         "lint": "eslint .",
         "preview": "bun run build && next start",

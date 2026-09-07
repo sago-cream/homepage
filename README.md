@@ -16,84 +16,50 @@ A personal browser homepage for fast bookmark access across browsers with instan
 
 ## Privacy
 
-Core features work without an account. Location tracking is off by default. Enabling the map pin requests browser permission
-and remembers the preference; while the homepage is open, it follows movement and
-updates the nearest supported Taiwan location. Turning the pin off stops tracking
-and keeps the last location available for manual selection. The selected Taiwan location is stored in a same-site cookie for
-SSR and mirrored in browser storage with weather/AQI caches. Guest bookmarks stay in
-browser local storage; signed-in bookmarks sync to PostgreSQL under the Clerk
-account. Wallpaper sync requires sign-in and uses private, authenticated object
-storage.
+Core features work without an account. Guest bookmarks and preferences stay in browser storage.
+Signed-in bookmarks and private wallpapers sync through Supabase Auth, PostgreSQL, and Storage.
+Location tracking is off by default and requests browser permission when enabled.
 
 ## Development
 
-### Quick Start
-
-Requires Node.js 22+ and Bun.
+Requires Node.js 24 and Bun.
 
 ```bash
-git clone https://github.com/sago-cream/homepage.git
-cd homepage
-bun i
+bun install --frozen-lockfile
 bun dev
 ```
 
-Weather requires a server-side `CWA_API_KEY` in `.env.local` (see `.env.example`).
-Production must set the same variable in the container environment. The key is
-never sent to the browser. Weather uses CWA's
-[10-minute station observations (O-A0003-001)](https://opendata.cwa.gov.tw/dataset/observation/O-A0003-001),
-selecting the nearest WGS84 station with valid observations from the past hour.
-Requests are cached for five minutes, with up to 30 minutes of stale weather on
-upstream failure. Without a key, the weather metric is omitted.
-
-### Stack Map
-
-- **Runtime:** Bun, Next.js 16 App Router, React 19, TypeScript, Turbopack in dev,
-  Node.js standalone server in production.
-- **SSR:** Hydrates location, weather, AQI, Clerk state, and signed-in wallpaper.
-- **Auth:** Clerk auth
-- **Storage:** Standard PostgreSQL for bookmarks and wallpaper metadata; local files
-  in development, Cloudflare R2 in production, and Vercel Blob as a migration-only
-  compatibility provider.
-- **External data:** Taiwan CWA for weather; Taiwan MOENV for AQI.
-
-### Oracle Deployment
-
-Production runs on the Oracle VM behind Caddy. Every push to `main` publishes
-`ghcr.io/sago-cream/homepage` for Linux AMD64 and ARM64. Dependencies and standalone
-output are built inside the target Linux image, so production never receives
-native modules from the development Mac.
-
-Changes reach `main` through a pull request. Deploy from a clean local `main`
-that matches `origin/main`; the command waits for that commit's image and asks
-the Oracle platform to pull it. It never pushes code:
+Copy `.env.example` to `.env.local` and configure the Supabase public URL and publishable key.
+Weather and AQI require server-only `CWA_API_KEY` and `MOENV_API_KEY` values.
+Without the corresponding key, that metric is omitted.
 
 ```bash
-bun run deploy
+bun run lint
+bun test
+bun run build
 ```
 
-The container listens on `0.0.0.0:3102` and exposes `/api/health` for health
-checks.
+## Deployment
 
-### Persistence
+Production runs in the Vercel project `homepage-startup-check` under Hsi's Lab,
+serving <https://homepage.hsichen.dev>. The connected `sago-cream/homepage` repository
+deploys `main` to production and pull requests to preview deployments.
 
-Schema changes are tracked in `migrations/` and never run from an application
-request. Set `DATABASE_URL` to any PostgreSQL connection string, then apply and
-verify migrations before starting the application:
+`vercel.json` configures Next.js, the frozen Bun install, and the custom `dist` build directory.
+Set these project environment variables for production and previews:
 
-```bash
-bun run db:migrate
-bun run db:verify
-```
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `CWA_API_KEY`
+- `MOENV_API_KEY`
 
-Local wallpaper files are selected with
-`WALLPAPER_STORAGE_PROVIDER=local` and default to `.data/wallpapers`. Production
-uses `WALLPAPER_STORAGE_PROVIDER=r2` with a private bucket and an R2 API token
-scoped to object read/write for that bucket. Configure `R2_ENDPOINT`, `R2_BUCKET`,
-`R2_ACCESS_KEY_ID`, and `R2_SECRET_ACCESS_KEY`; do not put their values in Git.
+The homepage is pre-rendered and served by Vercel's CDN. A service worker caches
+HTML and static assets locally for fast repeat openings. Weather, AQI, authentication,
+bookmarks, and wallpapers use separate server endpoints; they do not block the initial HTML.
+`/api/health` provides a basic health check.
 
-During migration, `WALLPAPER_STORAGE_PROVIDER=vercel-blob` remains supported with
-the existing Blob token. Metadata is read through provider-neutral object keys,
-so the database is ready for copying objects to R2 and switching the provider.
-The non-destructive copy, byte-level verification, cutover, and rollback process
-is documented in [the persistence migration runbook](docs/persistence-migration.md).
+Cloudflare manages DNS only: the `homepage` CNAME points to Vercel with proxying disabled.
+Oracle containers, Caddy routing, Cloudflare Tunnel ingress, and GHCR image builds are no longer used.
+
+Supabase remains the persistent backend. Schema migrations are tracked in `supabase/migrations/`;
+apply them separately before deploying code that requires a schema change.
