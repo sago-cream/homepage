@@ -2921,18 +2921,33 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-feed-card {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
     overflow: hidden;
 }
 
 .settings-feed-selected,
 .settings-feed-search-area {
+    min-width: 0;
     padding: 1rem;
     display: grid;
     gap: 0.75rem;
 }
 
-.settings-feed-search-area {
-    border-top: 1px solid var(--clr-text-alpha-2);
+.settings-feed-selected {
+    border-left: 1px solid var(--clr-text-alpha-2);
+}
+
+@media (width < 48rem) {
+    .settings-feed-card {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .settings-feed-selected {
+        border-left: 0;
+        border-top: 1px solid var(--clr-text-alpha-2);
+    }
 }
 
 .settings-feed-subheading {

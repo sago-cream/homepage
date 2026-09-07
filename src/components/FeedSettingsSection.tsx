@@ -181,6 +181,33 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
                 <p>{t.feedsDescription}</p>
             </div>
             <div className='settings-card settings-feed-card'>
+                <div className='settings-feed-search-area'>
+                    <label
+                        className='settings-feed-subheading'
+                        htmlFor='feed-bookmark-search'
+                    >
+                        {t.addFeedBookmark}
+                    </label>
+                    <div className='settings-feed-search'>
+                        <Search aria-hidden='true' />
+                        <input
+                            ref={searchInputRef}
+                            id='feed-bookmark-search'
+                            type='search'
+                            autoComplete='off'
+                            placeholder={t.bookmarkSearch}
+                            value={query}
+                            disabled={!bookmarkControls.canEdit}
+                            onChange={(event) => {
+                                setQuery(event.target.value);
+                            }}
+                        />
+                    </div>
+                    <div className='settings-feed-results' aria-live='polite'>
+                        {searchResultsContent}
+                    </div>
+                </div>
+
                 <div className='settings-feed-selected'>
                     <div className='settings-feed-subheading'>
                         <span>{t.feedBookmarks}</span>
@@ -217,33 +244,6 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
                             </div>
                         </DragDropProvider>
                     )}
-                </div>
-
-                <div className='settings-feed-search-area'>
-                    <label
-                        className='settings-feed-subheading'
-                        htmlFor='feed-bookmark-search'
-                    >
-                        {t.addFeedBookmark}
-                    </label>
-                    <div className='settings-feed-search'>
-                        <Search aria-hidden='true' />
-                        <input
-                            ref={searchInputRef}
-                            id='feed-bookmark-search'
-                            type='search'
-                            autoComplete='off'
-                            placeholder={t.bookmarkSearch}
-                            value={query}
-                            disabled={!bookmarkControls.canEdit}
-                            onChange={(event) => {
-                                setQuery(event.target.value);
-                            }}
-                        />
-                    </div>
-                    <div className='settings-feed-results' aria-live='polite'>
-                        {searchResultsContent}
-                    </div>
                 </div>
             </div>
         </section>
