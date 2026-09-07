@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 
 import type { TaiwanLocation } from '@/constants/taiwanLocations';
 import {
@@ -16,6 +16,137 @@ const LEGACY_AQI_SITE_STORAGE_KEY = 'aqi_site';
 const LEGACY_WEATHER_LOCATION_STORAGE_KEY = 'weather_location';
 const locationCookieMaxAgeSeconds = 60 * 60 * 24 * 365;
 const locationSyncTimeout = 10_000;
+const TRACKING_STORAGE_KEY = 'homepage_location_tracking';
+const trackingListeners = new Set<() => void>();
+const initialTrackingState = {
+    enabled: false,
+    syncing: false,
+    failed: false,
+    updatedAt: undefined as number | undefined,
+};
+let trackingState = initialTrackingState;
+let watchId: number | undefined;
+let watchGeneration = 0;
+
+function notifyTracking() {
+    for (const listener of trackingListeners) {
+        listener();
+    }
+}
+
+function stopWatching() {
+    watchGeneration++;
+    if (watchId !== undefined) {
+        navigator.geolocation.clearWatch(watchId);
+    }
+    watchId = undefined;
+}
+
+function publishLocation(location: TaiwanLocation) {
+    globalThis.localStorage.setItem(LOCATION_STORAGE_KEY, location.id);
+    writeLocationCookie(location.id);
+    globalThis.dispatchEvent(
+        new CustomEvent(LOCATION_CHANGE_EVENT, { detail: location })
+    );
+}
+
+function startWatching() {
+    if (
+        watchId !== undefined ||
+        !trackingState.enabled ||
+        trackingListeners.size === 0
+    ) {
+        return;
+    }
+    if (!('geolocation' in navigator)) {
+        setLocationTracking(false);
+        return;
+    }
+    watchGeneration++;
+    const generation = watchGeneration;
+    trackingState = { ...trackingState, syncing: true, failed: false };
+    notifyTracking();
+    watchId = navigator.geolocation.watchPosition(
+        ({ coords }) => {
+            if (generation !== watchGeneration) {
+                return;
+            }
+            const location = findNearestTaiwanLocation(
+                coords.latitude,
+                coords.longitude
+            );
+            if (getStoredLocation().id !== location.id) {
+                publishLocation(location);
+            }
+            trackingState = {
+                ...trackingState,
+                syncing: false,
+                failed: false,
+                updatedAt: Date.now(),
+            };
+            notifyTracking();
+        },
+        (error) => {
+            if (generation !== watchGeneration) {
+                return;
+            }
+            if (error.code === error.PERMISSION_DENIED) {
+                setLocationTracking(false);
+            }
+            trackingState = { ...trackingState, syncing: false, failed: true };
+            notifyTracking();
+        },
+        { maximumAge: 0, timeout: locationSyncTimeout }
+    );
+}
+
+function setLocationTracking(enabled: boolean) {
+    globalThis.localStorage.setItem(TRACKING_STORAGE_KEY, String(enabled));
+    trackingState = {
+        ...trackingState,
+        enabled,
+        syncing: false,
+        failed: false,
+    };
+    if (enabled) {
+        startWatching();
+    } else {
+        stopWatching();
+    }
+    notifyTracking();
+}
+
+function onTrackingStorage(event: StorageEvent) {
+    if (event.key === TRACKING_STORAGE_KEY || event.key === null) {
+        setLocationTracking(
+            globalThis.localStorage.getItem(TRACKING_STORAGE_KEY) === 'true'
+        );
+    }
+}
+
+function subscribeTracking(listener: () => void) {
+    trackingListeners.add(listener);
+    if (trackingListeners.size === 1) {
+        globalThis.addEventListener('storage', onTrackingStorage);
+        trackingState = {
+            ...trackingState,
+            enabled:
+                globalThis.localStorage.getItem(TRACKING_STORAGE_KEY) ===
+                'true',
+        };
+        startWatching();
+    }
+    return () => {
+        trackingListeners.delete(listener);
+        if (trackingListeners.size === 0) {
+            stopWatching();
+            globalThis.removeEventListener('storage', onTrackingStorage);
+        }
+    };
+}
+
+const getTrackingSnapshot = () => trackingState;
+const getServerTrackingSnapshot = () => initialTrackingState;
 const unsupportedGeolocationPermission = 'unsupported';
 
 export type GeolocationPermissionState =
@@ -93,14 +224,6 @@ function getStoredLocation(): TaiwanLocation {
     );
 }
 
-function getInitialLocation(
-    initialLocationId: string | undefined
-): TaiwanLocation {
-    return initialLocationId === undefined
-        ? getStoredLocation()
-        : findTaiwanLocation(initialLocationId);
-}
-
 function writeLocationCookie(locationId: string) {
     const secureAttribute =
         globalThis.location.protocol === 'https:' ? '; Secure' : '';
@@ -134,66 +257,39 @@ export const useTaiwanLocation = ({
     isGeolocationAvailable: boolean;
     isSyncingLocation: boolean;
     lastLocationSyncSucceededAt: number | undefined;
+    isTrackingLocation: boolean;
+    locationTrackingFailed: boolean;
+    toggleLocationTracking: () => void;
     selectLocationId: (locationId: string) => void;
     syncCurrentLocation: () => void;
 } => {
     const [selectedLocation, setSelectedLocation] = useState(() =>
-        getInitialLocation(initialLocationId)
+        findTaiwanLocation(initialLocationId)
     );
     const [geolocationPermission, setGeolocationPermission] =
-        useState<GeolocationPermissionState>(
-            typeof navigator !== 'undefined' && 'geolocation' in navigator
-                ? 'prompt'
-                : unsupportedGeolocationPermission
-        );
-    const [isSyncingLocation, setIsSyncingLocation] = useState(false);
-    const [lastLocationSyncSucceededAt, setLastLocationSyncSucceededAt] =
-        useState<number>();
-
+        useState<GeolocationPermissionState>(unsupportedGeolocationPermission);
+    const tracking = useSyncExternalStore(
+        subscribeTracking,
+        getTrackingSnapshot,
+        getServerTrackingSnapshot
+    );
     const selectLocation = useCallback((location: TaiwanLocation) => {
-        globalThis.localStorage.setItem(LOCATION_STORAGE_KEY, location.id);
-        writeLocationCookie(location.id);
+        publishLocation(location);
         setSelectedLocation(location);
-        globalThis.dispatchEvent(
-            new CustomEvent(LOCATION_CHANGE_EVENT, { detail: location })
-        );
     }, []);
-
     const selectLocationId = useCallback(
         (locationId: string) => {
+            setLocationTracking(false);
             selectLocation(findTaiwanLocation(locationId));
         },
         [selectLocation]
     );
-
     const syncCurrentLocation = useCallback(() => {
-        if (!('geolocation' in navigator)) {
-            setGeolocationPermission(unsupportedGeolocationPermission);
-            return;
-        }
-
-        setIsSyncingLocation(true);
-        navigator.geolocation.getCurrentPosition(
-            (position) => {
-                const { latitude, longitude } = position.coords;
-                selectLocation(findNearestTaiwanLocation(latitude, longitude));
-                setGeolocationPermission('granted');
-                setIsSyncingLocation(false);
-                setLastLocationSyncSucceededAt(Date.now());
-            },
-            (error) => {
-                console.error(error);
-                if (error.code === error.PERMISSION_DENIED) {
-                    setGeolocationPermission('denied');
-                }
-                setIsSyncingLocation(false);
-            },
-            {
-                maximumAge: 30 * 60 * 1000,
-                timeout: locationSyncTimeout,
-            }
-        );
-    }, [selectLocation]);
+        setLocationTracking(true);
+    }, []);
+    const toggleLocationTracking = useCallback(() => {
+        setLocationTracking(!trackingState.enabled);
+    }, []);
 
     useEffect(() => {
         if (hasInitialLocationCookie === true) {
@@ -220,6 +316,8 @@ export const useTaiwanLocation = ({
             return undefined;
         }
 
+        setGeolocationPermission('prompt');
+
         if (!('permissions' in navigator)) {
             return undefined;
         }
@@ -229,6 +327,12 @@ export const useTaiwanLocation = ({
         const updatePermission = () => {
             if (permissionStatus !== undefined) {
                 setGeolocationPermission(permissionStatus.state);
+                if (
+                    permissionStatus.state === 'denied' &&
+                    trackingState.enabled
+                ) {
+                    setLocationTracking(false);
+                }
             }
         };
 
@@ -260,8 +364,15 @@ export const useTaiwanLocation = ({
             }
         };
 
+        const onStorage = (event: StorageEvent) => {
+            if (event.key === LOCATION_STORAGE_KEY || event.key === null) {
+                setSelectedLocation(getStoredLocation());
+            }
+        };
+        globalThis.addEventListener('storage', onStorage);
         globalThis.addEventListener(LOCATION_CHANGE_EVENT, onLocationChange);
         return () => {
+            globalThis.removeEventListener('storage', onStorage);
             globalThis.removeEventListener(
                 LOCATION_CHANGE_EVENT,
                 onLocationChange
@@ -273,8 +384,11 @@ export const useTaiwanLocation = ({
         selectedLocation,
         geolocationPermission,
         isGeolocationAvailable: geolocationPermission !== 'unsupported',
-        isSyncingLocation,
-        lastLocationSyncSucceededAt,
+        isSyncingLocation: tracking.syncing,
+        lastLocationSyncSucceededAt: tracking.updatedAt,
+        isTrackingLocation: tracking.enabled,
+        locationTrackingFailed: tracking.failed,
+        toggleLocationTracking,
         selectLocationId,
         syncCurrentLocation,
     };

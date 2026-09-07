@@ -126,6 +126,8 @@ export const useWeatherWithInitialData = ({
         hasInitialLocationCookie,
         initialLocationId,
     });
+    const selectedLocationIdRef = useRef(selectedLocation.id);
+    selectedLocationIdRef.current = selectedLocation.id;
     const initialCachedWeatherRef = useRef<CachedWeather | undefined>(
         initialWeather === undefined
             ? undefined
@@ -137,11 +139,7 @@ export const useWeatherWithInitialData = ({
     );
     const [cachedWeather, setCachedWeather] = useState<
         CachedWeather | undefined
-    >(
-        () =>
-            initialCachedWeatherRef.current ??
-            getCachedWeather(selectedLocation.id)
-    );
+    >(() => initialCachedWeatherRef.current);
     const weather = cachedWeather?.data;
     const [isLoading, setIsLoading] = useState(false);
 
@@ -166,6 +164,9 @@ export const useWeatherWithInitialData = ({
             setIsLoading(true);
             try {
                 const data = await requestWeather(location);
+                if (selectedLocationIdRef.current !== location.id) {
+                    return;
+                }
 
                 if (data !== undefined) {
                     updateCache(data, location);
@@ -182,7 +183,9 @@ export const useWeatherWithInitialData = ({
             } catch (error) {
                 console.error(error);
             } finally {
-                setIsLoading(false);
+                if (selectedLocationIdRef.current === location.id) {
+                    setIsLoading(false);
+                }
             }
         },
         [updateCache]
