@@ -7,6 +7,8 @@ interface ThemeTransitionOptions {
     isDarkMode: boolean;
 }
 
+let activeThemeTransition: ViewTransition | undefined;
+
 const applyTheme = (nextDarkMode: boolean) => {
     const nextTheme = nextDarkMode ? 'dark' : 'light';
     const root = globalThis.document.documentElement;
@@ -87,16 +89,27 @@ export const runThemeTransition = ({
         ),
     ];
 
-    const commitTheme = () => {
-        applyTheme(nextDarkMode);
-    };
-
     if ('startViewTransition' in globalThis.document) {
         const transition = (
             globalThis.document as Document & {
                 startViewTransition: (callback: () => void) => ViewTransition;
             }
-        ).startViewTransition(commitTheme);
+        ).startViewTransition(() => {
+            // Capture the old view first, then reveal settled theme colors instead of repainting
+            // ordinary CSS transitions underneath it.
+            root.dataset.themeTransition = 'active';
+            applyTheme(nextDarkMode);
+        });
+        activeThemeTransition = transition;
+
+        const restoreTransitions = () => {
+            // A superseded transition must not restore styles mid-reveal.
+            if (activeThemeTransition === transition) {
+                delete root.dataset.themeTransition;
+                activeThemeTransition = undefined;
+            }
+        };
+        transition.finished.then(restoreTransitions, restoreTransitions);
 
         transition.ready
             .then(() => {
@@ -159,7 +172,9 @@ export const runThemeTransition = ({
                 });
             })
             .catch(() => {
-                applyTheme(nextDarkMode);
+                // Skipping still runs the update callback. Reapplying here could overwrite the
+                // theme chosen by a newer transition.
+                transition.skipTransition();
             });
 
         return nextDarkMode;
