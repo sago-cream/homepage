@@ -4446,6 +4446,18 @@ a.bookmark-workspace-tree-item {
     }
 }
 
+.theme-toggle-trigger .theme-icon-dark {
+    display: none;
+}
+
+:root[data-theme='dark'] .theme-toggle-trigger .theme-icon-light {
+    display: none;
+}
+
+:root[data-theme='dark'] .theme-toggle-trigger .theme-icon-dark {
+    display: block;
+}
+
 .link-panel:has(.link-tree:focus-within) .theme-toggle-trigger {
     visibility: hidden;
 }
