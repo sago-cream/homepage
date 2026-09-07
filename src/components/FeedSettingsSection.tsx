@@ -9,29 +9,24 @@ import { useLocale } from '@/hooks/useLocale';
 import type { BookmarkLinkData } from '@/types/bookmarks';
 import { getFeedBookmarks, setFeedBookmarkIds } from '@/utils/feeds';
 import { getSearchItems, getSearchResults } from '@/utils/search';
+import { BookmarkActions, BookmarkCard } from './BookmarkCard';
 
 interface FeedBookmarkRowProps {
     bookmark: BookmarkLinkData;
     disabled: boolean;
     index: number;
     onRemove: () => void;
+    onOpen: () => void;
 }
-
-const getBookmarkHost = (url: string): string => {
-    try {
-        return new URL(url).hostname.replace(/^www\./, '');
-    } catch {
-        return url;
-    }
-};
 
 const FeedBookmarkRow: React.FC<FeedBookmarkRowProps> = ({
     bookmark,
     disabled,
     index,
     onRemove,
+    onOpen,
 }) => {
-    const { t } = useLocale();
+    const { locale, t } = useLocale();
     const sortable = useSortable({
         accept: 'settings-feed-bookmark',
         disabled,
@@ -44,7 +39,7 @@ const FeedBookmarkRow: React.FC<FeedBookmarkRowProps> = ({
     return (
         <div
             ref={sortable.ref}
-            className='settings-feed-bookmark'
+            className='bookmark-workspace-list-row settings-feed-bookmark'
             data-dragging={sortable.isDragSource ? 'true' : undefined}
         >
             <button
@@ -56,32 +51,29 @@ const FeedBookmarkRow: React.FC<FeedBookmarkRowProps> = ({
             >
                 <GripVertical aria-hidden='true' />
             </button>
-            <span className='settings-feed-bookmark-icon'>
-                <LinkIcon aria-hidden='true' />
-            </span>
-            <span className='settings-feed-bookmark-copy'>
-                <strong>{bookmark.title}</strong>
-                <small>{getBookmarkHost(bookmark.url)}</small>
-            </span>
-            <button
-                className='settings-icon-button settings-feed-remove'
-                type='button'
-                aria-label={`${t.removeFromFeeds}: ${bookmark.title}`}
-                disabled={disabled}
-                onClick={onRemove}
-            >
-                <X aria-hidden='true' />
-            </button>
+            <BookmarkCard bookmark={bookmark} onClick={onOpen} />
+            <BookmarkActions
+                bookmark={bookmark}
+                onEdit={onOpen}
+                onDelete={disabled ? undefined : onRemove}
+                labels={{
+                    edit: t.openInBookmarkManager,
+                    open: locale === 'zh-TW' ? '開啟' : 'Open',
+                    delete: t.removeFromFeeds,
+                }}
+            />
         </div>
     );
 };
 
 interface FeedSettingsSectionProps {
     bookmarkControls: BookmarkControls;
+    onOpenBookmark: (bookmarkId: string) => void;
 }
 
 export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
     bookmarkControls,
+    onOpenBookmark,
 }) => {
     const { t } = useLocale();
     const dialogRef = useRef<HTMLDialogElement>(null);
@@ -256,13 +248,16 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
                     </div>
                 ) : (
                     <DragDropProvider onDragEnd={handleDragEnd}>
-                        <div className='settings-feed-list'>
+                        <div className='settings-feed-list bookmark-card-list'>
                             {feedBookmarks.map((bookmark, index) => (
                                 <FeedBookmarkRow
                                     key={bookmark.id}
                                     bookmark={bookmark}
                                     disabled={!bookmarkControls.canEdit}
                                     index={index}
+                                    onOpen={() => {
+                                        onOpenBookmark(bookmark.id);
+                                    }}
                                     onRemove={() => {
                                         saveFeedBookmarkIds(
                                             feedBookmarks.flatMap((item) =>

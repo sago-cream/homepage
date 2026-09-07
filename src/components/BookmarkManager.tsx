@@ -23,7 +23,6 @@ import {
     FolderPlus,
     Link2,
     LoaderCircle,
-    MoreVertical,
     Plus,
     Search,
     Trash2,
@@ -53,9 +52,12 @@ import {
     isBookmarkLink,
     isBookmarkRootCategory,
 } from '@/utils/bookmarks';
+import { getFeedBookmarks, setFeedBookmarkIds } from '@/utils/feeds';
+import { BookmarkActions, BookmarkCard } from './BookmarkCard';
 
 export interface BookmarkManagerHandle {
     requestClose: () => boolean;
+    openBookmark: (bookmarkId: string) => void;
 }
 
 interface BookmarkManagerProps {
@@ -164,77 +166,6 @@ const SortableBookmarkRow: React.FC<SortableBookmarkRowProps> = ({
         >
             {children(sortable.sourceRef)}
         </div>
-    );
-};
-
-const BookmarkActions: React.FC<{
-    bookmark: { title: string; url?: string };
-    onEdit: () => void;
-    onDelete?: () => void;
-    labels: { edit: string; open: string; delete: string };
-}> = ({ bookmark, onEdit, onDelete, labels }) => {
-    const menuRef = useRef<HTMLDetailsElement>(null);
-    const close = () => {
-        if (menuRef.current) {
-            menuRef.current.open = false;
-        }
-    };
-    return (
-        <details
-            ref={menuRef}
-            className='bookmark-row-menu'
-            onBlur={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget)) {
-                    close();
-                }
-            }}
-            onKeyDown={(event) => {
-                if (event.key === 'Escape') {
-                    event.stopPropagation();
-                    close();
-                    menuRef.current?.querySelector('summary')?.focus();
-                }
-            }}
-        >
-            <summary
-                aria-label={`${bookmark.title}: ${labels.edit}${bookmark.url ? `, ${labels.open}` : ''}${onDelete ? `, ${labels.delete}` : ''}`}
-            >
-                <MoreVertical aria-hidden='true' />
-            </summary>
-            <div className='bookmark-row-menu-content'>
-                <button
-                    type='button'
-                    onClick={() => {
-                        close();
-                        onEdit();
-                    }}
-                >
-                    {labels.edit}
-                </button>
-                {bookmark.url && (
-                    <a
-                        href={bookmark.url}
-                        target='_blank'
-                        rel='noreferrer'
-                        onClick={close}
-                    >
-                        {labels.open}
-                    </a>
-                )}
-                {onDelete && (
-                    <button
-                        type='button'
-                        className='danger'
-                        onClick={() => {
-                            close();
-                            onDelete();
-                        }}
-                    >
-                        {labels.delete}
-                    </button>
-                )}
-            </div>
-        </details>
     );
 };
 
@@ -398,14 +329,6 @@ const serializeDraft = (draft: EditorDraft): string =>
         title: draft.title,
         url: draft.url,
     });
-
-const getBookmarkHost = (url: string): string => {
-    try {
-        return new URL(url).hostname.replace(/^www\./, '');
-    } catch {
-        return url;
-    }
-};
 
 interface PastedBookmark {
     title: string;
@@ -825,6 +748,22 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         });
     };
 
+    const feedBookmarkIds = new Set(
+        getFeedBookmarks(bookmarkControls.bookmarkTree).map(
+            (bookmark) => bookmark.id
+        )
+    );
+    const getAddToFeedsAction = (bookmarkId: string) =>
+        bookmarkControls.canEdit && !feedBookmarkIds.has(bookmarkId)
+            ? () =>
+                  bookmarkControls.replaceBookmarkTree(
+                      setFeedBookmarkIds(bookmarkControls.bookmarkTree, [
+                          ...feedBookmarkIds,
+                          bookmarkId,
+                      ])
+                  )
+            : undefined;
+
     const bookmarkActionLabels = {
         edit: locale === 'zh-TW' ? '編輯' : 'Edit',
         open: locale === 'zh-TW' ? '開啟' : 'Open',
@@ -957,7 +896,40 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         return true;
     };
 
-    useImperativeHandle(ref, () => ({ requestClose: requestDialogClose }));
+    useImperativeHandle(ref, () => ({
+        requestClose: requestDialogClose,
+        openBookmark: (bookmarkId) => {
+            const find = (
+                nodes: readonly BookmarkNodeData[],
+                path: readonly string[]
+            ): string[] | undefined => {
+                for (const node of nodes) {
+                    if (node.id === bookmarkId && isBookmarkLink(node)) {
+                        return [...path];
+                    }
+                    if (isBookmarkFolder(node)) {
+                        const found = find(node.children, [...path, node.id]);
+                        if (found) {
+                            return found;
+                        }
+                    }
+                }
+                return undefined;
+            };
+            for (const [categoryIndex, category] of bookmarkTree.entries()) {
+                const folderPath = find(category.children, []);
+                if (folderPath) {
+                    setQuery('');
+                    navigateTo({
+                        location: bookmarkRootLocation,
+                        selectedLocation: { categoryIndex, folderPath },
+                        focusedPane: 'right',
+                    });
+                    return;
+                }
+            }
+        },
+    }));
 
     const confirmDiscard = () => {
         const target = discardTarget;
@@ -1600,37 +1572,30 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                 </>
                                                             ) : bookmark ? (
                                                                 <>
-                                                                    <button
-                                                                        ref={
+                                                                    <BookmarkCard
+                                                                        sourceRef={
                                                                             sourceRef
                                                                         }
-                                                                        type='button'
-                                                                        className='bookmark-workspace-tree-item bookmark-link-item'
+                                                                        bookmark={
+                                                                            bookmark
+                                                                        }
                                                                         onClick={() => {
                                                                             editBookmark(
                                                                                 item.containerLocation,
                                                                                 bookmark
                                                                             );
                                                                         }}
-                                                                    >
-                                                                        <Link2 aria-hidden='true' />
-                                                                        <span className='bookmark-settings-link-copy'>
-                                                                            <strong>
-                                                                                {
-                                                                                    bookmark.title
-                                                                                }
-                                                                            </strong>
-                                                                            <small>
-                                                                                {getBookmarkHost(
-                                                                                    bookmark.url
-                                                                                )}
-                                                                            </small>
-                                                                        </span>
-                                                                    </button>
+                                                                    />
                                                                     <BookmarkActions
                                                                         bookmark={
                                                                             bookmark
                                                                         }
+                                                                        addToFeedsLabel={
+                                                                            t.addToFeeds
+                                                                        }
+                                                                        onAddToFeeds={getAddToFeedsAction(
+                                                                            bookmark.id
+                                                                        )}
                                                                         labels={
                                                                             bookmarkActionLabels
                                                                         }
@@ -1795,31 +1760,18 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                 </FolderLabel>
                                                             </button>
                                                         ) : (
-                                                            <button
-                                                                ref={sourceRef}
-                                                                type='button'
-                                                                className='bookmark-workspace-tree-item bookmark-link-item'
+                                                            <BookmarkCard
+                                                                sourceRef={
+                                                                    sourceRef
+                                                                }
+                                                                bookmark={node}
                                                                 onClick={() => {
                                                                     editBookmark(
                                                                         rightLocation,
                                                                         node
                                                                     );
                                                                 }}
-                                                            >
-                                                                <Link2 aria-hidden='true' />
-                                                                <span className='bookmark-settings-link-copy'>
-                                                                    <strong>
-                                                                        {
-                                                                            node.title
-                                                                        }
-                                                                    </strong>
-                                                                    <small>
-                                                                        {getBookmarkHost(
-                                                                            node.url
-                                                                        )}
-                                                                    </small>
-                                                                </span>
-                                                            </button>
+                                                            />
                                                         )}
                                                         {isFolder ? (
                                                             <BookmarkActions
@@ -1842,6 +1794,12 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                         ) : (
                                                             <BookmarkActions
                                                                 bookmark={node}
+                                                                addToFeedsLabel={
+                                                                    t.addToFeeds
+                                                                }
+                                                                onAddToFeeds={getAddToFeedsAction(
+                                                                    node.id
+                                                                )}
                                                                 labels={
                                                                     bookmarkActionLabels
                                                                 }

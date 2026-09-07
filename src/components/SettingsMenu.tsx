@@ -1149,6 +1149,12 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
 
                               {selectedSection === 'feeds' ? (
                                   <FeedSettingsSection
+                                      onOpenBookmark={(bookmarkId) => {
+                                          setSelectedSection('content');
+                                          bookmarkManagerRef.current?.openBookmark(
+                                              bookmarkId
+                                          );
+                                      }}
                                       bookmarkControls={bookmarkControls}
                                   />
                               ) : undefined}
