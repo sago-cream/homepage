@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { PanelLeft, PanelLeftClose, Sun } from 'lucide-react';
+import { Moon, PanelLeft, PanelLeftClose, Sun } from 'lucide-react';
 
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useLinkNavigation } from '@/hooks/useLinkNavigation';
@@ -244,7 +244,16 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                                 });
                             }}
                         >
-                            <Sun className='icon' size={20} aria-hidden />
+                            <Sun
+                                className='icon theme-icon-light'
+                                size={20}
+                                aria-hidden
+                            />
+                            <Moon
+                                className='icon theme-icon-dark'
+                                size={20}
+                                aria-hidden
+                            />
                         </button>
                     )}
             </div>
