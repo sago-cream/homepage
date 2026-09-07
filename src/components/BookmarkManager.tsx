@@ -1,5 +1,12 @@
 /* eslint-disable no-nested-ternary -- Visual state branches are clearest inline in this workspace. */
-import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, {
+    useEffect,
+    useId,
+    useImperativeHandle,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { DragDropProvider, useDroppable } from '@dnd-kit/react';
 import type { DragEndEvent } from '@dnd-kit/react';
 import { isSortable, useSortable } from '@dnd-kit/react/sortable';
@@ -25,7 +32,6 @@ import {
     Upload,
     X,
 } from 'lucide-react';
-import { createPortal } from 'react-dom';
 
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useLocale } from '@/hooks/useLocale';
@@ -49,8 +55,13 @@ import {
     isBookmarkRootCategory,
 } from '@/utils/bookmarks';
 
-interface BookmarkManagerDialogProps {
+export interface BookmarkManagerHandle {
+    requestClose: () => boolean;
+}
+
+interface BookmarkManagerProps {
     bookmarkControls: BookmarkControls;
+    ref?: React.Ref<BookmarkManagerHandle>;
     onClose: () => void;
 }
 
@@ -488,8 +499,9 @@ const parseClipboardBookmarks = (
     return bookmarks;
 };
 
-export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
+export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     bookmarkControls,
+    ref,
     onClose,
 }) => {
     const { locale, t } = useLocale();
@@ -905,11 +917,14 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
     const requestDialogClose = () => {
         if (isDraftDirty) {
             setDiscardTarget('dialog');
-            return;
+            return false;
         }
 
         onClose();
+        return true;
     };
+
+    useImperativeHandle(ref, () => ({ requestClose: requestDialogClose }));
 
     const confirmDiscard = () => {
         const target = discardTarget;
@@ -1155,21 +1170,18 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                   tone: 'success',
               };
 
-    return createPortal(
+    return (
         <div
-            className='bookmark-manager-backdrop'
-            onMouseDown={(event) => {
-                if (event.target === event.currentTarget) {
-                    requestDialogClose();
-                }
-            }}
+            className='bookmark-workspace-embedded-shell'
+            inert={!bookmarkControls.canEdit}
         >
             <div
                 ref={dialogRef}
-                className='bookmark-manager-dialog bookmark-workspace'
-                role='dialog'
+                className='bookmark-workspace bookmark-settings'
+                data-editing={editorDraft !== undefined}
+                data-browsing={selectedLocation !== undefined}
+                role='region'
                 aria-labelledby={titleId}
-                aria-modal='true'
                 tabIndex={-1}
                 onPointerDownCapture={(event) => {
                     const { target } = event;
@@ -1187,6 +1199,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                     }
 
                     event.preventDefault();
+                    event.stopPropagation();
                     if (isEmptyTrashConfirmOpen) {
                         setIsEmptyTrashConfirmOpen(false);
                     } else if (isTrashOpen) {
@@ -1210,27 +1223,15 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                     }
                 }}
             >
-                <header className='bookmark-manager-header'>
+                <header
+                    className='bookmark-settings-heading'
+                    inert={editorDraft !== undefined}
+                >
                     <div className='bookmark-workspace-title-group'>
-                        <div className='bookmark-workspace-layer-controls'>
-                            <button
-                                type='button'
-                                aria-label={t.previousFolderLayer}
-                                disabled={backLocations.length === 0}
-                                onClick={navigateBack}
-                            >
-                                <ChevronLeft aria-hidden='true' />
-                            </button>
-                            <button
-                                type='button'
-                                aria-label={t.nextFolderLayer}
-                                disabled={forwardLocations.length === 0}
-                                onClick={navigateForward}
-                            >
-                                <ChevronRight aria-hidden='true' />
-                            </button>
+                        <div className='settings-section-heading'>
+                            <h2 id={titleId}>{t.bookmarks}</h2>
+                            <p>{t.bookmarksDescription}</p>
                         </div>
-                        <h2 id={titleId}>{sidebarLayerTitle}</h2>
                         {bookmarkControls.status?.type === 'error' ? (
                             <span
                                 className={`bookmark-workspace-operation-status ${bookmarkControls.status.type}`}
@@ -1302,6 +1303,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                         <button
                             className='bookmark-workspace-header-button'
                             type='button'
+                            aria-label={t.import}
                             onClick={() => importInputRef.current?.click()}
                         >
                             <Upload aria-hidden='true' />
@@ -1310,6 +1312,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                         <button
                             className='bookmark-workspace-header-button'
                             type='button'
+                            aria-label={t.export}
                             onClick={bookmarkControls.exportBookmarks}
                         >
                             <Download aria-hidden='true' />
@@ -1332,51 +1335,72 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                 </small>
                             )}
                         </button>
-                        <button
-                            className='bookmark-workspace-icon-button'
-                            type='button'
-                            aria-label={t.cancel}
-                            onClick={requestDialogClose}
-                        >
-                            <X aria-hidden='true' />
-                        </button>
                     </div>
                 </header>
 
+                <div
+                    className='bookmark-settings-toolbar'
+                    inert={editorDraft !== undefined}
+                >
+                    <div className='bookmark-settings-path'>
+                        <div className='bookmark-workspace-layer-controls'>
+                            <button
+                                type='button'
+                                aria-label={t.previousFolderLayer}
+                                disabled={backLocations.length === 0}
+                                onClick={navigateBack}
+                            >
+                                <ChevronLeft aria-hidden='true' />
+                            </button>
+                            <button
+                                type='button'
+                                aria-label={t.nextFolderLayer}
+                                disabled={forwardLocations.length === 0}
+                                onClick={navigateForward}
+                            >
+                                <ChevronRight aria-hidden='true' />
+                            </button>
+                        </div>
+                        <span>{sidebarLayerTitle}</span>
+                    </div>
+                    <div
+                        className='bookmark-workspace-search quiet'
+                        role='search'
+                    >
+                        <Search aria-hidden='true' />
+                        <input
+                            ref={queryInputRef}
+                            type='search'
+                            aria-label={t.bookmarkSearch}
+                            placeholder={t.bookmarkSearch}
+                            value={query}
+                            onChange={(event) => {
+                                setQuery(event.target.value);
+                            }}
+                        />
+                        {query === '' ? undefined : (
+                            <button
+                                type='button'
+                                aria-label={t.cancel}
+                                onClick={() => {
+                                    setQuery('');
+                                    queryInputRef.current?.focus();
+                                }}
+                            >
+                                <X aria-hidden='true' />
+                            </button>
+                        )}
+                    </div>
+                </div>
                 <DragDropProvider onDragEnd={handleDragEnd}>
-                    <div className='bookmark-manager-body bookmark-workspace-grid'>
+                    <div
+                        className='bookmark-settings-browser bookmark-workspace-grid'
+                        inert={editorDraft !== undefined}
+                    >
                         <aside
                             className='bookmark-workspace-tree-pane'
                             aria-label={sidebarLayerTitle}
                         >
-                            <div
-                                className='bookmark-workspace-search quiet'
-                                role='search'
-                            >
-                                <Search aria-hidden='true' />
-                                <input
-                                    ref={queryInputRef}
-                                    type='search'
-                                    aria-label={t.bookmarkSearch}
-                                    placeholder={t.bookmarkSearch}
-                                    value={query}
-                                    onChange={(event) => {
-                                        setQuery(event.target.value);
-                                    }}
-                                />
-                                {query === '' ? undefined : (
-                                    <button
-                                        type='button'
-                                        aria-label={t.cancel}
-                                        onClick={() => {
-                                            setQuery('');
-                                            queryInputRef.current?.focus();
-                                        }}
-                                    >
-                                        <X aria-hidden='true' />
-                                    </button>
-                                )}
-                            </div>
                             <BookmarkSidebarDropTarget
                                 disabled={
                                     bookmarkControls.isLoading ||
@@ -1479,17 +1503,32 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                                         />
                                                     </button>
                                                 ) : bookmark ? (
-                                                    <a
+                                                    <button
                                                         className='bookmark-workspace-tree-item'
-                                                        href={bookmark.url}
-                                                        target='_blank'
-                                                        rel='noreferrer'
+                                                        type='button'
+                                                        onClick={() => {
+                                                            editBookmark(
+                                                                item.containerLocation,
+                                                                bookmark
+                                                            );
+                                                        }}
                                                     >
                                                         <LinkIcon aria-hidden='true' />
-                                                        <span>
-                                                            {bookmark.title}
+                                                        <span className='bookmark-settings-link-copy'>
+                                                            <strong>
+                                                                {bookmark.title}
+                                                            </strong>
+                                                            <small>
+                                                                {getBookmarkHost(
+                                                                    bookmark.url
+                                                                )}
+                                                            </small>
                                                         </span>
-                                                    </a>
+                                                        <MoreHorizontal
+                                                            className='bookmark-workspace-layer-chevron'
+                                                            aria-hidden='true'
+                                                        />
+                                                    </button>
                                                 ) : undefined}
                                             </BookmarkLocationDropTarget>
                                         );
@@ -1769,19 +1808,11 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                 </DragDropProvider>
 
                 {editorDraft === undefined ? undefined : (
-                    <div
-                        className='bookmark-workspace-editor-backdrop'
-                        onMouseDown={(event) => {
-                            if (event.target === event.currentTarget) {
-                                cancelEditor();
-                            }
-                        }}
-                    >
+                    <aside className='bookmark-settings-editor'>
                         <div
-                            className='bookmark-workspace-editor-dialog'
-                            role='dialog'
+                            className='bookmark-settings-editor-content'
+                            role='region'
                             aria-label={formTitle}
-                            aria-modal='true'
                             onPointerDownCapture={(event) => {
                                 const { target } = event;
                                 if (!(target instanceof Element)) {
@@ -2147,7 +2178,7 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    </aside>
                 )}
 
                 {isTrashOpen ? (
@@ -2339,7 +2370,6 @@ export const BookmarkManagerDialog: React.FC<BookmarkManagerDialogProps> = ({
                     </div>
                 )}
             </div>
-        </div>,
-        globalThis.document.body
+        </div>
     );
 };

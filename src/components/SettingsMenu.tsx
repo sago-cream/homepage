@@ -8,14 +8,12 @@ import React, {
 import {
     Check,
     ChevronDown,
-    ChevronRight,
     LayoutGrid,
     MapPin,
     MapPinOff,
     Monitor,
     Moon,
     Palette,
-    Pencil,
     Rss,
     Settings,
     SlidersHorizontal,
@@ -55,7 +53,8 @@ import {
 } from '@/utils/preferenceCookies';
 import { getCssUrlValue } from '@/utils/wallpaperStyle';
 import { wallpaperAcceptedContentTypes } from '../../shared/wallpaper';
-import { BookmarkManagerDialog } from './BookmarkManagerDialog';
+import { BookmarkManager } from './BookmarkManager';
+import type { BookmarkManagerHandle } from './BookmarkManager';
 import { FeedSettingsSection } from './FeedSettingsSection';
 
 type SettingsSectionId = 'appearance' | 'preferences' | 'feeds' | 'content';
@@ -402,7 +401,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     const [animationMode, setAnimationMode] = useState<AnimationMode>(() =>
         getInitialAnimationMode(initialPreferences.animationMode)
     );
-    const [isBookmarkManagerOpen, setIsBookmarkManagerOpen] = useState(false);
+    const bookmarkManagerRef = useRef<BookmarkManagerHandle>(null);
     const [selectedThemeColor, setSelectedThemeColor] = useState<ThemeColor>(
         initialPreferences.themeColor
     );
@@ -444,6 +443,14 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         setHasHydratedThemePreferences(true);
     }, [initialPreferences.themeColor, initialPreferences.themeMode]);
 
+    const requestSettingsClose = useCallback(() => {
+        if (bookmarkManagerRef.current === null) {
+            setMenuOpen(false);
+        } else if (!bookmarkManagerRef.current.requestClose()) {
+            setSelectedSection('content');
+        }
+    }, [setMenuOpen]);
+
     useEffect(() => {
         if (!isOpen) {
             return undefined;
@@ -452,13 +459,13 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         const previousOverflow = globalThis.document.body.style.overflow;
         const previouslyFocused = globalThis.document.activeElement;
         const onKeyDown = (event: KeyboardEvent) => {
-            if (event.key === 'Escape') {
+            if (event.key === 'Escape' && !event.defaultPrevented) {
                 event.preventDefault();
                 if (openDropdownIdRef.current !== undefined) {
                     setOpenDropdownId(undefined);
                     return;
                 }
-                setMenuOpen(false);
+                requestSettingsClose();
             }
         };
 
@@ -477,7 +484,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                 previouslyFocused.focus();
             }
         };
-    }, [isOpen, setMenuOpen]);
+    }, [isOpen, requestSettingsClose]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -604,7 +611,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         {
             icon: LayoutGrid,
             id: 'content',
-            label: t.content,
+            label: t.bookmarks,
         },
     ] satisfies ReadonlyArray<{
         icon: typeof Palette;
@@ -657,7 +664,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                   aria-label={t.cancel}
                                   ref={closeButtonRef}
                                   onClick={() => {
-                                      setMenuOpen(false);
+                                      requestSettingsClose();
                                   }}
                               >
                                   <X className='icon' size={20} />
@@ -1153,43 +1160,13 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                   className='settings-page-section'
                                   hidden={selectedSection !== 'content'}
                               >
-                                  <div className='settings-section-heading'>
-                                      <h2>{t.content}</h2>
-                                      <p>{t.contentDescription}</p>
-                                  </div>
-                                  <div className='settings-card'>
-                                      <button
-                                          className='settings-row settings-navigation-row'
-                                          type='button'
-                                          disabled={!bookmarkControls.canEdit}
-                                          onClick={() => {
-                                              setIsBookmarkManagerOpen(true);
-                                              setMenuOpen(false);
-                                          }}
-                                      >
-                                          <div className='settings-row-copy'>
-                                              <span className='settings-row-label'>
-                                                  {t.bookmarks}
-                                              </span>
-                                              <span className='settings-row-description'>
-                                                  {t.bookmarksDescription}
-                                              </span>
-                                          </div>
-                                          <span className='settings-navigation-action'>
-                                              <Pencil
-                                                  className='icon'
-                                                  size={16}
-                                                  aria-hidden
-                                              />
-                                              <span>{t.manageBookmarks}</span>
-                                              <ChevronRight
-                                                  className='icon'
-                                                  size={16}
-                                                  aria-hidden
-                                              />
-                                          </span>
-                                      </button>
-                                  </div>
+                                  <BookmarkManager
+                                      ref={bookmarkManagerRef}
+                                      bookmarkControls={bookmarkControls}
+                                      onClose={() => {
+                                          setMenuOpen(false);
+                                      }}
+                                  />
                               </section>
                           </div>
                       </section>
@@ -1224,14 +1201,6 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                 </button>
             )}
             {settingsPage}
-            {isBookmarkManagerOpen ? (
-                <BookmarkManagerDialog
-                    bookmarkControls={bookmarkControls}
-                    onClose={() => {
-                        setIsBookmarkManagerOpen(false);
-                    }}
-                />
-            ) : undefined}
         </div>
     );
 };
