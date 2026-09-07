@@ -611,7 +611,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         {
             icon: LayoutGrid,
             id: 'content',
-            label: t.content,
+            label: t.bookmarks,
         },
     ] satisfies ReadonlyArray<{
         icon: typeof Palette;
@@ -1160,10 +1160,6 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                   className='settings-page-section'
                                   hidden={selectedSection !== 'content'}
                               >
-                                  <div className='settings-section-heading'>
-                                      <h2>{t.content}</h2>
-                                      <p>{t.contentDescription}</p>
-                                  </div>
                                   <BookmarkManager
                                       ref={bookmarkManagerRef}
                                       bookmarkControls={bookmarkControls}

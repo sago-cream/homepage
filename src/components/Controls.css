@@ -4434,30 +4434,167 @@ a.bookmark-workspace-tree-item {
     visibility: hidden;
 }
 
-.bookmark-workspace.bookmark-workspace-embedded {
-    position: relative;
+/* Bookmark settings use the page flow; only confirmations remain overlays. */
+.bookmark-settings {
     width: 100%;
-    height: max(32rem, calc(100svh - 17rem));
-    max-height: none;
+    height: auto;
     min-width: 0;
-    border: 1px solid var(--bookmark-workspace-column-border);
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    align-items: start;
+    gap: 1.5rem;
+}
+
+.bookmark-settings[data-editing='true'] {
+    grid-template-columns: minmax(0, 1fr) minmax(20rem, 24rem);
+}
+
+.bookmark-settings-heading,
+.bookmark-settings-toolbar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-width: 0;
+    flex-wrap: wrap;
+}
+
+.bookmark-settings-heading .bookmark-workspace-header-actions {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.bookmark-settings-toolbar {
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--clr-text-alpha-2);
+}
+
+.bookmark-settings-path {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font: var(--fontBoldSm);
+}
+
+.bookmark-settings-path > span {
+    overflow-wrap: anywhere;
+}
+
+.bookmark-settings-toolbar .bookmark-workspace-search {
+    flex: 0 1 22rem;
+    width: auto;
+    min-width: 12rem;
+    margin: 0;
+    background-color: var(--clr-panel-bg);
+}
+
+.bookmark-settings-browser {
+    grid-column: 1;
+    min-width: 0;
+    min-height: 16rem;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: start;
+}
+
+.bookmark-settings[data-browsing='true'] .bookmark-settings-browser {
+    grid-template-columns: minmax(12rem, 0.35fr) minmax(0, 1fr);
+}
+
+.bookmark-settings .bookmark-workspace-tree-pane,
+.bookmark-settings .bookmark-workspace-list-pane {
+    min-width: 0;
+    padding: 0;
+    overflow: visible;
+    border: 0;
+    background: transparent;
+}
+
+.bookmark-settings .bookmark-workspace-list-pane[data-empty='true'] {
+    display: none;
+}
+
+.bookmark-settings .bookmark-workspace-tree {
+    padding: 0;
+    overflow: visible;
+}
+
+.bookmark-settings .bookmark-workspace-tree-row {
+    min-height: 3.5rem;
+}
+
+.bookmark-settings .bookmark-workspace-tree-item {
+    min-height: 3.5rem;
+    padding: 0.75rem;
+}
+
+.bookmark-settings-link-copy {
+    min-width: 0;
+    display: grid;
+    gap: 0.25rem;
+}
+
+.bookmark-settings-link-copy strong {
+    font: var(--fontBoldSm);
+}
+
+.bookmark-settings-link-copy small {
+    color: var(--clr-text-alpha);
+    font: var(--fontBaseSm);
+}
+
+.bookmark-settings-editor {
+    grid-column: 2;
+    grid-row: 3;
+    position: sticky;
+    top: 7rem;
+    min-width: 0;
+    padding: 1.5rem;
     border-radius: 1rem;
-    box-shadow: none;
-    animation: none;
+    background-color: var(--clr-panel-bg);
+    box-shadow: var(--shadow-panel);
 }
 
-.bookmark-workspace-embedded .bookmark-workspace-grid {
-    grid-template-columns: minmax(12rem, 0.8fr) minmax(0, 1fr);
+.bookmark-settings-editor .bookmark-workspace-form {
+    padding: 0;
 }
 
-@media (width < 48rem) {
-    .bookmark-workspace-embedded .bookmark-workspace-grid {
+@media (width < 64rem) {
+    .bookmark-settings[data-editing='true'] {
         grid-template-columns: minmax(0, 1fr);
     }
 
-    .bookmark-workspace-embedded .bookmark-workspace-tree-pane {
-        max-height: 18rem;
-        border-right: 0;
-        border-bottom: 1px solid var(--bookmark-workspace-column-border);
+    .bookmark-settings[data-editing='true'] .bookmark-settings-browser {
+        display: none;
+    }
+
+    .bookmark-settings-editor {
+        grid-column: 1;
+        position: static;
+    }
+}
+
+@media (width < 48rem) {
+    .bookmark-settings[data-browsing='true'] .bookmark-settings-browser {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .bookmark-settings-toolbar .bookmark-workspace-search {
+        flex-basis: 100%;
+    }
+
+    .bookmark-settings .bookmark-workspace-header-button {
+        display: inline-flex;
+        min-height: 2.5rem;
+    }
+
+    .bookmark-settings .bookmark-workspace-header-button span {
+        display: inline;
     }
 }
