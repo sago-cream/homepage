@@ -1,4 +1,3 @@
-import type { ThemeMode } from '@/constants/theme';
 import { themeResolvedStorageKey, themeStorageKey } from '@/constants/theme';
 import { createBlobPath } from '@/hooks/themeTransitionUtils';
 import { writePreferenceCookie } from '@/utils/preferenceCookies';
@@ -6,39 +5,24 @@ import { writePreferenceCookie } from '@/utils/preferenceCookies';
 interface ThemeTransitionOptions {
     button: HTMLButtonElement;
     isDarkMode: boolean;
-    nextDarkMode?: boolean;
-    onCommit?: () => void;
-    themeMode?: ThemeMode;
 }
 
-const applyTheme = (
-    nextDarkMode: boolean,
-    themeMode: ThemeTransitionOptions['themeMode'],
-    onCommit?: ThemeTransitionOptions['onCommit']
-) => {
+const applyTheme = (nextDarkMode: boolean) => {
     const nextTheme = nextDarkMode ? 'dark' : 'light';
     const root = globalThis.document.documentElement;
 
     root.dataset.theme = nextTheme;
-    if (themeMode !== undefined) {
-        root.dataset.themeMode = themeMode;
-    }
+    root.dataset.themeMode = nextTheme;
     root.style.colorScheme = nextTheme;
-    globalThis.localStorage.setItem(themeStorageKey, themeMode ?? nextTheme);
-    writePreferenceCookie(themeStorageKey, themeMode ?? nextTheme);
+    globalThis.localStorage.setItem(themeStorageKey, nextTheme);
+    writePreferenceCookie(themeStorageKey, nextTheme);
     writePreferenceCookie(themeResolvedStorageKey, nextTheme);
-    onCommit?.();
 };
 
 export const runThemeTransition = ({
     button,
     isDarkMode,
-    nextDarkMode: requestedNextDarkMode,
-    onCommit,
-    themeMode,
 }: ThemeTransitionOptions): boolean => {
-    const darkTheme = 'dark';
-    const lightTheme = 'light';
     const searchSelector = '.search';
     const searchIconSelector = '.search-icon .icon';
     const transitionXVar = '--theme-transition-x';
@@ -66,8 +50,7 @@ export const runThemeTransition = ({
     const lightFinalExpandEasing = 'cubic-bezier(0.16, 0.9, 0.22, 1)';
 
     const root = globalThis.document.documentElement;
-    const nextDarkMode = requestedNextDarkMode ?? !isDarkMode;
-    const nextTheme = nextDarkMode ? darkTheme : lightTheme;
+    const nextDarkMode = !isDarkMode;
     const searchElement = globalThis.document.querySelector(searchSelector);
     const searchRect = searchElement?.getBoundingClientRect();
     let transitionCenterX = globalThis.innerWidth / 2;
@@ -105,18 +88,7 @@ export const runThemeTransition = ({
     ];
 
     const commitTheme = () => {
-        root.dataset.theme = nextTheme;
-        if (themeMode !== undefined) {
-            root.dataset.themeMode = themeMode;
-        }
-        root.style.colorScheme = nextTheme;
-        globalThis.localStorage.setItem(
-            themeStorageKey,
-            themeMode ?? nextTheme
-        );
-        writePreferenceCookie(themeStorageKey, themeMode ?? nextTheme);
-        writePreferenceCookie(themeResolvedStorageKey, nextTheme);
-        onCommit?.();
+        applyTheme(nextDarkMode);
     };
 
     if ('startViewTransition' in globalThis.document) {
@@ -147,23 +119,32 @@ export const runThemeTransition = ({
                         globalThis.innerHeight - searchIconCenterY
                     )
                 );
+                const circleCenter = `${(searchIconCenterX / globalThis.innerWidth) * 100}% ${(searchIconCenterY / globalThis.innerHeight) * 100}%`;
+                const circleRadiusPercent =
+                    (circularMaxRadius /
+                        (Math.hypot(
+                            globalThis.innerWidth,
+                            globalThis.innerHeight
+                        ) /
+                            Math.SQRT2)) *
+                    100;
                 const circleFrames = [
                     {
-                        clipPath: `circle(0px at ${searchIconCenterX}px ${searchIconCenterY}px)`,
+                        clipPath: `circle(0% at ${circleCenter})`,
                         offset: 0,
                         easing: lightMidExpandEasing,
                     },
                     {
-                        clipPath: `circle(${(circularMaxRadius * circleMidScale).toFixed(2)}px at ${searchIconCenterX}px ${searchIconCenterY}px)`,
+                        clipPath: `circle(${circleRadiusPercent * circleMidScale}% at ${circleCenter})`,
                         offset: circleMidOffset,
                         easing: lightFinalExpandEasing,
                     },
                     {
-                        clipPath: `circle(${(circularMaxRadius * circleScalePeak).toFixed(2)}px at ${searchIconCenterX}px ${searchIconCenterY}px)`,
+                        clipPath: `circle(${circleRadiusPercent * circleScalePeak}% at ${circleCenter})`,
                         offset: 0.9,
                     },
                     {
-                        clipPath: `circle(${(circularMaxRadius * circleScaleEnd).toFixed(2)}px at ${searchIconCenterX}px ${searchIconCenterY}px)`,
+                        clipPath: `circle(${circleRadiusPercent * circleScaleEnd}% at ${circleCenter})`,
                         offset: 1,
                     },
                 ];
@@ -178,12 +159,12 @@ export const runThemeTransition = ({
                 });
             })
             .catch(() => {
-                applyTheme(nextDarkMode, themeMode, onCommit);
+                applyTheme(nextDarkMode);
             });
 
         return nextDarkMode;
     }
 
-    applyTheme(nextDarkMode, themeMode, onCommit);
+    applyTheme(nextDarkMode);
     return nextDarkMode;
 };
