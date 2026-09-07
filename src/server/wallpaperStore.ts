@@ -192,6 +192,15 @@ export const clearUserWallpaper = async (
     }
 
     if (data !== null) {
-        await deleteWallpaperObject(client, data.object_key);
+        // Metadata deletion is authoritative. A failed cleanup must not leave clients displaying a
+        // wallpaper that no longer exists in the database.
+        await deleteWallpaperObject(client, data.object_key).catch(
+            (deleteError: unknown) => {
+                console.error(
+                    'Failed to delete removed wallpaper:',
+                    deleteError
+                );
+            }
+        );
     }
 };

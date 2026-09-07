@@ -8,7 +8,6 @@ import type { InitialAppPreferences } from '@/types/preferences';
 import { decorateBookmarkTree } from '@/utils/bookmarkPresentation';
 import { isBrowser } from '@/utils/browserEnv';
 import { runThemeTransition } from '@/utils/themeTransition';
-import type { WallpaperAsset } from '../../shared/wallpaper';
 import { BookmarkEmptyState } from './BookmarkEmptyState';
 import { LinkCategory } from './LinkCategory';
 import { MobileBookmarks } from './MobileBookmarks';
@@ -26,8 +25,6 @@ interface LinkPanelProps {
     initialPreferences: InitialAppPreferences;
     onClearSearch: () => void;
     onToggleLockedOpen: () => void;
-    initialWallpaper: WallpaperAsset | undefined;
-    onWallpaperChange: (wallpaper: WallpaperAsset | undefined) => void;
 }
 
 const areFolderPathsEqual = (
@@ -49,8 +46,6 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
     initialPreferences,
     onClearSearch,
     onToggleLockedOpen,
-    initialWallpaper,
-    onWallpaperChange,
 }) => {
     const {
         selectedCategory,
@@ -196,9 +191,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                 className='mobile-user-floating-bar'
                 closeMenusSignal={mouseLeaveCloseSignal}
                 initialPreferences={initialPreferences}
-                initialWallpaper={initialWallpaper}
                 isSupabaseEnabled={isSupabaseEnabled}
-                onWallpaperChange={onWallpaperChange}
                 settingsPlacement='mobile'
                 showSettingsInMenu
             />
@@ -304,9 +297,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                     className='desktop-user-floating-bar'
                     closeMenusSignal={mouseLeaveCloseSignal}
                     initialPreferences={initialPreferences}
-                    initialWallpaper={initialWallpaper}
                     isSupabaseEnabled={isSupabaseEnabled}
-                    onWallpaperChange={onWallpaperChange}
                 />
             </div>
         </nav>
