@@ -665,6 +665,61 @@
     background: var(--bookmark-item-hover-bg);
 }
 
+/* Skip closed subtrees only after their exit motion finishes. Browsers without
+   discrete transitions retain the existing offscreen-panel behavior. */
+@supports (content-visibility: hidden) and (transition-behavior: allow-discrete) {
+    .link-tree,
+    .links,
+    .links .bookmark-submenu,
+    .mobile-bookmark-page {
+        content-visibility: hidden;
+    }
+
+    .link-tree {
+        transition:
+            translate var(--motion-duration-fast) var(--motion-ease-out),
+            content-visibility var(--motion-duration-fast) allow-discrete;
+    }
+
+    .links {
+        transition:
+            translate var(--motion-duration-base) var(--motion-duration-fast)
+                var(--motion-ease-out),
+            content-visibility var(--motion-duration-base)
+                var(--motion-duration-fast) allow-discrete;
+    }
+
+    .links .bookmark-submenu {
+        transition:
+            opacity var(--motion-duration-fast) var(--motion-ease-out),
+            content-visibility var(--motion-duration-fast) allow-discrete;
+    }
+
+    .mobile-bookmark-page {
+        transition:
+            transform var(--motion-duration-base) var(--motion-ease-out),
+            content-visibility var(--motion-duration-base) allow-discrete;
+    }
+
+    .link-panel.hoverEffective .link-tree,
+    .link-tree.expanded,
+    .link-tree.focus-within,
+    .link-panel.hoverEffective:not(.category-layer-locked)
+        .category:hover
+        + .links,
+    .category.selected + .links,
+    .category.clicked + .links,
+    .hoverEffective .links:hover,
+    .links:has(:focus-visible),
+    .links .folder-node:not(.layer-locked):hover > .bookmark-submenu,
+    .links .folder-node.clicked:hover > .bookmark-submenu,
+    .links .folder-node:focus-within > .bookmark-submenu,
+    .links .folder-node.expanded > .bookmark-submenu,
+    .mobile-bookmark-page.open {
+        content-visibility: visible;
+    }
+}
+
 @media (width < 37.5rem) {
     .link-panel .trigger,
     .link-panel .panel-lock-control,
