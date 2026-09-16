@@ -4,12 +4,14 @@ import { Moon, PanelLeft, PanelLeftClose, Sun } from 'lucide-react';
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useLinkNavigation } from '@/hooks/useLinkNavigation';
 import { useLocale } from '@/hooks/useLocale';
+import { useMenuAim } from '@/hooks/useMenuAim';
 import type { InitialAppPreferences } from '@/types/preferences';
 import { decorateBookmarkTree } from '@/utils/bookmarkPresentation';
 import { isBrowser } from '@/utils/browserEnv';
 import { runThemeTransition } from '@/utils/themeTransition';
 import { BookmarkEmptyState } from './BookmarkEmptyState';
 import { LinkCategory } from './LinkCategory';
+import { MenuSafetyTriangle } from './MenuSafetyTriangle';
 import { MobileBookmarks } from './MobileBookmarks';
 import { UserFloatingBar } from './UserFloatingBar';
 
@@ -59,9 +61,14 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
     const [windowHeight, setWindowHeight] = useState(() =>
         isBrowser() ? globalThis.innerHeight : 768
     );
+    const [debugMenuAim, setDebugMenuAim] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [clickedCategory, setClickedCategory] = useState<number>();
     const [clickedFolderPath, setClickedFolderPath] = useState<string[]>([]);
+    const categoryAim = useMenuAim(
+        isMouseNav && !hidden && clickedCategory === undefined,
+        bookmarkControls.bookmarkTree
+    );
     const isExpanded = selectedCategory !== 0 || clickedCategory !== undefined;
     const bookmarkTree = useMemo(
         () => decorateBookmarkTree(bookmarkControls.bookmarkTree),
@@ -71,6 +78,12 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
         bookmarkControls.status === undefined
             ? undefined
             : t[bookmarkControls.status.messageKey];
+
+    useEffect(() => {
+        setDebugMenuAim(
+            new URLSearchParams(globalThis.location.search).has('debugMenuAim')
+        );
+    }, []);
 
     useEffect(() => {
         const onResize = () => {
@@ -153,6 +166,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
         <nav
             className={[
                 'link-panel',
+                debugMenuAim && 'debug-menu-aim',
                 isMouseNav && 'hoverEffective',
                 isSearchNav && 'search-nav',
                 clickedCategory !== undefined && 'category-layer-locked',
@@ -167,6 +181,16 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
             aria-hidden={hidden}
             aria-expanded={isLockedOpen || isExpanded || isMobileOpen}
         >
+            <button
+                className='menu-aim-debug-toggle'
+                type='button'
+                aria-pressed={debugMenuAim}
+                onClick={() => {
+                    setDebugMenuAim((enabled) => !enabled);
+                }}
+            >
+                {debugMenuAim ? 'Safety triangles: on' : 'Debug menu aim'}
+            </button>
             <MobileBookmarks
                 bookmarkTree={bookmarkTree}
                 bookmarksLabel={t.bookmarks}
@@ -251,6 +275,8 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                     )}
             </div>
             <div
+                data-menu-level
+                ref={categoryAim.ref}
                 className={[
                     'link-tree',
                     (isExpanded || isLockedOpen) && 'expanded',
@@ -259,6 +285,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                     .join(' ')}
             >
                 <div className='panel' />
+                <MenuSafetyTriangle points={categoryAim.triangle} />
                 {bookmarkTree.length === 0 ? (
                     <BookmarkEmptyState
                         bookmarkControls={bookmarkControls}
@@ -275,6 +302,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                             key={`${categoryData.category}-${i}`}
                             categoryData={categoryData}
                             index={i}
+                            isHovered={categoryAim.activeId === String(i + 1)}
                             clickedCategory={clickedCategory}
                             clickedFolderPath={
                                 clickedCategory === i + 1
