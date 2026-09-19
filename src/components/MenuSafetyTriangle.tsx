@@ -5,7 +5,7 @@ import type { MenuPoint } from '@/hooks/useMenuAim';
 export const MenuSafetyTriangle = ({
     points,
 }: {
-    points: MenuPoint[];
+    points: readonly MenuPoint[];
 }): React.JSX.Element => {
     const ref = useRef<HTMLDivElement>(null);
     useLayoutEffect(() => {

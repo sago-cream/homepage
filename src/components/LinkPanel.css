@@ -369,7 +369,7 @@
     z-index: 20;
 
     opacity: 1;
-    pointer-events: all;
+    pointer-events: inherit;
 
     .panel {
         position: absolute;
@@ -496,6 +496,7 @@
     pointer-events: none;
 
     > .panel {
+        pointer-events: none;
         width: calc(var(--width) * 2);
         height: inherit;
         position: absolute;
@@ -608,7 +609,7 @@
 
     .bookmark-submenu
         > .bookmark-node-list
-        > .bookmark-node:nth-child(2)
+        > .bookmark-node:first-child
         > .link {
         border-top-right-radius: var(--bookmark-panel-radius);
     }
@@ -623,7 +624,7 @@
     .folder-node:focus-within > .bookmark-submenu,
     .folder-node.expanded > .bookmark-submenu {
         opacity: 1;
-        pointer-events: all;
+        pointer-events: inherit;
         translate: none;
     }
 
@@ -639,7 +640,7 @@
 .category.clicked + .links,
 .links:has(:focus-visible) {
     translate: var(--width);
-    pointer-events: all;
+    pointer-events: inherit;
 }
 
 .link.highlighted,

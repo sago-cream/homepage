@@ -1,10 +1,5 @@
-import React, {
-    Fragment,
-    useCallback,
-    useEffect,
-    useRef,
-    useState,
-} from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { FloatingNode } from '@floating-ui/react';
 
 import { useMenuAim } from '@/hooks/useMenuAim';
 import type { BookmarkFolderData, BookmarkNodeData } from '@/types/bookmarks';
@@ -15,7 +10,6 @@ import { MenuSafetyTriangle } from './MenuSafetyTriangle';
 
 interface LinkCategoryProps {
     categoryData: CategoryData;
-    isHovered?: boolean;
     clickedCategory?: number;
     clickedFolderPath: readonly string[];
     index: number;
@@ -56,7 +50,6 @@ interface BookmarkNodeListProps {
 
 interface BookmarkFolderNodeProps {
     categoryIndex: number;
-    isHovered: boolean;
     clickedFolderPath: readonly string[];
     currentFolderPath: readonly string[];
     depth: number;
@@ -91,7 +84,6 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
     highlightedFolderPath,
     highlightedLinkId,
     isMouseNav,
-    isHovered,
     node,
     onSelectFolder,
     onSelectLink,
@@ -106,10 +98,11 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
         clickedFolderPath.length > currentFolderPath.length;
     const isHighlighted = highlightedFolderPath?.[depth] === node.id;
     const isExpanded = isHighlighted || isClicked;
-    const isOpen =
-        isExpanded ||
-        isFocused ||
-        (isMouseNav && isHovered && (!isFolderLayerLocked || isClicked));
+    const aim = useMenuAim(
+        isMouseNav && !isFolderLayerLocked,
+        isExpanded || isFocused
+    );
+    const isOpen = aim.open;
     const updateSubmenuPlacement = useCallback(() => {
         const folderNode = folderNodeRef.current;
         const submenu = submenuRef.current;
@@ -133,11 +126,12 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
             globalThis.innerWidth - submenuViewportPadding;
         submenu.style.left = `${opensLeft ? anchor.left - width : anchor.right}px`;
         submenu.dataset.side = opensLeft ? 'left' : 'right';
+        aim.setPlacement(opensLeft ? 'left-start' : 'right-start');
         const submenuHeight = Math.min(submenu.scrollHeight, availableHeight);
         const maxTop = Math.max(topLimit, bottomLimit - submenuHeight);
         const submenuTop = Math.min(Math.max(anchorTop, topLimit), maxTop);
         submenu.style.top = `${Math.round(submenuTop)}px`;
-    }, []);
+    }, [aim.setPlacement]);
 
     useEffect(() => {
         const submenu = submenuRef.current;
@@ -190,6 +184,8 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
             ref={folderNodeRef}
         >
             <button
+                ref={aim.refs.setReference}
+                {...aim.getReferenceProps()}
                 className={[
                     'link',
                     'folder-link',
@@ -207,22 +203,35 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
                 {createBookmarkIcon(node.icon, 'icon folder-icon-display')}
                 <span>{node.title}</span>
             </button>
-            <div className='bookmark-submenu' popover='manual' ref={submenuRef}>
-                {isOpen && (
-                    <BookmarkNodeList
-                        categoryIndex={categoryIndex}
-                        clickedFolderPath={clickedFolderPath}
-                        currentFolderPath={folderPath}
-                        depth={depth + 1}
-                        highlightedFolderPath={highlightedFolderPath}
-                        highlightedLinkId={highlightedLinkId}
-                        isMouseNav={isMouseNav}
-                        nodes={node.children}
-                        onSelectFolder={onSelectFolder}
-                        onSelectLink={onSelectLink}
-                    />
-                )}
-            </div>
+            <FloatingNode id={aim.nodeId}>
+                <div
+                    className='bookmark-submenu'
+                    popover='manual'
+                    ref={(element) => {
+                        submenuRef.current = element;
+                        aim.refs.setFloating(element);
+                    }}
+                    {...aim.getFloatingProps({
+                        onMouseEnter: aim.clearTriangle,
+                    })}
+                >
+                    <MenuSafetyTriangle points={aim.triangle} />
+                    {isOpen && (
+                        <BookmarkNodeList
+                            categoryIndex={categoryIndex}
+                            clickedFolderPath={clickedFolderPath}
+                            currentFolderPath={folderPath}
+                            depth={depth + 1}
+                            highlightedFolderPath={highlightedFolderPath}
+                            highlightedLinkId={highlightedLinkId}
+                            isMouseNav={isMouseNav}
+                            nodes={node.children}
+                            onSelectFolder={onSelectFolder}
+                            onSelectLink={onSelectLink}
+                        />
+                    )}
+                </div>
+            </FloatingNode>
         </div>
     );
 };
@@ -238,73 +247,65 @@ const BookmarkNodeList: React.FC<BookmarkNodeListProps> = ({
     nodes,
     onSelectFolder,
     onSelectLink,
-}) => {
-    const aim = useMenuAim(
-        isMouseNav && clickedFolderPath.length <= currentFolderPath.length,
-        nodes
-    );
-    return (
-        <div className='bookmark-node-list' data-menu-level ref={aim.ref}>
-            <MenuSafetyTriangle points={aim.triangle} />
-            {nodes.map((node) => {
-                if (isBookmarkFolder(node)) {
-                    return (
-                        <BookmarkFolderNode
-                            categoryIndex={categoryIndex}
-                            isHovered={aim.activeId === node.id}
-                            clickedFolderPath={clickedFolderPath}
-                            currentFolderPath={currentFolderPath}
-                            depth={depth}
-                            highlightedFolderPath={highlightedFolderPath}
-                            highlightedLinkId={highlightedLinkId}
-                            isMouseNav={isMouseNav}
-                            key={node.id}
-                            node={node}
-                            onSelectFolder={onSelectFolder}
-                            onSelectLink={onSelectLink}
-                        />
-                    );
-                }
-
-                const isDisabled = node.url.trim() === '';
-                const isHighlighted = highlightedLinkId === node.id;
-
-                const linkClassName = [
-                    'link',
-                    isDisabled && 'disabled',
-                    isMouseNav && 'hoverEffective',
-                    isHighlighted && 'highlighted',
-                ]
-                    .filter(Boolean)
-                    .join(' ');
-
+}) => (
+    <div className='bookmark-node-list' data-menu-level>
+        {nodes.map((node) => {
+            if (isBookmarkFolder(node)) {
                 return (
-                    <div
-                        className='bookmark-node link-node'
-                        data-menu-row={node.id}
-                        key={`${node.id}-${node.title}`}
-                    >
-                        <a
-                            data-bookmark-id={node.id}
-                            href={isDisabled ? undefined : node.url}
-                            className={linkClassName}
-                            onClick={(event) => {
-                                if (isDisabled) {
-                                    event.preventDefault();
-                                    return;
-                                }
-
-                                onSelectLink(categoryIndex, currentFolderPath);
-                            }}
-                        >
-                            <span>{node.title}</span>
-                        </a>
-                    </div>
+                    <BookmarkFolderNode
+                        categoryIndex={categoryIndex}
+                        clickedFolderPath={clickedFolderPath}
+                        currentFolderPath={currentFolderPath}
+                        depth={depth}
+                        highlightedFolderPath={highlightedFolderPath}
+                        highlightedLinkId={highlightedLinkId}
+                        isMouseNav={isMouseNav}
+                        key={node.id}
+                        node={node}
+                        onSelectFolder={onSelectFolder}
+                        onSelectLink={onSelectLink}
+                    />
                 );
-            })}
-        </div>
-    );
-};
+            }
+
+            const isDisabled = node.url.trim() === '';
+            const isHighlighted = highlightedLinkId === node.id;
+
+            const linkClassName = [
+                'link',
+                isDisabled && 'disabled',
+                isMouseNav && 'hoverEffective',
+                isHighlighted && 'highlighted',
+            ]
+                .filter(Boolean)
+                .join(' ');
+
+            return (
+                <div
+                    className='bookmark-node link-node'
+                    data-menu-row={node.id}
+                    key={`${node.id}-${node.title}`}
+                >
+                    <a
+                        data-bookmark-id={node.id}
+                        href={isDisabled ? undefined : node.url}
+                        className={linkClassName}
+                        onClick={(event) => {
+                            if (isDisabled) {
+                                event.preventDefault();
+                                return;
+                            }
+
+                            onSelectLink(categoryIndex, currentFolderPath);
+                        }}
+                    >
+                        <span>{node.title}</span>
+                    </a>
+                </div>
+            );
+        })}
+    </div>
+);
 
 export const LinkCategory: React.FC<LinkCategoryProps> = ({
     categoryData,
@@ -312,7 +313,6 @@ export const LinkCategory: React.FC<LinkCategoryProps> = ({
     clickedFolderPath,
     index,
     isMouseNav,
-    isHovered = false,
     highlightedLinkId,
     highlightedFolderPath,
     onSelectCategory,
@@ -324,12 +324,16 @@ export const LinkCategory: React.FC<LinkCategoryProps> = ({
     const categoryIndex = index + 1;
     const isCategoryClicked = clickedCategory === categoryIndex;
     const isCategorySelected = selectedCategory === categoryIndex;
-    const isCategoryOpen = isCategorySelected || isCategoryClicked || isHovered;
+    const aim = useMenuAim(
+        isMouseNav && clickedCategory === undefined,
+        isCategorySelected || isCategoryClicked
+    );
+    const isCategoryOpen = aim.open;
 
     const categoryClassName = [
         'category',
         (isCategorySelected || isCategoryClicked) && 'selected',
-        isHovered && 'hover-open',
+        isCategoryOpen && 'hover-open',
         isCategoryClicked && 'clicked',
         isMouseNav && 'hoverEffective',
     ]
@@ -337,8 +341,10 @@ export const LinkCategory: React.FC<LinkCategoryProps> = ({
         .join(' ');
 
     return (
-        <Fragment>
+        <FloatingNode id={aim.nodeId}>
             <button
+                ref={aim.refs.setReference}
+                {...aim.getReferenceProps()}
                 data-menu-row={String(categoryIndex)}
                 className={categoryClassName}
                 type='button'
@@ -352,10 +358,13 @@ export const LinkCategory: React.FC<LinkCategoryProps> = ({
                 <span className='category-title'>{categoryData.category}</span>
             </button>
             <div
+                ref={aim.refs.setFloating}
+                {...aim.getFloatingProps({ onMouseEnter: aim.clearTriangle })}
                 className={`links ${isMouseNav ? 'hoverEffective' : ''}`}
                 style={{ '--padding': padding } as React.CSSProperties}
             >
                 <div className='panel' />
+                <MenuSafetyTriangle points={aim.triangle} />
                 {isCategoryOpen && (
                     <BookmarkNodeList
                         categoryIndex={categoryIndex}
@@ -371,6 +380,6 @@ export const LinkCategory: React.FC<LinkCategoryProps> = ({
                     />
                 )}
             </div>
-        </Fragment>
+        </FloatingNode>
     );
 };

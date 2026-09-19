@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FloatingTree } from '@floating-ui/react';
 import { Moon, PanelLeft, PanelLeftClose, Sun } from 'lucide-react';
 
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useLinkNavigation } from '@/hooks/useLinkNavigation';
 import { useLocale } from '@/hooks/useLocale';
-import { useMenuAim } from '@/hooks/useMenuAim';
+import { MenuAimDebugContext } from '@/hooks/useMenuAim';
 import type { InitialAppPreferences } from '@/types/preferences';
 import { decorateBookmarkTree } from '@/utils/bookmarkPresentation';
 import { isBrowser } from '@/utils/browserEnv';
 import { runThemeTransition } from '@/utils/themeTransition';
 import { BookmarkEmptyState } from './BookmarkEmptyState';
 import { LinkCategory } from './LinkCategory';
-import { MenuSafetyTriangle } from './MenuSafetyTriangle';
 import { MobileBookmarks } from './MobileBookmarks';
 import { UserFloatingBar } from './UserFloatingBar';
 
@@ -57,18 +57,32 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
         endMouseNav,
     } = useLinkNavigation(isSearchNav, onClearSearch, highlightedCategory);
     const { t } = useLocale(initialPreferences.locale);
+    useEffect(() => {
+        if (!isMouseNav) {
+            return undefined;
+        }
+        const onMove = (event: MouseEvent) => {
+            if (
+                event.target instanceof Element &&
+                !event.target.closest('.link-panel')
+            ) {
+                endMouseNav();
+            }
+        };
+        document.addEventListener('mousemove', onMove);
+        return () => {
+            document.removeEventListener('mousemove', onMove);
+        };
+    }, [endMouseNav, isMouseNav]);
 
     const [windowHeight, setWindowHeight] = useState(() =>
         isBrowser() ? globalThis.innerHeight : 768
     );
     const [debugMenuAim, setDebugMenuAim] = useState(false);
+    const [showMenuAimDebug, setShowMenuAimDebug] = useState(false);
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [clickedCategory, setClickedCategory] = useState<number>();
     const [clickedFolderPath, setClickedFolderPath] = useState<string[]>([]);
-    const categoryAim = useMenuAim(
-        isMouseNav && !hidden && clickedCategory === undefined,
-        bookmarkControls.bookmarkTree
-    );
     const isExpanded = selectedCategory !== 0 || clickedCategory !== undefined;
     const bookmarkTree = useMemo(
         () => decorateBookmarkTree(bookmarkControls.bookmarkTree),
@@ -80,9 +94,11 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
             : t[bookmarkControls.status.messageKey];
 
     useEffect(() => {
-        setDebugMenuAim(
-            new URLSearchParams(globalThis.location.search).has('debugMenuAim')
+        const requested = new URLSearchParams(globalThis.location.search).has(
+            'debugMenuAim'
         );
+        setDebugMenuAim(requested);
+        setShowMenuAimDebug(process.env.NODE_ENV !== 'production' || requested);
     }, []);
 
     useEffect(() => {
@@ -163,171 +179,180 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
     }, [bookmarkTree, windowHeight]);
 
     return (
-        <nav
-            className={[
-                'link-panel',
-                debugMenuAim && 'debug-menu-aim',
-                isMouseNav && 'hoverEffective',
-                isSearchNav && 'search-nav',
-                clickedCategory !== undefined && 'category-layer-locked',
-            ]
-                .filter(Boolean)
-                .join(' ')}
-            onMouseDown={(e) => {
-                e.preventDefault();
-            }}
-            onMouseMove={startMouseNav}
-            onMouseLeave={endMouseNav}
-            aria-hidden={hidden}
-            aria-expanded={isLockedOpen || isExpanded || isMobileOpen}
-        >
-            <button
-                className='menu-aim-debug-toggle'
-                type='button'
-                aria-pressed={debugMenuAim}
-                onClick={() => {
-                    setDebugMenuAim((enabled) => !enabled);
-                }}
-            >
-                {debugMenuAim ? 'Safety triangles: on' : 'Debug menu aim'}
-            </button>
-            <MobileBookmarks
-                bookmarkTree={bookmarkTree}
-                bookmarksLabel={t.bookmarks}
-                disabled={isSearchNav}
-                emptyState={
-                    <BookmarkEmptyState
-                        bookmarkControls={bookmarkControls}
-                        className='mobile-bookmark-empty-state'
-                        ctaLabel={t.importBookmarksFromBrowser}
-                        description={t.bookmarksEmptyDescription}
-                        statusMessage={bookmarkStatusMessage}
-                        statusType={bookmarkControls.status?.type}
-                        title={t.bookmarksEmpty}
-                    />
-                }
-                hidden={hidden}
-                onClearSearch={onClearSearch}
-                onOpenChange={setIsMobileOpen}
-            />
-            <UserFloatingBar
-                bookmarkControls={bookmarkControls}
-                className='mobile-user-floating-bar'
-                closeMenusSignal={mouseLeaveCloseSignal}
-                initialPreferences={initialPreferences}
-                isSupabaseEnabled={isSupabaseEnabled}
-                settingsPlacement='mobile'
-                showSettingsInMenu
-            />
-            <div className={`trigger ${hidden && 'hidden'}`} />
-            <div
-                className='panel-lock-control'
-                onMouseMove={(event) => {
-                    event.stopPropagation();
-                }}
-            >
-                <button
-                    className='panel-lock-trigger'
-                    type='button'
-                    aria-label={
-                        isLockedOpen
-                            ? 'Unlock bookmark panel'
-                            : 'Lock bookmark panel open'
-                    }
-                    aria-pressed={isLockedOpen}
-                    onClick={onToggleLockedOpen}
+        <MenuAimDebugContext value={debugMenuAim}>
+            <FloatingTree>
+                <nav
+                    className={[
+                        'link-panel',
+                        debugMenuAim && 'debug-menu-aim',
+                        isMouseNav && 'hoverEffective',
+                        isSearchNav && 'search-nav',
+                        clickedCategory !== undefined &&
+                            'category-layer-locked',
+                    ]
+                        .filter(Boolean)
+                        .join(' ')}
+                    onMouseDown={(e) => {
+                        e.preventDefault();
+                    }}
+                    onMouseMove={startMouseNav}
+                    onMouseLeave={endMouseNav}
+                    aria-hidden={hidden}
+                    aria-expanded={isLockedOpen || isExpanded || isMobileOpen}
                 >
-                    {isLockedOpen ? (
-                        <PanelLeftClose className='icon' size={20} />
-                    ) : (
-                        <PanelLeft className='icon' size={20} />
-                    )}
-                </button>
-                {!isLockedOpen &&
-                    !isExpanded &&
-                    !isMobileOpen &&
-                    !isMouseNav && (
+                    {showMenuAimDebug && (
                         <button
-                            className='panel-lock-trigger theme-toggle-trigger'
+                            className='menu-aim-debug-toggle'
                             type='button'
-                            aria-label={t.theme}
-                            title={t.theme}
-                            onClick={(event) => {
-                                runThemeTransition({
-                                    button: event.currentTarget,
-                                    isDarkMode:
-                                        globalThis.document.documentElement
-                                            .dataset.theme === 'dark',
-                                });
+                            aria-pressed={debugMenuAim}
+                            onClick={() => {
+                                setDebugMenuAim((enabled) => !enabled);
                             }}
                         >
-                            <Sun
-                                className='icon theme-icon-light'
-                                size={20}
-                                aria-hidden
-                            />
-                            <Moon
-                                className='icon theme-icon-dark'
-                                size={20}
-                                aria-hidden
-                            />
+                            {debugMenuAim
+                                ? 'Safety triangles: on'
+                                : 'Debug menu aim'}
                         </button>
                     )}
-            </div>
-            <div
-                data-menu-level
-                ref={categoryAim.ref}
-                className={[
-                    'link-tree',
-                    (isExpanded || isLockedOpen) && 'expanded',
-                ]
-                    .filter(Boolean)
-                    .join(' ')}
-            >
-                <div className='panel' />
-                <MenuSafetyTriangle points={categoryAim.triangle} />
-                {bookmarkTree.length === 0 ? (
-                    <BookmarkEmptyState
-                        bookmarkControls={bookmarkControls}
-                        className='bookmark-panel-empty-state'
-                        ctaLabel={t.importBookmarksFromBrowser}
-                        description={t.bookmarksEmptyDescription}
-                        statusMessage={bookmarkStatusMessage}
-                        statusType={bookmarkControls.status?.type}
-                        title={t.bookmarksEmpty}
+                    <MobileBookmarks
+                        bookmarkTree={bookmarkTree}
+                        bookmarksLabel={t.bookmarks}
+                        disabled={isSearchNav}
+                        emptyState={
+                            <BookmarkEmptyState
+                                bookmarkControls={bookmarkControls}
+                                className='mobile-bookmark-empty-state'
+                                ctaLabel={t.importBookmarksFromBrowser}
+                                description={t.bookmarksEmptyDescription}
+                                statusMessage={bookmarkStatusMessage}
+                                statusType={bookmarkControls.status?.type}
+                                title={t.bookmarksEmpty}
+                            />
+                        }
+                        hidden={hidden}
+                        onClearSearch={onClearSearch}
+                        onOpenChange={setIsMobileOpen}
                     />
-                ) : (
-                    bookmarkTree.map((categoryData, i) => (
-                        <LinkCategory
-                            key={`${categoryData.category}-${i}`}
-                            categoryData={categoryData}
-                            index={i}
-                            isHovered={categoryAim.activeId === String(i + 1)}
-                            clickedCategory={clickedCategory}
-                            clickedFolderPath={
-                                clickedCategory === i + 1
-                                    ? clickedFolderPath
-                                    : []
+                    <UserFloatingBar
+                        bookmarkControls={bookmarkControls}
+                        className='mobile-user-floating-bar'
+                        closeMenusSignal={mouseLeaveCloseSignal}
+                        initialPreferences={initialPreferences}
+                        isSupabaseEnabled={isSupabaseEnabled}
+                        settingsPlacement='mobile'
+                        showSettingsInMenu
+                    />
+                    <div className={`trigger ${hidden && 'hidden'}`} />
+                    <div
+                        className='panel-lock-control'
+                        onMouseMove={(event) => {
+                            event.stopPropagation();
+                        }}
+                    >
+                        <button
+                            className='panel-lock-trigger'
+                            type='button'
+                            aria-label={
+                                isLockedOpen
+                                    ? 'Unlock bookmark panel'
+                                    : 'Lock bookmark panel open'
                             }
-                            selectedCategory={selectedCategory}
-                            isMouseNav={isMouseNav}
-                            padding={panelPaddings[i]}
-                            highlightedLinkId={highlightedLink}
-                            highlightedFolderPath={highlightedFolderPath}
-                            onSelectCategory={selectCategory}
-                            onSelectFolder={selectFolder}
-                            onSelectLink={selectLink}
+                            aria-pressed={isLockedOpen}
+                            onClick={onToggleLockedOpen}
+                        >
+                            {isLockedOpen ? (
+                                <PanelLeftClose className='icon' size={20} />
+                            ) : (
+                                <PanelLeft className='icon' size={20} />
+                            )}
+                        </button>
+                        {!isLockedOpen &&
+                            !isExpanded &&
+                            !isMobileOpen &&
+                            !isMouseNav && (
+                                <button
+                                    className='panel-lock-trigger theme-toggle-trigger'
+                                    type='button'
+                                    aria-label={t.theme}
+                                    title={t.theme}
+                                    onClick={(event) => {
+                                        runThemeTransition({
+                                            button: event.currentTarget,
+                                            isDarkMode:
+                                                globalThis.document
+                                                    .documentElement.dataset
+                                                    .theme === 'dark',
+                                        });
+                                    }}
+                                >
+                                    <Sun
+                                        className='icon theme-icon-light'
+                                        size={20}
+                                        aria-hidden
+                                    />
+                                    <Moon
+                                        className='icon theme-icon-dark'
+                                        size={20}
+                                        aria-hidden
+                                    />
+                                </button>
+                            )}
+                    </div>
+                    <div
+                        data-menu-level
+                        className={[
+                            'link-tree',
+                            (isExpanded || isLockedOpen) && 'expanded',
+                        ]
+                            .filter(Boolean)
+                            .join(' ')}
+                    >
+                        <div className='panel' />
+                        {bookmarkTree.length === 0 ? (
+                            <BookmarkEmptyState
+                                bookmarkControls={bookmarkControls}
+                                className='bookmark-panel-empty-state'
+                                ctaLabel={t.importBookmarksFromBrowser}
+                                description={t.bookmarksEmptyDescription}
+                                statusMessage={bookmarkStatusMessage}
+                                statusType={bookmarkControls.status?.type}
+                                title={t.bookmarksEmpty}
+                            />
+                        ) : (
+                            bookmarkTree.map((categoryData, i) => (
+                                <LinkCategory
+                                    key={`${categoryData.category}-${i}`}
+                                    categoryData={categoryData}
+                                    index={i}
+                                    clickedCategory={clickedCategory}
+                                    clickedFolderPath={
+                                        clickedCategory === i + 1
+                                            ? clickedFolderPath
+                                            : []
+                                    }
+                                    selectedCategory={selectedCategory}
+                                    isMouseNav={isMouseNav && !hidden}
+                                    padding={panelPaddings[i]}
+                                    highlightedLinkId={highlightedLink}
+                                    highlightedFolderPath={
+                                        highlightedFolderPath
+                                    }
+                                    onSelectCategory={selectCategory}
+                                    onSelectFolder={selectFolder}
+                                    onSelectLink={selectLink}
+                                />
+                            ))
+                        )}
+                        <UserFloatingBar
+                            bookmarkControls={bookmarkControls}
+                            className='desktop-user-floating-bar'
+                            closeMenusSignal={mouseLeaveCloseSignal}
+                            initialPreferences={initialPreferences}
+                            isSupabaseEnabled={isSupabaseEnabled}
                         />
-                    ))
-                )}
-                <UserFloatingBar
-                    bookmarkControls={bookmarkControls}
-                    className='desktop-user-floating-bar'
-                    closeMenusSignal={mouseLeaveCloseSignal}
-                    initialPreferences={initialPreferences}
-                    isSupabaseEnabled={isSupabaseEnabled}
-                />
-            </div>
-        </nav>
+                    </div>
+                </nav>
+            </FloatingTree>
+        </MenuAimDebugContext>
     );
 };
