@@ -46,7 +46,11 @@ export const useMenuAim = (
     const handleClose = useMemo(() => {
         const handler: HandleClose = (args) => {
             // Each crossing needs fresh intent and landing state.
-            const polygon = safePolygon({ blockPointerEvents: true });
+            const polygon = safePolygon({
+                blockPointerEvents: true,
+                // Keep slow crossings safe without independent idle-close timers.
+                requireIntent: false,
+            });
             if (!debug) {
                 return polygon(args);
             }

@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 
 test.each([false, true])(
-    'Floating UI grace, return, timeout and cleanup (debug=%s)',
+    'Floating UI grace, return, slow crossing and cleanup (debug=%s)',
     async (debug) => {
         const browser = new Window();
         const bindings = {
@@ -149,6 +149,15 @@ test.each([false, true])(
                     setTimeout(resolve, 60);
                 });
             });
+            expect(row.dataset.open).toBe('true');
+            await dispatch(menu, 'mousemove', 520, 200);
+            await act(async () => {
+                await new Promise((resolve) => {
+                    setTimeout(resolve, 60);
+                });
+            });
+            expect(row.dataset.open).toBe('true');
+            await dispatch(document.body, 'mousemove', 350, 210);
             expect(row.dataset.open).toBe('false');
         } finally {
             await act(async () => {
