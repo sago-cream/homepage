@@ -103,6 +103,13 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
         isExpanded || isFocused
     );
     const isOpen = aim.open;
+    const setSubmenuRef = useCallback(
+        (element: HTMLDivElement | null) => {
+            submenuRef.current = element;
+            aim.refs.setFloating(element);
+        },
+        [aim.refs.setFloating]
+    );
     const updateSubmenuPlacement = useCallback(() => {
         const folderNode = folderNodeRef.current;
         const submenu = submenuRef.current;
@@ -144,18 +151,23 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
         }
         submenu.showPopover();
         updateSubmenuPlacement();
-        const frame = globalThis.requestAnimationFrame(updateSubmenuPlacement);
-        globalThis.addEventListener('resize', updateSubmenuPlacement);
-        globalThis.addEventListener('scroll', updateSubmenuPlacement, true);
+        let frame: number | undefined;
+        const schedulePlacement = () => {
+            frame ??= globalThis.requestAnimationFrame(() => {
+                frame = undefined;
+                updateSubmenuPlacement();
+            });
+        };
+        schedulePlacement();
+        globalThis.addEventListener('resize', schedulePlacement);
+        globalThis.addEventListener('scroll', schedulePlacement, true);
 
         return () => {
-            globalThis.cancelAnimationFrame(frame);
-            globalThis.removeEventListener('resize', updateSubmenuPlacement);
-            globalThis.removeEventListener(
-                'scroll',
-                updateSubmenuPlacement,
-                true
-            );
+            if (frame !== undefined) {
+                globalThis.cancelAnimationFrame(frame);
+            }
+            globalThis.removeEventListener('resize', schedulePlacement);
+            globalThis.removeEventListener('scroll', schedulePlacement, true);
         };
     }, [isOpen, updateSubmenuPlacement]);
 
@@ -207,15 +219,14 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
                 <div
                     className='bookmark-submenu'
                     popover='manual'
-                    ref={(element) => {
-                        submenuRef.current = element;
-                        aim.refs.setFloating(element);
-                    }}
+                    ref={setSubmenuRef}
                     {...aim.getFloatingProps({
                         onMouseEnter: aim.clearTriangle,
                     })}
                 >
-                    <MenuSafetyTriangle points={aim.triangle} />
+                    {aim.triangle.length > 0 && (
+                        <MenuSafetyTriangle points={aim.triangle} />
+                    )}
                     {isOpen && (
                         <BookmarkNodeList
                             categoryIndex={categoryIndex}
@@ -362,7 +373,9 @@ export const LinkCategory: React.FC<LinkCategoryProps> = ({
                 style={{ '--padding': padding } as React.CSSProperties}
             >
                 <div className='panel' />
-                <MenuSafetyTriangle points={aim.triangle} />
+                {aim.triangle.length > 0 && (
+                    <MenuSafetyTriangle points={aim.triangle} />
+                )}
                 <div
                     className='bookmark-category-items'
                     ref={aim.refs.setFloating}

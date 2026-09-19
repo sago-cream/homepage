@@ -1,4 +1,11 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useMemo,
+    useState,
+} from 'react';
 import {
     safePolygon,
     useFloating,
@@ -17,6 +24,8 @@ export interface MenuPoint {
     y: number;
 }
 
+const emptyTriangle: readonly MenuPoint[] = [];
+
 // The overlay is illustrative; Floating UI owns all hit testing and timing.
 export const useMenuAim = (
     enabled: boolean,
@@ -31,7 +40,8 @@ export const useMenuAim = (
 } => {
     const debug = useContext(MenuAimDebugContext);
     const [hovered, setHovered] = useState(false);
-    const [triangle, setTriangle] = useState<readonly MenuPoint[]>([]);
+    const [triangle, setTriangle] =
+        useState<readonly MenuPoint[]>(emptyTriangle);
     const [placement, setPlacement] = useState<Placement>('right-start');
     const nodeId = useFloatingNodeId();
     const parentId = useFloatingParentNodeId();
@@ -68,7 +78,7 @@ export const useMenuAim = (
             return polygon({
                 ...args,
                 onClose: () => {
-                    setTriangle([]);
+                    setTriangle(emptyTriangle);
                     args.onClose();
                 },
             });
@@ -87,7 +97,7 @@ export const useMenuAim = (
             setHovered(false);
         }
         if (!open || forcedOpen || !debug) {
-            setTriangle([]);
+            setTriangle(emptyTriangle);
         }
     }, [enabled, open, forcedOpen, debug]);
     useEffect(() => {
@@ -111,6 +121,9 @@ export const useMenuAim = (
             tree?.events.off('bookmark-hover', onSiblingOpen);
         };
     }, [tree, parentId, nodeId]);
+    const clearTriangle = useCallback(() => {
+        setTriangle(emptyTriangle);
+    }, []);
     return {
         ...interactions,
         refs,
@@ -118,10 +131,6 @@ export const useMenuAim = (
         open,
         triangle,
         setPlacement,
-        clearTriangle: () => {
-            setTriangle((points: readonly MenuPoint[]) =>
-                points.length > 0 ? [] : points
-            );
-        },
+        clearTriangle,
     };
 };
