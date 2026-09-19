@@ -358,27 +358,33 @@ export const LinkCategory: React.FC<LinkCategoryProps> = ({
                 <span className='category-title'>{categoryData.category}</span>
             </button>
             <div
-                ref={aim.refs.setFloating}
-                {...aim.getFloatingProps({ onMouseEnter: aim.clearTriangle })}
                 className={`links ${isMouseNav ? 'hoverEffective' : ''}`}
                 style={{ '--padding': padding } as React.CSSProperties}
             >
                 <div className='panel' />
                 <MenuSafetyTriangle points={aim.triangle} />
-                {isCategoryOpen && (
-                    <BookmarkNodeList
-                        categoryIndex={categoryIndex}
-                        clickedFolderPath={clickedFolderPath}
-                        currentFolderPath={[]}
-                        depth={0}
-                        highlightedFolderPath={highlightedFolderPath}
-                        highlightedLinkId={highlightedLinkId}
-                        isMouseNav={isMouseNav}
-                        nodes={categoryData.children}
-                        onSelectFolder={onSelectFolder}
-                        onSelectLink={onSelectLink}
-                    />
-                )}
+                <div
+                    className='bookmark-category-items'
+                    ref={aim.refs.setFloating}
+                    {...aim.getFloatingProps({
+                        onMouseEnter: aim.clearTriangle,
+                    })}
+                >
+                    {isCategoryOpen && (
+                        <BookmarkNodeList
+                            categoryIndex={categoryIndex}
+                            clickedFolderPath={clickedFolderPath}
+                            currentFolderPath={[]}
+                            depth={0}
+                            highlightedFolderPath={highlightedFolderPath}
+                            highlightedLinkId={highlightedLinkId}
+                            isMouseNav={isMouseNav}
+                            nodes={categoryData.children}
+                            onSelectFolder={onSelectFolder}
+                            onSelectLink={onSelectLink}
+                        />
+                    )}
+                </div>
             </div>
         </FloatingNode>
     );

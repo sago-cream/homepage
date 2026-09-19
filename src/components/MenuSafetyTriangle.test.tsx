@@ -159,6 +159,67 @@ test.each([false, true])(
             expect(row.dataset.open).toBe('true');
             await dispatch(document.body, 'mousemove', 350, 210);
             expect(row.dataset.open).toBe('false');
+            // Happy DOM does not implement the native popover API.
+            Object.defineProperties(browser.HTMLElement.prototype, {
+                showPopover: { configurable: true, value: () => undefined },
+                hidePopover: { configurable: true, value: () => undefined },
+            });
+            const { LinkCategory } = await import('./LinkCategory');
+            await act(async () => {
+                root.render(
+                    <MenuAimDebugContext value={debug}>
+                        <FloatingTree>
+                            <LinkCategory
+                                categoryData={{
+                                    category: 'Short list',
+                                    icon: <span />,
+                                    iconName: 'Folder',
+                                    links: [],
+                                    children: [
+                                        {
+                                            id: 'leaf',
+                                            title: 'Item',
+                                            type: 'link',
+                                            url: 'https://example.com',
+                                        },
+                                    ],
+                                }}
+                                clickedFolderPath={[]}
+                                index={0}
+                                isMouseNav
+                                padding='100px'
+                                onSelectCategory={() => undefined}
+                                onSelectFolder={() => undefined}
+                                onSelectLink={() => undefined}
+                            />
+                        </FloatingTree>
+                    </MenuAimDebugContext>
+                );
+                await Promise.resolve();
+            });
+            const category = container.querySelector<HTMLElement>('.category');
+            const panel = container.querySelector<HTMLElement>('.links');
+            const items = container.querySelector<HTMLElement>(
+                '.bookmark-category-items'
+            );
+            if (!category || !panel || !items) {
+                throw new Error('Missing category items fixture');
+            }
+            category.getBoundingClientRect = () =>
+                new browser.DOMRect(0, 100, 240, 56);
+            panel.getBoundingClientRect = () =>
+                new browser.DOMRect(240, 0, 240, 900);
+            items.getBoundingClientRect = () =>
+                new browser.DOMRect(240, 100, 240, 112);
+            await dispatch(category, 'mouseenter', 100, 140);
+            expect(items.style.pointerEvents).toBe('auto');
+            expect(panel.style.pointerEvents).toBe('');
+            await dispatch(category, 'mouseleave', 200, 156);
+            await dispatch(document.body, 'mousemove', 220, 160);
+            expect(category.getAttribute('aria-expanded')).toBe('true');
+            // Inside the old full-panel triangle, but outside the item-list triangle.
+            await dispatch(document.body, 'mousemove', 225, 300);
+            expect(category.getAttribute('aria-expanded')).toBe('false');
         } finally {
             await act(async () => {
                 root.unmount();
