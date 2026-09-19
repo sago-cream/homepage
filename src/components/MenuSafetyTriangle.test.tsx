@@ -214,12 +214,21 @@ test.each([false, true])(
             await dispatch(category, 'mouseenter', 100, 140);
             expect(items.style.pointerEvents).toBe('auto');
             expect(panel.style.pointerEvents).toBe('');
+            expect(
+                container.querySelectorAll('.menu-safety-overlay')
+            ).toHaveLength(0);
             await dispatch(category, 'mouseleave', 200, 156);
+            expect(
+                container.querySelectorAll('.menu-safety-overlay')
+            ).toHaveLength(debug ? 1 : 0);
             await dispatch(document.body, 'mousemove', 220, 160);
             expect(category.getAttribute('aria-expanded')).toBe('true');
             // Inside the old full-panel triangle, but outside the item-list triangle.
             await dispatch(document.body, 'mousemove', 225, 300);
             expect(category.getAttribute('aria-expanded')).toBe('false');
+            expect(
+                container.querySelectorAll('.menu-safety-overlay')
+            ).toHaveLength(0);
         } finally {
             await act(async () => {
                 root.unmount();
