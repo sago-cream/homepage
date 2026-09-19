@@ -44,11 +44,12 @@ export const useMenuAim = (
         onOpenChange: setHovered,
     });
     const handleClose = useMemo(() => {
-        const polygon = safePolygon({ blockPointerEvents: true });
-        if (!debug) {
-            return polygon;
-        }
         const handler: HandleClose = (args) => {
+            // Each crossing needs fresh intent and landing state.
+            const polygon = safePolygon({ blockPointerEvents: true });
+            if (!debug) {
+                return polygon(args);
+            }
             const bounds = args.elements.floating?.getBoundingClientRect();
             if (bounds && bounds.width > 0 && bounds.height > 0) {
                 const edge = args.placement.startsWith('left')
@@ -68,7 +69,7 @@ export const useMenuAim = (
                 },
             });
         };
-        handler.__options = polygon.__options;
+        handler.__options = { blockPointerEvents: true };
         return handler;
     }, [debug]);
     const hover = useHover(context, {

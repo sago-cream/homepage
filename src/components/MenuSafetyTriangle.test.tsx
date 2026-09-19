@@ -121,6 +121,13 @@ test.each([false, true])(
             expect(row.dataset.open).toBe('true');
             await dispatch(menu, 'mousemove', 520, 200);
             expect(row.dataset.open).toBe('true');
+            // Returning to the trigger starts a new protected crossing too.
+            await dispatch(row, 'mousemove', 350, 140);
+            await dispatch(row, 'mouseenter', 350, 140);
+            await dispatch(row, 'mouseleave', 400, 156);
+            await dispatch(document.body, 'mousemove', 430, 175);
+            expect(row.dataset.open).toBe('true');
+            await dispatch(menu, 'mousemove', 520, 200);
             await dispatch(document.body, 'mousemove', 350, 210);
             expect(row.dataset.open).toBe('false');
             await dispatch(sibling, 'mouseenter', 350, 210);
@@ -136,6 +143,7 @@ test.each([false, true])(
             await dispatch(row, 'mouseenter', 350, 140);
             await dispatch(row, 'mouseleave', 400, 156);
             await dispatch(document.body, 'mousemove', 430, 175);
+            expect(row.dataset.open).toBe('true');
             await act(async () => {
                 await new Promise((resolve) => {
                     setTimeout(resolve, 60);
