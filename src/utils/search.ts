@@ -194,8 +194,8 @@ const getSearchScore = (
 
     return getBestTextSearchScore(normalizedSource, [
         normalizedQuery,
-        getLatinKeySequenceAlias(normalizedQuery) ?? '',
-        normalizedKeySequence,
+        normalizedKeySequence ||
+            (getLatinKeySequenceAlias(normalizedQuery) ?? ''),
     ]);
 };
 
