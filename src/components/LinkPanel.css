@@ -797,3 +797,17 @@
 .bookmark-node-list {
     display: contents;
 }
+
+/* Hover geometry follows the visible item list, not its full-height backdrop. */
+.bookmark-category-items {
+    display: flex;
+    flex-direction: column;
+    width: var(--width);
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+
+    > .bookmark-node-list > .bookmark-node {
+        flex-shrink: 0;
+    }
+}
