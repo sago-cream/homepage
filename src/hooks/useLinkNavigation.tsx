@@ -47,6 +47,11 @@ export const useLinkNavigation = (
             clearTimeout(hoverExitTimeoutRef.current);
         }
         hoverExitTimeoutRef.current = setTimeout(() => {
+            // Floating UI temporarily redirects pointer events while crossing menus.
+            if (Object.hasOwn(document.body.dataset, 'floatingUiSafePolygon')) {
+                hoverExitTimeoutRef.current = undefined;
+                return;
+            }
             setIsMouseNav(false);
             setMouseLeaveCloseSignal((signal) => signal + 1);
             hoverExitTimeoutRef.current = undefined;
