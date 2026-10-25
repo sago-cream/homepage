@@ -40,6 +40,7 @@ const FeedBookmarkRow: React.FC<FeedBookmarkRowProps> = ({
         <div
             ref={sortable.ref}
             className='bookmark-workspace-list-row settings-feed-bookmark'
+            data-feed-id={bookmark.id}
             data-dragging={sortable.isDragSource ? 'true' : undefined}
         >
             <button
@@ -78,6 +79,8 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
     const { t } = useLocale();
     const dialogRef = useRef<HTMLDialogElement>(null);
     const [query, setQuery] = useState('');
+    const selectedListRef = useRef<HTMLDivElement>(null);
+    const pendingAddedRef = useRef<string | undefined>(undefined);
     const searchInputRef = useRef<HTMLInputElement>(null);
     const feedBookmarks = useMemo(
         () => getFeedBookmarks(bookmarkControls.bookmarkTree),
@@ -150,10 +153,14 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
                 key={result.id}
                 type='button'
                 onClick={() => {
-                    saveFeedBookmarkIds([
-                        ...feedBookmarks.map((bookmark) => bookmark.id),
-                        result.id,
-                    ]);
+                    if (
+                        saveFeedBookmarkIds([
+                            ...feedBookmarks.map((bookmark) => bookmark.id),
+                            result.id,
+                        ])
+                    ) {
+                        pendingAddedRef.current = result.id;
+                    }
                     setQuery('');
                     searchInputRef.current?.focus();
                 }}
@@ -172,7 +179,6 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
             <div className='settings-feed-heading'>
                 <div className='settings-section-heading'>
                     <h2>{t.feeds}</h2>
-                    <p>{t.feedsDescription}</p>
                 </div>
                 <button
                     className='bookmark-workspace-primary-button'
@@ -190,6 +196,21 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
             <dialog
                 ref={dialogRef}
                 className='settings-feed-dialog'
+                onClose={() => {
+                    if (pendingAddedRef.current) {
+                        const row = [
+                            ...(selectedListRef.current?.querySelectorAll<HTMLElement>(
+                                '[data-feed-id]'
+                            ) ?? []),
+                        ].find(
+                            (item) =>
+                                item.dataset.feedId === pendingAddedRef.current
+                        );
+                        row?.scrollIntoView({ block: 'nearest' });
+                        pendingAddedRef.current = undefined;
+                    }
+                    setQuery('');
+                }}
                 aria-labelledby='feed-dialog-title'
                 onClick={(event) => {
                     if (event.target === event.currentTarget) {
@@ -233,7 +254,7 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
                     </div>
                 </div>
             </dialog>
-            <div className='settings-feed-selected'>
+            <div className='settings-feed-selected' ref={selectedListRef}>
                 {feedBookmarks.length === 0 ? (
                     <div className='settings-feed-empty'>
                         <LinkIcon aria-hidden='true' />

@@ -1,13 +1,6 @@
-import { useRef } from 'react';
-import { Link2, MoreVertical } from 'lucide-react';
+import { Link2 } from 'lucide-react';
 
-const getBookmarkHost = (url: string): string => {
-    try {
-        return new URL(url).hostname.replace(/^www\./, '');
-    } catch {
-        return url;
-    }
-};
+import { ActionMenu } from './ActionMenu';
 
 export const BookmarkCard: React.FC<{
     bookmark: { title: string; url: string };
@@ -18,12 +11,12 @@ export const BookmarkCard: React.FC<{
         ref={sourceRef}
         type='button'
         className='bookmark-workspace-tree-item bookmark-link-item'
+        title={bookmark.title}
         onClick={onClick}
     >
         <Link2 aria-hidden='true' />
         <span className='bookmark-settings-link-copy'>
             <strong>{bookmark.title}</strong>
-            <small>{getBookmarkHost(bookmark.url)}</small>
         </span>
     </button>
 );
@@ -42,79 +35,20 @@ export const BookmarkActions: React.FC<{
     onAddToFeeds,
     addToFeedsLabel,
     labels,
-}) => {
-    const menuRef = useRef<HTMLDetailsElement>(null);
-    const close = () => {
-        if (menuRef.current) {
-            menuRef.current.open = false;
-        }
-    };
-    return (
-        <details
-            ref={menuRef}
-            className='bookmark-row-menu'
-            onBlur={(event) => {
-                if (!event.currentTarget.contains(event.relatedTarget)) {
-                    close();
-                }
-            }}
-            onKeyDown={(event) => {
-                if (event.key === 'Escape') {
-                    event.stopPropagation();
-                    close();
-                    menuRef.current?.querySelector('summary')?.focus();
-                }
-            }}
-        >
-            <summary
-                aria-label={`${bookmark.title}: ${labels.edit}${bookmark.url ? `, ${labels.open}` : ''}${onAddToFeeds ? `, ${addToFeedsLabel}` : ''}${onDelete ? `, ${labels.delete}` : ''}`}
-            >
-                <MoreVertical aria-hidden='true' />
-            </summary>
-            <div className='bookmark-row-menu-content'>
-                <button
-                    type='button'
-                    onClick={() => {
-                        close();
-                        onEdit();
-                    }}
-                >
-                    {labels.edit}
-                </button>
-                {bookmark.url && (
-                    <a
-                        href={bookmark.url}
-                        target='_blank'
-                        rel='noreferrer'
-                        onClick={close}
-                    >
-                        {labels.open}
-                    </a>
-                )}
-                {onAddToFeeds && (
-                    <button
-                        type='button'
-                        onClick={() => {
-                            close();
-                            onAddToFeeds();
-                        }}
-                    >
-                        {addToFeedsLabel}
-                    </button>
-                )}
-                {onDelete && (
-                    <button
-                        type='button'
-                        className='danger'
-                        onClick={() => {
-                            close();
-                            onDelete();
-                        }}
-                    >
-                        {labels.delete}
-                    </button>
-                )}
-            </div>
-        </details>
-    );
-};
+}) => (
+    <ActionMenu
+        label={`${bookmark.title}: ${labels.edit}${bookmark.url ? `, ${labels.open}` : ''}${onAddToFeeds ? `, ${addToFeedsLabel}` : ''}${onDelete ? `, ${labels.delete}` : ''}`}
+        items={[
+            { label: labels.edit, onSelect: onEdit },
+            ...(bookmark.url
+                ? [{ label: labels.open, href: bookmark.url }]
+                : []),
+            ...(onAddToFeeds && addToFeedsLabel
+                ? [{ label: addToFeedsLabel, onSelect: onAddToFeeds }]
+                : []),
+            ...(onDelete
+                ? [{ label: labels.delete, onSelect: onDelete, danger: true }]
+                : []),
+        ]}
+    />
+);

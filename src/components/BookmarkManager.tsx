@@ -20,18 +20,17 @@ import type {
 import { useSortable } from '@dnd-kit/react/sortable';
 import {
     Bookmark,
+    BookmarkPlus,
     Check,
     ChevronDown,
     ChevronLeft,
     ChevronRight,
     CircleAlert,
-    ClipboardPaste,
     Download,
     FolderOpen,
     FolderPlus,
     Link2,
     LoaderCircle,
-    Plus,
     Search,
     Trash2,
     Undo2,
@@ -61,7 +60,9 @@ import {
     isBookmarkRootCategory,
 } from '@/utils/bookmarks';
 import { getFeedBookmarks, setFeedBookmarkIds } from '@/utils/feeds';
+import { ActionMenu } from './ActionMenu';
 import { BookmarkActions, BookmarkCard } from './BookmarkCard';
+import { TooltipIconButton } from './TooltipIconButton';
 
 export interface BookmarkManagerHandle {
     requestClose: () => boolean;
@@ -83,6 +84,7 @@ interface NavigationSnapshot {
     location: BookmarkLocation;
     selectedLocation?: BookmarkLocation;
     focusedPane: 'left' | 'right';
+    scrollPositions?: { left: number; right: number };
 }
 
 interface EditorDraft extends BookmarkLocation {
@@ -225,6 +227,7 @@ const SortableBookmarkRow: React.FC<SortableBookmarkRowProps> = ({
             data-dragging={sortable.isDragSource ? 'true' : undefined}
             data-drop-position={dropPosition}
             data-selected={selected}
+            data-node-id={nodeId}
         >
             {children(sortable.sourceRef)}
         </div>
@@ -500,8 +503,14 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
 }) => {
     const { locale, t } = useLocale();
     const titleId = useId();
+    const discardDescriptionId = useId();
+    const emptyTrashDescriptionId = useId();
     const importInputId = useId();
     const dialogRef = useRef<HTMLDivElement>(null);
+    const editorReturnFocusRef = useRef<HTMLElement | undefined>(undefined);
+    const trashReturnFocusRef = useRef<HTMLElement | undefined>(undefined);
+    const emptyTrashReturnFocusRef = useRef<HTMLElement | undefined>(undefined);
+    const discardReturnFocusRef = useRef<HTMLElement | undefined>(undefined);
     const importInputRef = useRef<HTMLInputElement>(null);
     const queryInputRef = useRef<HTMLInputElement>(null);
     const iconPickerTriggerRef = useRef<HTMLButtonElement>(null);
@@ -518,6 +527,15 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         NavigationSnapshot[]
     >([]);
     const [query, setQuery] = useState('');
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const searchTriggerRef = useRef<HTMLButtonElement>(null);
+    const pendingRevealRef = useRef<
+        | {
+              existingIds: Set<string>;
+              pane: 'left' | 'right';
+          }
+        | undefined
+    >(undefined);
     const [pasteMessage, setPasteMessage] = useState('');
     const [isAppleDevice, setIsAppleDevice] = useState(false);
     useEffect(() => {
@@ -537,6 +555,9 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         id: string;
     }>();
     const undoToastRef = useRef<HTMLDivElement>(null);
+    const pendingScrollRef = useRef<
+        { left: number; right: number } | undefined
+    >(undefined);
 
     const { bookmarkTree } = bookmarkControls;
     const decoratedTree = useMemo(
@@ -652,12 +673,10 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         editorDraft !== undefined &&
         serializeDraft(editorDraft) !== draftBaseline;
 
-    const itemCountLabel = (count: number) =>
-        locale === 'zh-TW'
-            ? `${count} 個項目`
-            : `${count} ${count === 1 ? 'item' : 'items'}`;
-
     const openDraft = (draft: EditorDraft) => {
+        const active = document.activeElement;
+        editorReturnFocusRef.current =
+            active instanceof HTMLElement ? active : undefined;
         setEditorDraft(draft);
         setDraftBaseline(serializeDraft(draft));
         setFormErrors({});
@@ -670,7 +689,23 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         selectedLocation,
         focusedPane,
     };
+    const captureScrollPositions = () => ({
+        left:
+            dialogRef.current?.querySelector('.bookmark-workspace-tree-pane')
+                ?.scrollTop ?? 0,
+        right:
+            dialogRef.current?.querySelector('.bookmark-workspace-list-pane')
+                ?.scrollTop ?? 0,
+    });
+    const captureNavigation = (): NavigationSnapshot => ({
+        ...navigationSnapshot,
+        scrollPositions: captureScrollPositions(),
+    });
     const restoreNavigation = (snapshot: NavigationSnapshot) => {
+        pendingScrollRef.current = snapshot.scrollPositions ?? {
+            left: 0,
+            right: 0,
+        };
         setLocation(snapshot.location);
         setSelectedLocation(snapshot.selectedLocation);
         setFocusedPane(snapshot.focusedPane);
@@ -680,7 +715,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     const navigateTo = (snapshot: NavigationSnapshot) => {
         setBackLocations((current: readonly NavigationSnapshot[]) => [
             ...current.slice(-49),
-            navigationSnapshot,
+            captureNavigation(),
         ]);
         setForwardLocations([]);
         restoreNavigation(snapshot);
@@ -697,6 +732,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             location,
             selectedLocation: nextLocation,
             focusedPane: 'right',
+            scrollPositions: { left: captureScrollPositions().left, right: 0 },
         });
     };
     const enterFolder = (nextLocation: BookmarkLocation) => {
@@ -715,7 +751,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             current.slice(0, -1)
         );
         setForwardLocations((current: readonly NavigationSnapshot[]) => [
-            navigationSnapshot,
+            captureNavigation(),
             ...current.slice(0, 49),
         ]);
         restoreNavigation(previous);
@@ -730,7 +766,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         );
         setBackLocations((current: readonly NavigationSnapshot[]) => [
             ...current.slice(-49),
-            navigationSnapshot,
+            captureNavigation(),
         ]);
         restoreNavigation(next);
     };
@@ -839,10 +875,25 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             setPasteMessage(t.bookmarkUrlInvalid);
             return;
         }
+        pendingRevealRef.current = {
+            existingIds: new Set(
+                [
+                    ...(dialogRef.current?.querySelectorAll<HTMLElement>(
+                        '[data-node-id]'
+                    ) ?? []),
+                ].map((row) => row.dataset.nodeId ?? '')
+            ),
+            pane: focusedPane,
+        };
+        setQuery('');
+        setIsSearchOpen(false);
         const count = bookmarkControls.addBookmarksToLocation(
             activeAddLocation,
             links
         );
+        if (count === 0) {
+            pendingRevealRef.current = undefined;
+        }
         setPasteMessage(
             count === 0
                 ? t.bookmarksAlreadySaved
@@ -851,18 +902,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                   : `${count} ${count === 1 ? 'link' : 'links'} added`
         );
     };
-    const pasteFromClipboard = async () => {
-        try {
-            pasteLinks(await navigator.clipboard.readText());
-        } catch {
-            setPasteMessage(
-                locale === 'zh-TW'
-                    ? `請在面板中按 ${pasteShortcut} 貼上連結。`
-                    : `Press ${pasteShortcut} in the panel to paste links.`
-            );
-        }
-    };
-
     const saveDraft = () => {
         if (editorDraft === undefined) {
             return;
@@ -887,6 +926,20 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             return;
         }
 
+        if (editorDraft.mode === 'add') {
+            pendingRevealRef.current = {
+                existingIds: new Set(
+                    [
+                        ...(dialogRef.current?.querySelectorAll<HTMLElement>(
+                            '[data-node-id]'
+                        ) ?? []),
+                    ].map((row) => row.dataset.nodeId ?? '')
+                ),
+                pane: focusedPane,
+            };
+            setQuery('');
+            setIsSearchOpen(false);
+        }
         let didSave = false;
         if (editorDraft.kind === 'category') {
             didSave =
@@ -920,6 +973,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         }
 
         if (!didSave) {
+            pendingRevealRef.current = undefined;
             return;
         }
 
@@ -941,6 +995,9 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
 
     const cancelEditor = () => {
         if (isDraftDirty) {
+            const active = document.activeElement;
+            discardReturnFocusRef.current =
+                active instanceof HTMLElement ? active : undefined;
             setDiscardTarget('editor');
             return;
         }
@@ -1040,8 +1097,95 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     };
 
     useEffect(() => {
-        dialogRef.current?.focus();
-    }, []);
+        if (editorDraft === undefined && editorReturnFocusRef.current) {
+            editorReturnFocusRef.current.focus({ preventScroll: true });
+            editorReturnFocusRef.current = undefined;
+        }
+    }, [editorDraft]);
+    useEffect(() => {
+        if (!isTrashOpen && trashReturnFocusRef.current) {
+            trashReturnFocusRef.current.focus({ preventScroll: true });
+            trashReturnFocusRef.current = undefined;
+        }
+    }, [isTrashOpen]);
+
+    useEffect(() => {
+        if (!isEmptyTrashConfirmOpen && emptyTrashReturnFocusRef.current) {
+            emptyTrashReturnFocusRef.current.focus({ preventScroll: true });
+            emptyTrashReturnFocusRef.current = undefined;
+        }
+    }, [isEmptyTrashConfirmOpen]);
+    useEffect(() => {
+        if (discardTarget === undefined && discardReturnFocusRef.current) {
+            if (discardReturnFocusRef.current.isConnected) {
+                discardReturnFocusRef.current.focus({ preventScroll: true });
+            }
+            discardReturnFocusRef.current = undefined;
+        }
+    }, [discardTarget]);
+
+    useEffect(() => {
+        const positions = pendingScrollRef.current;
+        if (!positions) {
+            return;
+        }
+        pendingScrollRef.current = undefined;
+        const left = dialogRef.current?.querySelector(
+            '.bookmark-workspace-tree-pane'
+        );
+        const right = dialogRef.current?.querySelector(
+            '.bookmark-workspace-list-pane'
+        );
+        if (left) {
+            left.scrollTop = positions.left;
+        }
+        if (right) {
+            right.scrollTop = positions.right;
+        }
+    }, [location, selectedLocation]);
+
+    useEffect(() => {
+        const invalid = dialogRef.current?.querySelector<HTMLInputElement>(
+            '.bookmark-edit-fields input[aria-invalid="true"]'
+        );
+        invalid?.focus();
+    }, [formErrors]);
+
+    useEffect(() => {
+        if (isSearchOpen) {
+            queryInputRef.current?.focus();
+        }
+    }, [isSearchOpen]);
+
+    useEffect(() => {
+        const pending = pendingRevealRef.current;
+        if (!pending || editorDraft !== undefined) {
+            return;
+        }
+        pendingRevealRef.current = undefined;
+        const pane = dialogRef.current?.querySelector<HTMLElement>(
+            pending.pane === 'left'
+                ? '.bookmark-workspace-tree-pane'
+                : '.bookmark-workspace-list-pane'
+        );
+        const rows = pane?.querySelectorAll<HTMLElement>('[data-node-id]');
+        const added = [...(rows ?? [])].find(
+            (row) => !pending.existingIds.has(row.dataset.nodeId ?? '')
+        );
+        if (pane && added) {
+            const rowBounds = added.getBoundingClientRect();
+            const paneBounds = pane.getBoundingClientRect();
+            if (rowBounds.bottom > paneBounds.bottom) {
+                pane.scrollTop += rowBounds.bottom - paneBounds.bottom + 8;
+            }
+            if (rowBounds.top < paneBounds.top) {
+                pane.scrollTop -= paneBounds.top - rowBounds.top + 8;
+            }
+            added
+                .querySelector<HTMLButtonElement>('button')
+                ?.focus({ preventScroll: true });
+        }
+    }, [bookmarkTree, editorDraft]);
 
     useEffect(() => {
         if (isIconPickerOpen) {
@@ -1056,7 +1200,9 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
 
         let timeout: number;
         const dismissWhenIdle = (_timeoutArgument: undefined) => {
-            if (undoToastRef.current?.matches(':hover') === true) {
+            if (
+                undoToastRef.current?.matches(':hover, :focus-within') === true
+            ) {
                 timeout = globalThis.window.setTimeout(
                     dismissWhenIdle,
                     100,
@@ -1068,7 +1214,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         };
         timeout = globalThis.window.setTimeout(
             dismissWhenIdle,
-            1000,
+            5000,
             undefined
         );
 
@@ -1192,38 +1338,13 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                   : t.folderSettings
               : editorDraft?.mode === 'add'
                 ? t.newBookmark
-                : t.bookmarkSettings;
+                : t.editBookmark;
 
     const filteredIconOptions = categoryIconOptions
         .filter((option) =>
             option.searchText.includes(normalizeCategoryIconSearch(iconQuery))
         )
         .slice(0, maxVisibleIconOptions);
-    const saveStatus = bookmarkControls.isLoading
-        ? {
-              icon: <LoaderCircle aria-hidden='true' className='is-spinning' />,
-              label: t.bookmarksLoading,
-              tone: 'loading',
-          }
-        : bookmarkControls.saveState === 'saving'
-          ? {
-                icon: (
-                    <LoaderCircle aria-hidden='true' className='is-spinning' />
-                ),
-                label: t.bookmarkSaving,
-                tone: 'loading',
-            }
-          : bookmarkControls.saveState === 'error'
-            ? {
-                  icon: <CircleAlert aria-hidden='true' />,
-                  label: t.bookmarkSaveFailed,
-                  tone: 'error',
-              }
-            : {
-                  icon: <Check aria-hidden='true' />,
-                  label: t.bookmarkSaved,
-                  tone: 'success',
-              };
 
     return (
         <div
@@ -1286,7 +1407,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                     <div className='bookmark-workspace-title-group'>
                         <div className='settings-section-heading'>
                             <h2 id={titleId}>{t.bookmarks}</h2>
-                            <p>{t.bookmarksDescription}</p>
                         </div>
                         <span role='status' aria-live='polite'>
                             {pasteMessage}
@@ -1301,95 +1421,56 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                             </span>
                         ) : undefined}
                     </div>
-                    <div className='bookmark-workspace-header-actions'>
-                        <button
-                            className='bookmark-workspace-secondary-button'
-                            type='button'
-                            aria-keyshortcuts={
-                                isAppleDevice ? 'Meta+V' : 'Control+V'
+                    <input
+                        ref={importInputRef}
+                        id={importInputId}
+                        className='bookmark-workspace-file-input'
+                        type='file'
+                        accept='.html,text/html'
+                        onChange={(event) => {
+                            const file = event.target.files?.[0];
+                            if (file) {
+                                bookmarkControls
+                                    .importBookmarks(file)
+                                    .catch(() => undefined);
                             }
-                            onClick={() => {
-                                pasteFromClipboard().catch(() => undefined);
-                            }}
-                        >
-                            <ClipboardPaste aria-hidden='true' />
-                            {locale === 'zh-TW' ? '貼上連結' : 'Paste link'}
-                            <kbd>{pasteShortcut}</kbd>
-                        </button>
-                        <button
-                            className='bookmark-workspace-secondary-button'
-                            type='button'
-                            onClick={beginAddBookmark}
-                        >
-                            <Plus aria-hidden='true' />
-                            {locale === 'zh-TW' ? '新增連結' : 'Add link'}
-                        </button>
-                        <button
-                            className='bookmark-workspace-secondary-button'
-                            type='button'
-                            onClick={beginAddFolder}
-                        >
-                            <FolderPlus aria-hidden='true' />
-                            {t.newFolder}
-                        </button>
-                        <input
-                            ref={importInputRef}
-                            id={importInputId}
-                            className='bookmark-workspace-file-input'
-                            type='file'
-                            accept='.html,text/html'
-                            onChange={(event) => {
-                                const file = event.target.files?.[0];
-                                if (file !== undefined) {
-                                    bookmarkControls
-                                        .importBookmarks(file)
-                                        .catch(() => undefined);
-                                }
-                                if (importInputRef.current !== null) {
-                                    importInputRef.current.value = '';
-                                }
-                            }}
-                        />
-                        <button
-                            className='bookmark-workspace-header-button'
-                            type='button'
-                            aria-label={t.import}
-                            onClick={() => importInputRef.current?.click()}
-                        >
-                            <Upload aria-hidden='true' />
-                            <span>{t.import}</span>
-                        </button>
-                        <button
-                            className='bookmark-workspace-header-button'
-                            type='button'
-                            aria-label={t.export}
-                            onClick={bookmarkControls.exportBookmarks}
-                        >
-                            <Download aria-hidden='true' />
-                            <span>{t.export}</span>
-                        </button>
-                        <button
-                            className='bookmark-workspace-header-button'
-                            type='button'
-                            aria-label={t.trash}
-                            onClick={() => {
-                                setIsTrashOpen(true);
-                            }}
-                        >
-                            <Trash2 aria-hidden='true' />
-                            <span>{t.trash}</span>
-                            {bookmarkControls.bookmarkTrash.length ===
-                            0 ? undefined : (
-                                <small className='bookmark-workspace-count-badge'>
-                                    {bookmarkControls.bookmarkTrash.length}
-                                </small>
-                            )}
-                        </button>
-                    </div>
+                            if (importInputRef.current) {
+                                importInputRef.current.value = '';
+                            }
+                        }}
+                    />
+                    <ActionMenu
+                        label={t.bookmarkActions}
+                        items={[
+                            {
+                                label: t.importBookmarks,
+                                icon: <Upload aria-hidden />,
+                                onSelect: () => importInputRef.current?.click(),
+                            },
+                            {
+                                label: t.exportBookmarks,
+                                icon: <Download aria-hidden />,
+                                onSelect: bookmarkControls.exportBookmarks,
+                            },
+                            {
+                                label: t.trash,
+                                icon: <Trash2 aria-hidden />,
+                                onSelect: () => {
+                                    const active = document.activeElement;
+                                    trashReturnFocusRef.current =
+                                        active instanceof HTMLElement
+                                            ? active
+                                            : undefined;
+                                    setIsTrashOpen(true);
+                                },
+                            },
+                        ]}
+                    />
                 </header>
 
                 <div
                     className='bookmark-settings-toolbar'
+                    data-searching={isSearchOpen}
                     inert={editorDraft !== undefined}
                 >
                     <div className='bookmark-settings-path'>
@@ -1416,34 +1497,91 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                             <span>{getLocationTitle(activeAddLocation)}</span>
                         </div>
                     </div>
-                    <div
-                        className='bookmark-workspace-search quiet'
-                        role='search'
-                    >
-                        <Search aria-hidden='true' />
-                        <input
-                            ref={queryInputRef}
-                            type='search'
-                            aria-label={t.bookmarkSearch}
-                            placeholder={t.bookmarkSearch}
-                            value={query}
-                            onChange={(event) => {
-                                setQuery(event.target.value);
+                    {isSearchOpen ? (
+                        <div
+                            className='bookmark-workspace-search quiet'
+                            role='search'
+                            onBlur={(event) => {
+                                if (
+                                    query === '' &&
+                                    !event.currentTarget.contains(
+                                        event.relatedTarget
+                                    )
+                                ) {
+                                    setIsSearchOpen(false);
+                                }
                             }}
-                        />
-                        {query === '' ? undefined : (
+                        >
+                            <Search aria-hidden />
+                            <input
+                                ref={queryInputRef}
+                                type='search'
+                                aria-label={t.bookmarkSearch}
+                                placeholder={t.bookmarkSearch}
+                                value={query}
+                                onChange={(event) => {
+                                    setQuery(event.target.value);
+                                }}
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Escape') {
+                                        event.preventDefault();
+                                        event.stopPropagation();
+                                        setQuery('');
+                                        setIsSearchOpen(false);
+                                        requestAnimationFrame(() =>
+                                            searchTriggerRef.current?.focus()
+                                        );
+                                    }
+                                }}
+                            />
                             <button
                                 type='button'
-                                aria-label={t.cancel}
+                                aria-label={t.closeSearch}
+                                title={t.closeSearch}
                                 onClick={() => {
                                     setQuery('');
-                                    queryInputRef.current?.focus();
+                                    setIsSearchOpen(false);
+                                    requestAnimationFrame(() =>
+                                        searchTriggerRef.current?.focus()
+                                    );
                                 }}
                             >
-                                <X aria-hidden='true' />
+                                <X aria-hidden />
                             </button>
-                        )}
-                    </div>
+                        </div>
+                    ) : (
+                        <div className='bookmark-settings-tools'>
+                            <TooltipIconButton
+                                label={t.addLink}
+                                description={`${t.pasteLinksHint} ${pasteShortcut}.`}
+                                aria-keyshortcuts={
+                                    isAppleDevice ? 'Meta+V' : 'Control+V'
+                                }
+                                onClick={beginAddBookmark}
+                            >
+                                <BookmarkPlus aria-hidden />
+                            </TooltipIconButton>
+                            <TooltipIconButton
+                                label={t.addFolder}
+                                onClick={beginAddFolder}
+                            >
+                                <FolderPlus aria-hidden />
+                            </TooltipIconButton>
+                            <button
+                                ref={searchTriggerRef}
+                                className='bookmark-workspace-icon-button'
+                                type='button'
+                                aria-label={t.bookmarkSearch}
+                                title={t.bookmarkSearch}
+                                aria-expanded={false}
+                                onClick={() => {
+                                    setIsSearchOpen(true);
+                                }}
+                            >
+                                <Search aria-hidden />
+                            </button>
+                        </div>
+                    )}
                 </div>
                 <DragDropProvider
                     onDragOver={(event) => {
@@ -1469,10 +1607,8 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                     setFocusedPane('left');
                                 }
                             }}
-                            onFocusCapture={(event) => {
-                                if (event.target === event.currentTarget) {
-                                    setFocusedPane('left');
-                                }
+                            onFocusCapture={() => {
+                                setFocusedPane('left');
                             }}
                             aria-label={sidebarLayerTitle}
                         >
@@ -1585,13 +1721,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                                     folder.title
                                                                                 }
                                                                             </strong>
-                                                                            <small>
-                                                                                {itemCountLabel(
-                                                                                    folder
-                                                                                        .children
-                                                                                        .length
-                                                                                )}
-                                                                            </small>
                                                                         </FolderLabel>
                                                                     </button>
                                                                     <BookmarkActions
@@ -1816,13 +1945,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                             node.title
                                                                         }
                                                                     </strong>
-                                                                    <small>
-                                                                        {itemCountLabel(
-                                                                            node
-                                                                                .children
-                                                                                .length
-                                                                        )}
-                                                                    </small>
                                                                 </FolderLabel>
                                                             </button>
                                                         ) : (
@@ -1903,10 +2025,14 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                         ref={(element) => {
                             if (element && !element.open) {
                                 element.showModal();
+                                element
+                                    .querySelector<HTMLInputElement>('input')
+                                    ?.focus();
                             }
                         }}
                         onCancel={(event) => {
                             event.preventDefault();
+                            event.stopPropagation();
                             cancelEditor();
                         }}
                     >
@@ -1952,206 +2078,217 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                     </button>
                                 </div>
 
-                                <label className='bookmark-workspace-field'>
-                                    <span>
-                                        {editorDraft.kind === 'folder'
-                                            ? t.folderName
-                                            : editorDraft.kind === 'category'
-                                              ? t.folderName
-                                              : t.bookmarkTitle}
-                                    </span>
-                                    <input
-                                        autoFocus
-                                        type='text'
-                                        value={editorDraft.title}
-                                        aria-invalid={
-                                            formErrors.title !== undefined
-                                        }
-                                        onPointerDown={(event) => {
-                                            event.currentTarget.focus();
-                                        }}
-                                        onChange={(event) => {
-                                            setEditorDraft({
-                                                ...editorDraft,
-                                                title: event.target.value,
-                                            });
-                                            setFormErrors((current) => ({
-                                                ...current,
-                                                title: undefined,
-                                            }));
-                                        }}
-                                    />
-                                    {formErrors.title ===
-                                    undefined ? undefined : (
-                                        <small role='alert'>
-                                            {formErrors.title}
-                                        </small>
-                                    )}
-                                </label>
+                                <div className='bookmark-edit-fields'>
+                                    <label className='bookmark-workspace-field'>
+                                        <span>
+                                            {editorDraft.kind === 'folder'
+                                                ? t.folderName
+                                                : editorDraft.kind ===
+                                                    'category'
+                                                  ? t.folderName
+                                                  : t.bookmarkTitle}
+                                        </span>
+                                        <input
+                                            autoFocus
+                                            type='text'
+                                            value={editorDraft.title}
+                                            aria-invalid={
+                                                formErrors.title !== undefined
+                                            }
+                                            onPointerDown={(event) => {
+                                                event.currentTarget.focus();
+                                            }}
+                                            onChange={(event) => {
+                                                setEditorDraft({
+                                                    ...editorDraft,
+                                                    title: event.target.value,
+                                                });
+                                                setFormErrors((current) => ({
+                                                    ...current,
+                                                    title: undefined,
+                                                }));
+                                            }}
+                                        />
+                                        {formErrors.title ===
+                                        undefined ? undefined : (
+                                            <small role='alert'>
+                                                {formErrors.title}
+                                            </small>
+                                        )}
+                                    </label>
 
-                                {editorDraft.kind === 'bookmark' ? (
-                                    <>
-                                        <label className='bookmark-workspace-field'>
-                                            <span>{t.bookmarkUrl}</span>
-                                            <input
-                                                type='text'
-                                                inputMode='url'
-                                                placeholder='https://'
-                                                value={editorDraft.url}
-                                                aria-invalid={
-                                                    formErrors.url !== undefined
-                                                }
-                                                onPointerDown={(event) => {
-                                                    event.currentTarget.focus();
-                                                }}
-                                                onChange={(event) => {
-                                                    setEditorDraft({
-                                                        ...editorDraft,
-                                                        url: event.target.value,
-                                                    });
-                                                    setFormErrors(
-                                                        (current) => ({
-                                                            ...current,
-                                                            url: undefined,
-                                                        })
+                                    {editorDraft.kind === 'bookmark' ? (
+                                        <>
+                                            <label className='bookmark-workspace-field'>
+                                                <span>{t.bookmarkUrl}</span>
+                                                <input
+                                                    type='text'
+                                                    inputMode='url'
+                                                    placeholder='https://'
+                                                    value={editorDraft.url}
+                                                    aria-invalid={
+                                                        formErrors.url !==
+                                                        undefined
+                                                    }
+                                                    onPointerDown={(event) => {
+                                                        event.currentTarget.focus();
+                                                    }}
+                                                    onChange={(event) => {
+                                                        setEditorDraft({
+                                                            ...editorDraft,
+                                                            url: event.target
+                                                                .value,
+                                                        });
+                                                        setFormErrors(
+                                                            (current) => ({
+                                                                ...current,
+                                                                url: undefined,
+                                                            })
+                                                        );
+                                                    }}
+                                                />
+                                                {formErrors.url ===
+                                                undefined ? undefined : (
+                                                    <small role='alert'>
+                                                        {formErrors.url}
+                                                    </small>
+                                                )}
+                                            </label>
+                                        </>
+                                    ) : (
+                                        <div className='bookmark-workspace-field'>
+                                            <span>{t.categoryIcon}</span>
+                                            <button
+                                                ref={iconPickerTriggerRef}
+                                                className='bookmark-workspace-icon-picker-trigger'
+                                                type='button'
+                                                aria-expanded={isIconPickerOpen}
+                                                onClick={() => {
+                                                    const nextIsOpen =
+                                                        !isIconPickerOpen;
+                                                    setIconQuery('');
+                                                    setIsIconPickerOpen(
+                                                        nextIsOpen
                                                     );
                                                 }}
-                                            />
-                                            {formErrors.url ===
-                                            undefined ? undefined : (
-                                                <small role='alert'>
-                                                    {formErrors.url}
-                                                </small>
-                                            )}
-                                        </label>
-                                    </>
-                                ) : (
-                                    <div className='bookmark-workspace-field'>
-                                        <span>{t.categoryIcon}</span>
-                                        <button
-                                            ref={iconPickerTriggerRef}
-                                            className='bookmark-workspace-icon-picker-trigger'
-                                            type='button'
-                                            aria-expanded={isIconPickerOpen}
-                                            onClick={() => {
-                                                const nextIsOpen =
-                                                    !isIconPickerOpen;
-                                                setIconQuery('');
-                                                setIsIconPickerOpen(nextIsOpen);
-                                            }}
-                                        >
-                                            {createBookmarkIcon(
-                                                editorDraft.icon,
-                                                'icon'
-                                            )}
-                                            <span>{editorDraft.icon}</span>
-                                            <ChevronDown aria-hidden='true' />
-                                        </button>
-                                        {isIconPickerOpen ? (
-                                            <div className='bookmark-workspace-icon-picker'>
-                                                <div
-                                                    className='bookmark-workspace-search bookmark-workspace-icon-search quiet'
-                                                    role='search'
-                                                >
-                                                    <Search aria-hidden='true' />
-                                                    <input
-                                                        ref={iconSearchInputRef}
-                                                        type='text'
-                                                        inputMode='search'
-                                                        aria-label={
-                                                            t.categoryIconSearch
-                                                        }
-                                                        placeholder={
-                                                            t.categoryIconSearch
-                                                        }
-                                                        value={iconQuery}
-                                                        onPointerDown={(
-                                                            event
-                                                        ) => {
-                                                            event.currentTarget.focus();
-                                                        }}
-                                                        onChange={(event) => {
-                                                            setIconQuery(
-                                                                event.target
-                                                                    .value
-                                                            );
-                                                        }}
-                                                    />
-                                                    {iconQuery ===
-                                                    '' ? undefined : (
-                                                        <button
-                                                            type='button'
-                                                            aria-label={t.clear}
-                                                            onClick={() => {
-                                                                setIconQuery(
-                                                                    ''
-                                                                );
-                                                                iconSearchInputRef.current?.focus();
+                                            >
+                                                {createBookmarkIcon(
+                                                    editorDraft.icon,
+                                                    'icon'
+                                                )}
+                                                <span>{editorDraft.icon}</span>
+                                                <ChevronDown aria-hidden='true' />
+                                            </button>
+                                            {isIconPickerOpen ? (
+                                                <div className='bookmark-workspace-icon-picker'>
+                                                    <div
+                                                        className='bookmark-workspace-search bookmark-workspace-icon-search quiet'
+                                                        role='search'
+                                                    >
+                                                        <Search aria-hidden='true' />
+                                                        <input
+                                                            ref={
+                                                                iconSearchInputRef
+                                                            }
+                                                            type='text'
+                                                            inputMode='search'
+                                                            aria-label={
+                                                                t.categoryIconSearch
+                                                            }
+                                                            placeholder={
+                                                                t.categoryIconSearch
+                                                            }
+                                                            value={iconQuery}
+                                                            onPointerDown={(
+                                                                event
+                                                            ) => {
+                                                                event.currentTarget.focus();
                                                             }}
-                                                        >
-                                                            <X aria-hidden='true' />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                                {filteredIconOptions.length ===
-                                                0 ? (
-                                                    <p className='bookmark-workspace-icon-empty'>
-                                                        {
-                                                            t.categoryIconSearchEmpty
-                                                        }
-                                                    </p>
-                                                ) : (
-                                                    <div className='bookmark-workspace-icon-grid'>
-                                                        {filteredIconOptions.map(
-                                                            (option) => (
-                                                                <button
-                                                                    key={
-                                                                        option.iconName
-                                                                    }
-                                                                    type='button'
-                                                                    aria-label={
-                                                                        option.label
-                                                                    }
-                                                                    aria-pressed={
-                                                                        editorDraft.icon ===
-                                                                        option.iconName
-                                                                    }
-                                                                    onClick={() => {
-                                                                        setEditorDraft(
-                                                                            {
-                                                                                ...editorDraft,
-                                                                                icon: option.iconName,
-                                                                            }
-                                                                        );
-                                                                        setIsIconPickerOpen(
-                                                                            false
-                                                                        );
-                                                                        setIconQuery(
-                                                                            ''
-                                                                        );
-                                                                        iconPickerTriggerRef.current?.focus();
-                                                                    }}
-                                                                >
-                                                                    <option.Icon aria-hidden='true' />
-                                                                </button>
-                                                            )
+                                                            onChange={(
+                                                                event
+                                                            ) => {
+                                                                setIconQuery(
+                                                                    event.target
+                                                                        .value
+                                                                );
+                                                            }}
+                                                        />
+                                                        {iconQuery ===
+                                                        '' ? undefined : (
+                                                            <button
+                                                                type='button'
+                                                                aria-label={
+                                                                    t.clear
+                                                                }
+                                                                onClick={() => {
+                                                                    setIconQuery(
+                                                                        ''
+                                                                    );
+                                                                    iconSearchInputRef.current?.focus();
+                                                                }}
+                                                            >
+                                                                <X aria-hidden='true' />
+                                                            </button>
                                                         )}
                                                     </div>
-                                                )}
-                                            </div>
-                                        ) : undefined}
-                                    </div>
-                                )}
-
+                                                    {filteredIconOptions.length ===
+                                                    0 ? (
+                                                        <p className='bookmark-workspace-icon-empty'>
+                                                            {
+                                                                t.categoryIconSearchEmpty
+                                                            }
+                                                        </p>
+                                                    ) : (
+                                                        <div className='bookmark-workspace-icon-grid'>
+                                                            {filteredIconOptions.map(
+                                                                (option) => (
+                                                                    <button
+                                                                        key={
+                                                                            option.iconName
+                                                                        }
+                                                                        type='button'
+                                                                        aria-label={
+                                                                            option.label
+                                                                        }
+                                                                        aria-pressed={
+                                                                            editorDraft.icon ===
+                                                                            option.iconName
+                                                                        }
+                                                                        onClick={() => {
+                                                                            setEditorDraft(
+                                                                                {
+                                                                                    ...editorDraft,
+                                                                                    icon: option.iconName,
+                                                                                }
+                                                                            );
+                                                                            setIsIconPickerOpen(
+                                                                                false
+                                                                            );
+                                                                            setIconQuery(
+                                                                                ''
+                                                                            );
+                                                                            iconPickerTriggerRef.current?.focus();
+                                                                        }}
+                                                                    >
+                                                                        <option.Icon aria-hidden='true' />
+                                                                    </button>
+                                                                )
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : undefined}
+                                        </div>
+                                    )}
+                                </div>
                                 <div className='bookmark-workspace-form-spacer' />
-                                {bookmarkControls.saveState ===
-                                'saved' ? undefined : (
+                                {bookmarkControls.saveState === 'error' && (
                                     <div
-                                        className={`bookmark-workspace-form-save-state ${saveStatus.tone}`}
-                                        role='status'
+                                        className='bookmark-workspace-form-save-state error'
+                                        role='alert'
                                     >
-                                        {saveStatus.icon}
-                                        {saveStatus.label}
+                                        <CircleAlert aria-hidden />
+                                        {t.bookmarkSaveFailed}
                                     </div>
                                 )}
                                 <div
@@ -2189,120 +2326,143 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                 )}
 
                 {isTrashOpen ? (
-                    <div className='bookmark-workspace-editor-backdrop'>
-                        <section
-                            className='bookmark-workspace-trash-dialog'
-                            role='dialog'
-                            aria-label={t.trash}
-                            aria-modal='true'
-                        >
-                            <header>
+                    <dialog
+                        className='bookmark-workspace-trash-dialog bookmark-trash-modal'
+                        ref={(element) => {
+                            if (element && !element.open) {
+                                element.showModal();
+                            }
+                        }}
+                        onCancel={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setIsTrashOpen(false);
+                        }}
+                        role='dialog'
+                        aria-label={t.trash}
+                        aria-modal='true'
+                    >
+                        <header>
+                            <div>
+                                <Trash2 aria-hidden='true' />
                                 <div>
-                                    <Trash2 aria-hidden='true' />
-                                    <div>
-                                        <h3>{t.trash}</h3>
-                                        <p>{t.trashEmptyDescription}</p>
-                                    </div>
+                                    <h3>{t.trash}</h3>
                                 </div>
-                                <button
-                                    className='bookmark-workspace-icon-button'
-                                    type='button'
-                                    aria-label={t.cancel}
-                                    onClick={() => {
-                                        setIsTrashOpen(false);
-                                    }}
-                                >
-                                    <X aria-hidden='true' />
-                                </button>
-                            </header>
-                            {bookmarkControls.bookmarkTrash.length === 0 ? (
-                                <div className='bookmark-workspace-empty'>
-                                    <Trash2 aria-hidden='true' />
-                                    <strong>{t.trashEmpty}</strong>
-                                    <span>{t.trashEmptyDescription}</span>
-                                </div>
-                            ) : (
-                                <div className='bookmark-workspace-trash-list'>
-                                    {bookmarkControls.bookmarkTrash.map(
-                                        (trashItem) => (
-                                            <div key={trashItem.id}>
-                                                <span className='bookmark-workspace-item-icon'>
-                                                    {trashItem.kind ===
-                                                    'bookmark' ? (
-                                                        <Link2 aria-hidden='true' />
-                                                    ) : (
-                                                        <FolderOpen aria-hidden='true' />
+                            </div>
+                            <button
+                                className='bookmark-workspace-icon-button'
+                                type='button'
+                                aria-label={t.cancel}
+                                onClick={() => {
+                                    setIsTrashOpen(false);
+                                }}
+                            >
+                                <X aria-hidden='true' />
+                            </button>
+                        </header>
+                        {bookmarkControls.bookmarkTrash.length === 0 ? (
+                            <div className='bookmark-workspace-empty'>
+                                <Trash2 aria-hidden='true' />
+                                <strong>{t.trashEmpty}</strong>
+                                <span>{t.trashEmptyDescription}</span>
+                            </div>
+                        ) : (
+                            <div className='bookmark-workspace-trash-list'>
+                                {bookmarkControls.bookmarkTrash.map(
+                                    (trashItem) => (
+                                        <div key={trashItem.id}>
+                                            <span className='bookmark-workspace-item-icon'>
+                                                {trashItem.kind ===
+                                                'bookmark' ? (
+                                                    <Link2 aria-hidden='true' />
+                                                ) : (
+                                                    <FolderOpen aria-hidden='true' />
+                                                )}
+                                            </span>
+                                            <span>
+                                                <strong>
+                                                    {trashItem.label}
+                                                </strong>
+                                                <small>
+                                                    {t[trashItem.kind]} ·{' '}
+                                                    {new Intl.DateTimeFormat(
+                                                        locale,
+                                                        {
+                                                            dateStyle: 'medium',
+                                                        }
+                                                    ).format(
+                                                        new Date(
+                                                            trashItem.deletedAt
+                                                        )
                                                     )}
-                                                </span>
-                                                <span>
-                                                    <strong>
-                                                        {trashItem.label}
-                                                    </strong>
-                                                    <small>
-                                                        {t[trashItem.kind]} ·{' '}
-                                                        {new Intl.DateTimeFormat(
-                                                            locale,
-                                                            {
-                                                                dateStyle:
-                                                                    'medium',
-                                                            }
-                                                        ).format(
-                                                            new Date(
-                                                                trashItem.deletedAt
-                                                            )
-                                                        )}
-                                                    </small>
-                                                </span>
-                                                <button
-                                                    className='bookmark-workspace-secondary-button'
-                                                    type='button'
-                                                    onClick={() => {
-                                                        bookmarkControls.restoreTrashItem(
-                                                            trashItem.id
-                                                        );
-                                                    }}
-                                                >
-                                                    <Undo2 aria-hidden='true' />
-                                                    {t.restore}
-                                                </button>
-                                            </div>
-                                        )
-                                    )}
-                                </div>
-                            )}
-                            <footer>
-                                <button
-                                    className='bookmark-workspace-danger-button'
-                                    type='button'
-                                    disabled={
-                                        bookmarkControls.bookmarkTrash
-                                            .length === 0
-                                    }
-                                    onClick={() => {
-                                        setIsEmptyTrashConfirmOpen(true);
-                                    }}
-                                >
-                                    <Trash2 aria-hidden='true' />
-                                    {t.emptyTrash}
-                                </button>
-                            </footer>
-                        </section>
-                    </div>
+                                                </small>
+                                            </span>
+                                            <button
+                                                className='bookmark-workspace-secondary-button'
+                                                type='button'
+                                                onClick={() => {
+                                                    bookmarkControls.restoreTrashItem(
+                                                        trashItem.id
+                                                    );
+                                                }}
+                                            >
+                                                <Undo2 aria-hidden='true' />
+                                                {t.restore}
+                                            </button>
+                                        </div>
+                                    )
+                                )}
+                            </div>
+                        )}
+                        <footer>
+                            <button
+                                className='bookmark-workspace-danger-button'
+                                type='button'
+                                disabled={
+                                    bookmarkControls.bookmarkTrash.length === 0
+                                }
+                                onClick={(event) => {
+                                    emptyTrashReturnFocusRef.current =
+                                        event.currentTarget;
+                                    setIsEmptyTrashConfirmOpen(true);
+                                }}
+                            >
+                                <Trash2 aria-hidden='true' />
+                                {t.emptyTrash}
+                            </button>
+                        </footer>
+                    </dialog>
                 ) : undefined}
 
                 {isEmptyTrashConfirmOpen ? (
-                    <div className='bookmark-workspace-confirm-backdrop'>
-                        <div
-                            className='bookmark-workspace-confirm'
-                            role='alertdialog'
-                            aria-modal='true'
-                        >
+                    <dialog
+                        className='bookmark-workspace-confirm-backdrop bookmark-trash-confirm'
+                        role='alertdialog'
+                        aria-describedby={emptyTrashDescriptionId}
+                        aria-label={t.emptyTrash}
+                        ref={(element) => {
+                            if (element && !element.open) {
+                                element.showModal();
+                            }
+                        }}
+                        onCancel={(event) => {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            setIsEmptyTrashConfirmOpen(false);
+                        }}
+                        onKeyDown={(event) => {
+                            event.stopPropagation();
+                        }}
+                    >
+                        <div className='bookmark-workspace-confirm'>
                             <span className='bookmark-workspace-confirm-icon danger'>
                                 <Trash2 aria-hidden='true' />
                             </span>
                             <div>
                                 <h3>{t.emptyTrash}?</h3>
-                                <p>{t.emptyTrashConfirm}</p>
+                                <p id={emptyTrashDescriptionId}>
+                                    {t.emptyTrashConfirm}
+                                </p>
                             </div>
                             <div>
                                 <button
@@ -2326,12 +2486,15 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                 </button>
                             </div>
                         </div>
-                    </div>
+                    </dialog>
                 ) : undefined}
 
                 {discardTarget === undefined ? undefined : (
                     <dialog
                         className='bookmark-workspace-confirm-backdrop bookmark-discard-dialog'
+                        role='alertdialog'
+                        aria-label={t.discardChanges}
+                        aria-describedby={discardDescriptionId}
                         ref={(element) => {
                             if (element && !element.open) {
                                 element.showModal();
@@ -2339,23 +2502,22 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                         }}
                         onCancel={(event) => {
                             event.preventDefault();
+                            event.stopPropagation();
                             setDiscardTarget(undefined);
                         }}
                         onKeyDown={(event) => {
                             event.stopPropagation();
                         }}
                     >
-                        <div
-                            className='bookmark-workspace-confirm'
-                            role='alertdialog'
-                            aria-modal='true'
-                        >
+                        <div className='bookmark-workspace-confirm'>
                             <span className='bookmark-workspace-confirm-icon danger'>
                                 <CircleAlert aria-hidden='true' />
                             </span>
                             <div>
                                 <h3>{t.discardChanges}</h3>
-                                <p>{t.discardChangesConfirm}</p>
+                                <p id={discardDescriptionId}>
+                                    {t.discardChangesConfirm}
+                                </p>
                             </div>
                             <div>
                                 <button

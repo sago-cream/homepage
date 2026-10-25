@@ -45,7 +45,11 @@ test('hotkeys ignore editable targets, dialogs, modifiers, composition, repeats,
         value: browser.HTMLElement,
     });
     try {
-        const press = (target = browser.document.body, options = {}) => {
+        const press = (
+            target: ReturnType<typeof browser.document.createElement> = browser
+                .document.body,
+            options = {}
+        ) => {
             const event = new browser.KeyboardEvent('keydown', {
                 key: 'a',
                 cancelable: true,

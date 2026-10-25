@@ -6,6 +6,7 @@ import React, {
     useState,
 } from 'react';
 import {
+    ArrowLeft,
     Bookmark,
     Keyboard,
     Mailbox,
@@ -14,6 +15,7 @@ import {
     Monitor,
     Moon,
     Palette,
+    Search,
     Settings,
     SlidersHorizontal,
     Sun,
@@ -226,9 +228,14 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     );
     const [openDropdownId, setOpenDropdownId] = useState<string>();
     const [selectedSection, setSelectedSection] =
-        useState<SettingsSectionId>('appearance');
+        useState<SettingsSectionId>('content');
+    const [settingsQuery, setSettingsQuery] = useState('');
+    const settingsSearchRef = useRef<HTMLInputElement>(null);
     const openDropdownIdRef = useRef(openDropdownId);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const returnFocusRef = useRef<HTMLElement | undefined>(undefined);
+    const triggerRef = useRef<HTMLButtonElement>(null);
+    const controlRef = useRef<HTMLDivElement>(null);
     const wallpaperInputRef = useRef<HTMLInputElement>(null);
     openDropdownIdRef.current = openDropdownId;
 
@@ -276,7 +283,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         }
 
         const previousOverflow = globalThis.document.body.style.overflow;
-        const previouslyFocused = globalThis.document.activeElement;
+        const previouslyFocused = returnFocusRef.current;
         const onKeyDown = (event: KeyboardEvent) => {
             if (event.key === 'Escape' && !event.defaultPrevented) {
                 event.preventDefault();
@@ -298,9 +305,17 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
 
             if (
                 previouslyFocused instanceof HTMLElement &&
-                previouslyFocused.isConnected
+                previouslyFocused.isConnected &&
+                previouslyFocused.getClientRects().length > 0
             ) {
                 previouslyFocused.focus();
+            } else {
+                const fallback =
+                    triggerRef.current ??
+                    controlRef.current
+                        ?.closest('.user-floating-bar')
+                        ?.querySelector<HTMLElement>('.user-menu-trigger');
+                fallback?.focus();
             }
         };
     }, [isOpen, requestSettingsClose]);
@@ -413,35 +428,41 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     } as React.CSSProperties & Record<'--settings-select-width', string>;
     const settingsSections = [
         {
+            icon: Bookmark,
+            id: 'content',
+            label: t.bookmarks,
+            keywords: t.bookmarkSettingsKeywords,
+        },
+        { icon: Mailbox, id: 'feeds', label: t.feeds, keywords: '/feeds' },
+        {
+            icon: Keyboard,
+            id: 'keybinds',
+            label: t.keybinds,
+            keywords: t.keybindSettingsKeywords,
+        },
+        {
             icon: Palette,
             id: 'appearance',
             label: t.appearance,
+            keywords: `${t.theme} ${t.accent} ${t.wallpaper} ${t.skipRiseAnimations}`,
         },
         {
             icon: SlidersHorizontal,
             id: 'preferences',
             label: t.preferences,
-        },
-        {
-            icon: Keyboard,
-            id: 'keybinds',
-            label: t.keybinds,
-        },
-        {
-            icon: Mailbox,
-            id: 'feeds',
-            label: t.feeds,
-        },
-        {
-            icon: Bookmark,
-            id: 'content',
-            label: t.bookmarks,
+            keywords: `${t.location} ${t.language}`,
         },
     ] satisfies ReadonlyArray<{
         icon: typeof Palette;
         id: SettingsSectionId;
         label: string;
+        keywords: string;
     }>;
+    const visibleSections = settingsSections.filter((section) =>
+        `${section.label} ${section.keywords}`
+            .toLocaleLowerCase()
+            .includes(settingsQuery.trim().toLocaleLowerCase())
+    );
 
     const getDropdownOpenHandler = (id: string) => (nextIsOpen: boolean) => {
         setOpenDropdownId(nextIsOpen ? id : undefined);
@@ -456,11 +477,41 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             ? createPortal(
                   <div
                       className='settings-page-backdrop'
+                      onMouseMove={(event) => {
+                          event.stopPropagation();
+                      }}
+                      onMouseLeave={(event) => {
+                          event.stopPropagation();
+                      }}
                       onMouseDown={(event) => {
                           event.stopPropagation();
                       }}
                   >
-                      <section
+                      <dialog
+                          ref={(element) => {
+                              if (element && !element.open) {
+                                  const active = document.activeElement;
+                                  returnFocusRef.current =
+                                      active instanceof HTMLElement &&
+                                      active !== document.body &&
+                                      !active.closest('.settings-page')
+                                          ? active
+                                          : (triggerRef.current ??
+                                            controlRef.current
+                                                ?.closest('.user-floating-bar')
+                                                ?.querySelector<HTMLElement>(
+                                                    '.user-menu-trigger'
+                                                ) ??
+                                            undefined);
+                                  element.showModal();
+                              }
+                          }}
+                          onCancel={(event) => {
+                              if (event.target === event.currentTarget) {
+                                  event.preventDefault();
+                                  requestSettingsClose();
+                              }
+                          }}
                           className='settings-page'
                           role='dialog'
                           aria-modal='true'
@@ -471,67 +522,121 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
 
                               if (
                                   target instanceof Element &&
-                                  !target.closest('.settings-select-control')
+                                  !target.closest(
+                                      '.settings-select-control, .settings-dropdown'
+                                  )
                               ) {
                                   setOpenDropdownId(undefined);
                               }
                           }}
                       >
-                          <header className='settings-page-header'>
-                              <div className='settings-page-heading'>
-                                  <h1 id='settings-page-title'>{t.settings}</h1>
-                                  <p>{t.settingsDescription}</p>
-                              </div>
-                              <button
-                                  className='settings-page-close'
-                                  type='button'
-                                  aria-label={t.cancel}
-                                  ref={closeButtonRef}
-                                  onClick={() => {
-                                      requestSettingsClose();
-                                  }}
-                              >
-                                  <X className='icon' size={20} />
-                              </button>
-                          </header>
-
                           <div className='settings-page-content'>
-                              <nav
-                                  className='settings-page-sidebar'
-                                  aria-label={t.settings}
-                              >
-                                  {settingsSections.map((section) => {
-                                      const Icon = section.icon;
-                                      const isSelected =
-                                          selectedSection === section.id;
-
-                                      return (
-                                          <button
-                                              className='settings-page-sidebar-button'
-                                              key={section.id}
-                                              type='button'
-                                              aria-current={
-                                                  isSelected
-                                                      ? 'page'
-                                                      : undefined
+                              <aside className='settings-page-sidebar'>
+                                  <h1 id='settings-page-title'>{t.settings}</h1>
+                                  <button
+                                      className='settings-page-sidebar-button settings-page-back'
+                                      type='button'
+                                      ref={closeButtonRef}
+                                      onClick={requestSettingsClose}
+                                  >
+                                      <ArrowLeft size={18} aria-hidden />
+                                      <span>{t.backToHomepage}</span>
+                                  </button>
+                                  <form
+                                      className='settings-sidebar-search'
+                                      role='search'
+                                      onSubmit={(event) => {
+                                          event.preventDefault();
+                                          const first = visibleSections.at(0);
+                                          if (first) {
+                                              setOpenDropdownId(undefined);
+                                              setSelectedSection(first.id);
+                                          }
+                                      }}
+                                  >
+                                      <Search size={18} aria-hidden />
+                                      <input
+                                          type='search'
+                                          ref={settingsSearchRef}
+                                          aria-label={t.searchSettings}
+                                          placeholder={t.searchSettings}
+                                          onKeyDown={(event) => {
+                                              if (
+                                                  event.key === 'Escape' &&
+                                                  settingsQuery !== ''
+                                              ) {
+                                                  event.preventDefault();
+                                                  event.stopPropagation();
+                                                  setSettingsQuery('');
                                               }
+                                          }}
+                                          value={settingsQuery}
+                                          onChange={(event) => {
+                                              setSettingsQuery(
+                                                  event.target.value
+                                              );
+                                          }}
+                                      />
+                                      {settingsQuery !== '' && (
+                                          <button
+                                              type='button'
+                                              aria-label={t.clearSearch}
                                               onClick={() => {
-                                                  setOpenDropdownId(undefined);
-                                                  setSelectedSection(
-                                                      section.id
-                                                  );
+                                                  setSettingsQuery('');
+                                                  settingsSearchRef.current?.focus();
                                               }}
                                           >
-                                              <Icon
-                                                  className='icon'
-                                                  size={18}
-                                                  aria-hidden
-                                              />
-                                              <span>{section.label}</span>
+                                              <X size={16} aria-hidden />
                                           </button>
-                                      );
-                                  })}
-                              </nav>
+                                      )}
+                                  </form>
+                                  <nav
+                                      className='settings-page-navigation'
+                                      aria-label={t.settings}
+                                  >
+                                      {visibleSections.length === 0 && (
+                                          <p
+                                              className='settings-search-empty'
+                                              role='status'
+                                          >
+                                              {t.noMatchingSettings}
+                                          </p>
+                                      )}
+                                      {visibleSections.map((section) => {
+                                          const Icon = section.icon;
+                                          const isSelected =
+                                              selectedSection === section.id;
+
+                                          return (
+                                              <button
+                                                  className='settings-page-sidebar-button'
+                                                  key={section.id}
+                                                  type='button'
+                                                  aria-current={
+                                                      isSelected
+                                                          ? 'page'
+                                                          : undefined
+                                                  }
+                                                  onClick={() => {
+                                                      setOpenDropdownId(
+                                                          undefined
+                                                      );
+                                                      setSelectedSection(
+                                                          section.id
+                                                      );
+                                                  }}
+                                              >
+                                                  <Icon
+                                                      className='icon'
+                                                      size={18}
+                                                      aria-hidden
+                                                  />
+                                                  <span>{section.label}</span>
+                                              </button>
+                                          );
+                                      })}
+                                  </nav>
+                              </aside>
 
                               <section
                                   className='settings-page-section'
@@ -539,7 +644,6 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                               >
                                   <div className='settings-section-heading'>
                                       <h2>{t.appearance}</h2>
-                                      <p>{t.appearanceDescription}</p>
                                   </div>
                                   <div className='settings-card'>
                                       <div className='settings-row settings-stacked-row'>
@@ -862,7 +966,6 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                               >
                                   <div className='settings-section-heading'>
                                       <h2>{t.preferences}</h2>
-                                      <p>{t.preferencesDescription}</p>
                                   </div>
                                   <div className='settings-card'>
                                       <div className='settings-row settings-select-row'>
@@ -1000,17 +1103,18 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                   />
                               </section>
                           </div>
-                      </section>
+                      </dialog>
                   </div>,
                   globalThis.document.body
               )
             : undefined;
 
     return (
-        <div className={`settings-control ${placement}`}>
+        <div ref={controlRef} className={`settings-control ${placement}`}>
             {isTriggerHidden ? undefined : (
                 <button
                     className='settings-trigger'
+                    ref={triggerRef}
                     type='button'
                     aria-label={t.settings}
                     aria-expanded={isOpen}
