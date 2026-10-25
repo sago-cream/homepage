@@ -92,6 +92,7 @@ export const KeybindSettingsSection = ({
                                     {t.keybindAction} {index + 1}
                                 </span>
                                 <SettingsDropdown
+                                    searchLabel={t.keybindSearchAction}
                                     id={`keybind-action-${binding.id}`}
                                     labelledBy={`keybind-action-${binding.id}-label`}
                                     value={binding.target}
@@ -107,7 +108,7 @@ export const KeybindSettingsSection = ({
                                         ...bookmarks.map((bookmark) => ({
                                             value: `bookmark:${bookmark.id}`,
                                             label: `${bookmark.title} — ${bookmark.pathLabel}`,
-                                            searchText: bookmark.title,
+                                            searchText: `${bookmark.title} ${bookmark.url} ${bookmark.pathLabel}`,
                                         })),
                                         ...(missingBookmark
                                             ? [

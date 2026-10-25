@@ -4537,11 +4537,14 @@ a.bookmark-workspace-tree-item {
 }
 
 .bookmark-settings-toolbar {
+    height: calc(2.75rem + 1rem + 1px);
+    align-items: flex-start;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--clr-text-alpha-2);
 }
 
 .bookmark-settings-path {
+    height: 2.75rem;
     flex: 1;
     min-width: 0;
     display: flex;
@@ -4568,6 +4571,7 @@ a.bookmark-workspace-tree-item {
 }
 
 .bookmark-settings-toolbar .bookmark-workspace-search {
+    height: 2.75rem;
     flex: 1;
     width: 100%;
     min-width: 0;
@@ -5211,11 +5215,20 @@ a.bookmark-workspace-tree-item {
         gap: 0.75rem;
     }
     .bookmark-settings .bookmark-settings-browser {
-        grid-template-columns: minmax(0, 0.45fr) minmax(0, 0.55fr);
-        gap: 0.5rem;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0;
     }
-    .bookmark-settings-current-location {
+    .bookmark-settings-browser[data-folder-open='true']
+        .bookmark-workspace-tree-pane,
+    .bookmark-settings-browser[data-folder-open='false']
+        .bookmark-workspace-list-pane {
         display: none;
+    }
+    .bookmark-settings-current-location > svg {
+        display: none;
+    }
+    .bookmark-settings-path {
+        gap: 0.5rem;
     }
     :is(.bookmark-settings, .bookmark-card-list) .bookmark-workspace-tree-item {
         grid-template-columns: 1.25rem minmax(0, 1fr);
@@ -5296,4 +5309,88 @@ a.bookmark-workspace-tree-item {
 }
 .settings-feed-results {
     min-height: 0;
+}
+
+.bookmark-settings-toolbar .bookmark-workspace-layer-controls {
+    grid-template-columns: repeat(2, 2.75rem);
+}
+.bookmark-settings-toolbar .bookmark-workspace-layer-controls button,
+.bookmark-settings-tools .bookmark-workspace-icon-button,
+.bookmark-settings-toolbar .bookmark-workspace-search.quiet button {
+    width: 2.75rem;
+    min-height: 2.75rem;
+    height: 2.75rem;
+}
+.bookmark-settings-toolbar .bookmark-workspace-search.quiet input {
+    height: 100%;
+    min-height: 0;
+    padding-block: 0;
+    border: 0;
+    padding-left: 2.75rem;
+}
+.bookmark-settings-toolbar svg,
+.bookmark-settings-toolbar .bookmark-workspace-icon-button svg,
+.bookmark-settings-toolbar .bookmark-workspace-search.quiet button svg {
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+.settings-dropdown-searchable {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.settings-dropdown-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+    min-height: 2.75rem;
+    padding: 0.5rem;
+    border-bottom: 1px solid var(--clr-text-alpha-2);
+    color: var(--clr-text-alpha);
+}
+.settings-dropdown-search input {
+    min-width: 0;
+    flex: 1;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: var(--clr-text);
+    font: var(--fontBaseSm);
+}
+.settings-dropdown-search > svg {
+    flex-shrink: 0;
+}
+.settings-dropdown-search button {
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.5rem;
+    background: transparent;
+    color: var(--clr-text-alpha);
+    cursor: pointer;
+}
+.settings-dropdown-options {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--clr-text-alpha) transparent;
+    scroll-padding: 0.25rem;
+}
+.settings-dropdown-options .settings-dropdown-option {
+    width: 100%;
+}
+.settings-dropdown-options .settings-dropdown-option[data-active='true'] {
+    background: var(--clr-primary-alpha-2);
+    outline: 2px solid var(--clr-primary);
+    outline-offset: -2px;
+}
+.settings-dropdown-empty {
+    padding: 1rem;
+    color: var(--clr-text-alpha);
+    font: var(--fontBaseSm);
 }

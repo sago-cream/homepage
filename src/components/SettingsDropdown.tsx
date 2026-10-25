@@ -13,6 +13,8 @@ import {
 } from '@floating-ui/react';
 import { Check, ChevronDown } from 'lucide-react';
 
+import { SettingsSearchOptions } from './SettingsSearchOptions';
+
 export interface SettingsDropdownOption {
     readonly disabled?: boolean;
     readonly label: string;
@@ -22,6 +24,7 @@ export interface SettingsDropdownOption {
 
 interface SettingsDropdownProps {
     disabled?: boolean;
+    searchLabel?: string;
     id: string;
     isOpen: boolean;
     labelledBy: string;
@@ -33,6 +36,7 @@ interface SettingsDropdownProps {
 
 export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
     disabled = false,
+    searchLabel,
     id,
     isOpen,
     labelledBy,
@@ -49,6 +53,7 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
             options.findIndex((option) => option.value === value)
         )
     );
+    const [initialSearch, setInitialSearch] = useState('');
     const typeaheadRef = useRef('');
     const typeaheadTimeRef = useRef(0);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -97,7 +102,7 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
     }, [onOpenChange]);
 
     useEffect(() => {
-        if (!isOpen) {
+        if (!isOpen || searchLabel) {
             return;
         }
 
@@ -110,7 +115,7 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                 'button:not(:disabled)'
             );
         (selectedOptionButton ?? firstOption)?.focus();
-    }, [isOpen, context.elements.floating]);
+    }, [isOpen, context.elements.floating, searchLabel]);
 
     const searchMatchingOption = useCallback(
         (key: string) => {
@@ -156,11 +161,12 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                 disabled={disabled}
                 type='button'
                 id={id}
-                aria-haspopup='listbox'
+                aria-haspopup={searchLabel ? 'dialog' : 'listbox'}
                 aria-expanded={isOpen}
                 aria-controls={`${id}-listbox`}
                 aria-labelledby={labelledBy}
                 onClick={() => {
+                    setInitialSearch('');
                     onOpenChange(!isOpen);
                 }}
                 onKeyDown={(event) => {
@@ -171,6 +177,7 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
 
                     if (event.key === 'ArrowDown' && !isOpen) {
                         event.preventDefault();
+                        setInitialSearch('');
                         onOpenChange(true);
                     }
 
@@ -181,7 +188,12 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                         !event.metaKey
                     ) {
                         event.preventDefault();
-                        searchMatchingOption(event.key);
+                        if (searchLabel) {
+                            setInitialSearch(event.key);
+                            onOpenChange(true);
+                        } else {
+                            searchMatchingOption(event.key);
+                        }
                     }
                 }}
             >
@@ -203,100 +215,118 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                     <FloatingFocusManager
                         context={context}
                         modal={false}
-                        initialFocus={-1}
+                        initialFocus={searchLabel ? 0 : -1}
                     >
                         <div
                             {...getFloatingProps()}
                             style={floatingStyles}
                             ref={setListboxRef}
-                            className='settings-dropdown'
+                            className={`settings-dropdown${searchLabel ? ' settings-dropdown-searchable' : ''}`}
                             id={`${id}-listbox`}
-                            role='listbox'
+                            role={searchLabel ? 'dialog' : 'listbox'}
                             aria-labelledby={labelledBy}
                         >
-                            {options.map((option, optionIndex) => {
-                                const isSelected = option.value === value;
+                            {searchLabel ? (
+                                <SettingsSearchOptions
+                                    id={id}
+                                    label={searchLabel}
+                                    initialQuery={initialSearch}
+                                    options={options}
+                                    value={value}
+                                    onClose={closeAndFocusTrigger}
+                                    onSelect={(nextValue) => {
+                                        onChange(nextValue);
+                                        closeAndFocusTrigger();
+                                    }}
+                                />
+                            ) : (
+                                options.map((option, optionIndex) => {
+                                    const isSelected = option.value === value;
 
-                                return (
-                                    <button
-                                        className='settings-dropdown-option'
-                                        type='button'
-                                        role='option'
-                                        tabIndex={
-                                            activeOption === optionIndex
-                                                ? 0
-                                                : -1
-                                        }
-                                        onFocus={() => {
-                                            setActiveOption(optionIndex);
-                                        }}
-                                        aria-selected={isSelected}
-                                        data-value={option.value}
-                                        disabled={option.disabled}
-                                        key={option.value}
-                                        onClick={() => {
-                                            if (option.disabled) {
-                                                return;
+                                    return (
+                                        <button
+                                            className='settings-dropdown-option'
+                                            type='button'
+                                            role='option'
+                                            tabIndex={
+                                                activeOption === optionIndex
+                                                    ? 0
+                                                    : -1
                                             }
+                                            onFocus={() => {
+                                                setActiveOption(optionIndex);
+                                            }}
+                                            aria-selected={isSelected}
+                                            data-value={option.value}
+                                            disabled={option.disabled}
+                                            key={option.value}
+                                            onClick={() => {
+                                                if (option.disabled) {
+                                                    return;
+                                                }
 
-                                            onChange(option.value);
-                                            closeAndFocusTrigger();
-                                        }}
-                                        onKeyDown={(event) => {
-                                            if (
-                                                [
-                                                    'ArrowDown',
-                                                    'ArrowUp',
-                                                    'Home',
-                                                    'End',
-                                                ].includes(event.key)
-                                            ) {
-                                                event.preventDefault();
-                                                event.stopPropagation();
-                                                const enabled = [
-                                                    ...(listboxRef.current?.querySelectorAll<HTMLButtonElement>(
-                                                        'button:not(:disabled)'
-                                                    ) ?? []),
-                                                ];
-                                                const index = enabled.indexOf(
-                                                    event.currentTarget
-                                                );
-                                                let next =
-                                                    event.key === 'ArrowDown'
-                                                        ? (index + 1) %
-                                                          enabled.length
-                                                        : (index -
-                                                              1 +
-                                                              enabled.length) %
-                                                          enabled.length;
-                                                if (event.key === 'Home') {
-                                                    next = 0;
-                                                }
-                                                if (event.key === 'End') {
-                                                    next = enabled.length - 1;
-                                                }
-                                                enabled[next]?.focus();
-                                            }
-                                            if (event.key === 'Escape') {
-                                                event.preventDefault();
-                                                event.stopPropagation();
+                                                onChange(option.value);
                                                 closeAndFocusTrigger();
-                                            }
-                                        }}
-                                    >
-                                        <span className='settings-option-label'>
-                                            {option.label}
-                                        </span>
-                                        {isSelected ? (
-                                            <Check
-                                                className='settings-dropdown-check'
-                                                size={16}
-                                                aria-hidden
-                                            />
-                                        ) : undefined}
-                                    </button>
-                                );
-                            })}
+                                            }}
+                                            onKeyDown={(event) => {
+                                                if (
+                                                    [
+                                                        'ArrowDown',
+                                                        'ArrowUp',
+                                                        'Home',
+                                                        'End',
+                                                    ].includes(event.key)
+                                                ) {
+                                                    event.preventDefault();
+                                                    event.stopPropagation();
+                                                    const enabled = [
+                                                        ...(listboxRef.current?.querySelectorAll<HTMLButtonElement>(
+                                                            'button:not(:disabled)'
+                                                        ) ?? []),
+                                                    ];
+                                                    const index =
+                                                        enabled.indexOf(
+                                                            event.currentTarget
+                                                        );
+                                                    let next =
+                                                        event.key ===
+                                                        'ArrowDown'
+                                                            ? (index + 1) %
+                                                              enabled.length
+                                                            : (index -
+                                                                  1 +
+                                                                  enabled.length) %
+                                                              enabled.length;
+                                                    if (event.key === 'Home') {
+                                                        next = 0;
+                                                    }
+                                                    if (event.key === 'End') {
+                                                        next =
+                                                            enabled.length - 1;
+                                                    }
+                                                    enabled[next]?.focus();
+                                                }
+                                                if (event.key === 'Escape') {
+                                                    event.preventDefault();
+                                                    event.stopPropagation();
+                                                    closeAndFocusTrigger();
+                                                }
+                                            }}
+                                        >
+                                            <span className='settings-option-label'>
+                                                {option.label}
+                                            </span>
+                                            {isSelected ? (
+                                                <Check
+                                                    className='settings-dropdown-check'
+                                                    size={16}
+                                                    aria-hidden
+                                                />
+                                            ) : undefined}
+                                        </button>
+                                    );
+                                })
+                            )}
                         </div>
                     </FloatingFocusManager>
                 </FloatingPortal>

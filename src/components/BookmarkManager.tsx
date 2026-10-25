@@ -46,6 +46,8 @@ import type {
     BookmarkLinkData,
     BookmarkNodeData,
 } from '@/types/bookmarks';
+import { getLocationAfterDeletion } from '@/utils/bookmarkNavigation';
+import type { BookmarkLocation } from '@/utils/bookmarkNavigation';
 import {
     categoryIconOptions,
     createBookmarkIcon,
@@ -73,11 +75,6 @@ interface BookmarkManagerProps {
     bookmarkControls: BookmarkControls;
     ref?: React.Ref<BookmarkManagerHandle>;
     onClose: () => void;
-}
-
-interface BookmarkLocation {
-    categoryIndex: number;
-    folderPath: string[];
 }
 
 interface NavigationSnapshot {
@@ -512,6 +509,9 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     const emptyTrashReturnFocusRef = useRef<HTMLElement | undefined>(undefined);
     const discardReturnFocusRef = useRef<HTMLElement | undefined>(undefined);
     const importInputRef = useRef<HTMLInputElement>(null);
+    const pendingDeleteFocusRef = useRef<
+        { pane: 'left' | 'right'; nodeId?: string } | undefined
+    >(undefined);
     const queryInputRef = useRef<HTMLInputElement>(null);
     const iconPickerTriggerRef = useRef<HTMLButtonElement>(null);
     const iconSearchInputRef = useRef<HTMLInputElement>(null);
@@ -1061,6 +1061,22 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     };
 
     const deleteItem = (deleteTarget: DeleteTarget) => {
+        const activeRow =
+            document.activeElement?.closest<HTMLElement>('[data-node-id]');
+        const pane = activeRow?.closest('.bookmark-workspace-tree-pane')
+            ? 'left'
+            : 'right';
+        const paneElement = dialogRef.current?.querySelector(
+            pane === 'left'
+                ? '.bookmark-workspace-tree-pane'
+                : '.bookmark-workspace-list-pane'
+        );
+        const rows = [
+            ...(paneElement?.querySelectorAll<HTMLElement>('[data-node-id]') ??
+                []),
+        ];
+        const rowIndex = activeRow ? rows.indexOf(activeRow) : -1;
+        const nextRow = rows.at(rowIndex + 1) ?? rows.at(rowIndex - 1);
         const trashItemId = (() => {
             if (deleteTarget.kind === 'category') {
                 return bookmarkControls.deleteCategory(
@@ -1077,13 +1093,69 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         })();
 
         if (trashItemId !== false) {
+            pendingDeleteFocusRef.current = {
+                pane,
+                nodeId: nextRow?.dataset.nodeId,
+            };
+            const rebase = (
+                snapshot: NavigationSnapshot
+            ): NavigationSnapshot => {
+                const nextLocation = getLocationAfterDeletion(
+                    snapshot.location,
+                    deleteTarget
+                );
+                const selected =
+                    snapshot.selectedLocation &&
+                    getLocationAfterDeletion(
+                        snapshot.selectedLocation,
+                        deleteTarget
+                    );
+                const nextSelected =
+                    selected?.categoryIndex === -1 ||
+                    (selected && isSameLocation(selected, nextLocation))
+                        ? undefined
+                        : selected;
+                const survives = (candidate: BookmarkLocation) =>
+                    deleteTarget.kind === 'category'
+                        ? candidate.categoryIndex !== deleteTarget.categoryIndex
+                        : deleteTarget.kind !== 'folder' ||
+                          candidate.categoryIndex !==
+                              deleteTarget.categoryIndex ||
+                          !deleteTarget.folderPath.every(
+                              (id, index) => candidate.folderPath[index] === id
+                          );
+                return {
+                    ...snapshot,
+                    location: nextLocation,
+                    selectedLocation: nextSelected,
+                    focusedPane: nextSelected ? snapshot.focusedPane : 'left',
+                    scrollPositions: {
+                        left: survives(snapshot.location)
+                            ? (snapshot.scrollPositions?.left ?? 0)
+                            : 0,
+                        right:
+                            snapshot.selectedLocation &&
+                            nextSelected &&
+                            survives(snapshot.selectedLocation)
+                                ? (snapshot.scrollPositions?.right ?? 0)
+                                : 0,
+                    },
+                };
+            };
+            const next = rebase(captureNavigation());
+            pendingScrollRef.current = next.scrollPositions;
+            setLocation(next.location);
+            setSelectedLocation(next.selectedLocation);
+            setFocusedPane(next.focusedPane);
+            setBackLocations((current: readonly NavigationSnapshot[]) =>
+                current.map(rebase)
+            );
+            setForwardLocations((current: readonly NavigationSnapshot[]) =>
+                current.map(rebase)
+            );
             setUndoSnapshot({ id: trashItemId });
             setEditorDraft(undefined);
             setDraftBaseline('');
-            setBackLocations([]);
-            setForwardLocations([]);
-            setLocation(bookmarkRootLocation);
-            setSelectedLocation(undefined);
         }
     };
 
@@ -1143,6 +1215,46 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             right.scrollTop = positions.right;
         }
     }, [location, selectedLocation]);
+
+    useEffect(() => {
+        if (globalThis.matchMedia('(width < 48rem)').matches) {
+            dialogRef.current
+                ?.querySelector<HTMLElement>(
+                    selectedLocation
+                        ? '.bookmark-workspace-list-pane'
+                        : '.bookmark-workspace-tree-pane'
+                )
+                ?.focus({ preventScroll: true });
+        }
+    }, [location, selectedLocation]);
+
+    useEffect(() => {
+        const pending = pendingDeleteFocusRef.current;
+        if (!pending) {
+            return;
+        }
+        pendingDeleteFocusRef.current = undefined;
+        const panes = [
+            ...(dialogRef.current?.querySelectorAll<HTMLElement>(
+                '.bookmark-workspace-tree-pane, .bookmark-workspace-list-pane'
+            ) ?? []),
+        ];
+        const pane =
+            panes.find(
+                (element) =>
+                    element.classList.contains(
+                        pending.pane === 'left'
+                            ? 'bookmark-workspace-tree-pane'
+                            : 'bookmark-workspace-list-pane'
+                    ) && element.getClientRects().length > 0
+            ) ?? panes.find((element) => element.getClientRects().length > 0);
+        const row = [
+            ...(pane?.querySelectorAll<HTMLElement>('[data-node-id]') ?? []),
+        ].find((element) => element.dataset.nodeId === pending.nodeId);
+        (row?.querySelector<HTMLButtonElement>('button') ?? pane)?.focus({
+            preventScroll: true,
+        });
+    }, [bookmarkTree]);
 
     useEffect(() => {
         const invalid = dialogRef.current?.querySelector<HTMLInputElement>(
@@ -1494,7 +1606,13 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                         </div>
                         <div className='bookmark-settings-current-location'>
                             {createBookmarkIcon(activeIcon, 'icon')}
-                            <span>{getLocationTitle(activeAddLocation)}</span>
+                            <span
+                                title={getLocationTitle(
+                                    selectedLocation ?? location
+                                )}
+                            >
+                                {getLocationTitle(activeAddLocation)}
+                            </span>
                         </div>
                     </div>
                     {isSearchOpen ? (
@@ -1592,6 +1710,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                 >
                     <div
                         className='bookmark-settings-browser bookmark-workspace-grid'
+                        data-folder-open={selectedLocation !== undefined}
                         inert={editorDraft !== undefined}
                     >
                         <aside
@@ -1605,6 +1724,24 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                     )
                                 ) {
                                     setFocusedPane('left');
+                                    const bounds =
+                                        event.currentTarget.getBoundingClientRect();
+                                    if (
+                                        selectedLocation &&
+                                        event.clientX <
+                                            bounds.left +
+                                                event.currentTarget.clientWidth
+                                    ) {
+                                        navigateTo({
+                                            location,
+                                            focusedPane: 'left',
+                                            scrollPositions: {
+                                                left: captureScrollPositions()
+                                                    .left,
+                                                right: 0,
+                                            },
+                                        });
+                                    }
                                 }
                             }}
                             onFocusCapture={() => {
