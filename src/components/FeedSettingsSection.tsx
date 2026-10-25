@@ -234,10 +234,6 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
                 </div>
             </dialog>
             <div className='settings-feed-selected'>
-                <div className='settings-feed-subheading'>
-                    <span>{t.feedBookmarks}</span>
-                    <small>{feedBookmarks.length}</small>
-                </div>
                 {feedBookmarks.length === 0 ? (
                     <div className='settings-feed-empty'>
                         <LinkIcon aria-hidden='true' />
