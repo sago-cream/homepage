@@ -2425,6 +2425,7 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-page {
+    pointer-events: auto;
     position: fixed;
     inset: 0;
     margin: 0;
