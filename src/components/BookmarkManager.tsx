@@ -1776,7 +1776,11 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                     </div>
                                 ) : visibleSidebarItems.length === 0 ? (
                                     <div className='bookmark-workspace-empty compact'>
-                                        <Search aria-hidden='true' />
+                                        {normalizedQuery === '' ? (
+                                            <Bookmark aria-hidden='true' />
+                                        ) : (
+                                            <Search aria-hidden='true' />
+                                        )}
                                         <strong>
                                             {normalizedQuery === ''
                                                 ? t.bookmarksEmpty
