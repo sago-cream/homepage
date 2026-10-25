@@ -4537,6 +4537,14 @@ a.bookmark-workspace-tree-item {
     gap: 0.5rem;
 }
 
+.bookmark-settings-heading {
+    align-items: flex-start;
+}
+
+.bookmark-settings-heading .settings-section-heading {
+    padding-top: 0.25rem;
+}
+
 .bookmark-settings-toolbar {
     height: calc(2.75rem + 1rem + 1px);
     align-items: flex-start;
@@ -4741,7 +4749,6 @@ a.bookmark-workspace-tree-item {
 
 /* Each workspace pane owns its scrolling inside the fixed settings viewport. */
 .settings-page-section:has(.bookmark-settings) {
-    max-width: none;
     overflow: hidden;
 }
 .settings-page-section:has(.bookmark-settings),
