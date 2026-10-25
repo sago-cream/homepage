@@ -90,7 +90,6 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
         }
 
         setIsMenuOpen(false);
-        setIsSettingsOpen(false);
     }, [closeMenusSignal]);
 
     return (
@@ -248,7 +247,6 @@ const UserFloatingBarFallback: React.FC<CloseableMenuProps> = ({
         }
 
         setIsMenuOpen(false);
-        setIsSettingsOpen(false);
     }, [closeMenusSignal]);
 
     return (

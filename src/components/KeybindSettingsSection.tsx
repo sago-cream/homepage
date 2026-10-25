@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 
 import type { BookmarkControls } from '@/hooks/useBookmarks';
@@ -21,6 +21,17 @@ export const KeybindSettingsSection = ({
 }): ReactElement => {
     const { t } = useLocale();
     const { keybinds, saveKeybinds } = useKeybinds();
+    const addButtonRef = useRef<HTMLButtonElement>(null);
+    const pendingKeybindRef = useRef<string | undefined>(undefined);
+    useEffect(() => {
+        const id = pendingKeybindRef.current;
+        if (id && keybinds.some((binding) => binding.id === id)) {
+            pendingKeybindRef.current = undefined;
+            document
+                .querySelector<HTMLButtonElement>(`[id="keybind-action-${id}"]`)
+                ?.focus();
+        }
+    }, [keybinds]);
     const [error, setError] = useState<{ id?: string; message: string }>();
     const bookmarks = getSearchItems(bookmarkControls.bookmarkTree);
     const commands = getSlashCommandResults('/');
@@ -54,7 +65,6 @@ export const KeybindSettingsSection = ({
         <section className='settings-page-section settings-keybinds'>
             <div className='settings-section-heading'>
                 <h2>{t.keybinds}</h2>
-                <p>{t.keybindsDescription}</p>
             </div>
             <div className='settings-card'>
                 {keybinds.length === 0 ? (
@@ -82,6 +92,7 @@ export const KeybindSettingsSection = ({
                                     {t.keybindAction} {index + 1}
                                 </span>
                                 <SettingsDropdown
+                                    searchLabel={t.keybindSearchAction}
                                     id={`keybind-action-${binding.id}`}
                                     labelledBy={`keybind-action-${binding.id}-label`}
                                     value={binding.target}
@@ -97,7 +108,7 @@ export const KeybindSettingsSection = ({
                                         ...bookmarks.map((bookmark) => ({
                                             value: `bookmark:${bookmark.id}`,
                                             label: `${bookmark.title} — ${bookmark.pathLabel}`,
-                                            searchText: bookmark.title,
+                                            searchText: `${bookmark.title} ${bookmark.url} ${bookmark.pathLabel}`,
                                         })),
                                         ...(missingBookmark
                                             ? [
@@ -175,11 +186,23 @@ export const KeybindSettingsSection = ({
                                 aria-label={`${t.removeKeybind} ${index + 1}`}
                                 onClick={() => {
                                     onOpenDropdownChange(undefined);
+                                    const next =
+                                        keybinds.at(index + 1) ??
+                                        keybinds.at(index - 1);
                                     save(
                                         keybinds.filter(
                                             (item) => item.id !== binding.id
                                         )
                                     );
+                                    requestAnimationFrame(() => {
+                                        const target =
+                                            next && next.id !== binding.id
+                                                ? document.querySelector<HTMLButtonElement>(
+                                                      `[id="keybind-action-${next.id}"]`
+                                                  )
+                                                : addButtonRef.current;
+                                        target?.focus();
+                                    });
                                 }}
                             >
                                 <Trash2 size={18} aria-hidden />
@@ -197,19 +220,15 @@ export const KeybindSettingsSection = ({
                     {error.message}
                 </p>
             ) : undefined}
-            <div>
+            <div className='settings-keybind-footer'>
                 <button
+                    ref={addButtonRef}
                     className='bookmark-workspace-primary-button'
                     type='button'
                     onClick={() => {
-                        save([
-                            ...keybinds,
-                            {
-                                id: globalThis.crypto.randomUUID(),
-                                target: '',
-                                key: '',
-                            },
-                        ]);
+                        const id = globalThis.crypto.randomUUID();
+                        pendingKeybindRef.current = id;
+                        save([...keybinds, { id, target: '', key: '' }]);
                     }}
                 >
                     <Plus size={18} aria-hidden />

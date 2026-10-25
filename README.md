@@ -42,7 +42,7 @@ bun run build
 
 ## Deployment
 
-Production runs in the Vercel project `homepage-startup-check` under Hsi's Lab,
+Production runs in the Vercel project `homepage` under Hsi's Lab,
 serving <https://homepage.hsichen.dev>. The connected `sago-cream/homepage` repository
 deploys `main` to production and pull requests to preview deployments.
 
