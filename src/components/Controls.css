@@ -4749,6 +4749,7 @@ a.bookmark-workspace-tree-item {
 
 /* Each workspace pane owns its scrolling inside the fixed settings viewport. */
 .settings-page-section:has(.bookmark-settings) {
+    grid-template-rows: minmax(0, 1fr);
     overflow: hidden;
 }
 .settings-page-section:has(.bookmark-settings),
@@ -4779,6 +4780,21 @@ a.bookmark-workspace-tree-item {
 }
 .bookmark-settings .bookmark-workspace-tree {
     min-height: 100%;
+}
+.bookmark-settings .bookmark-workspace-tree:has(> .bookmark-workspace-empty) {
+    align-content: safe center;
+}
+.bookmark-settings
+    .bookmark-settings-browser[data-folder-open='false']:has(
+        .bookmark-workspace-tree > .bookmark-workspace-empty
+    ) {
+    grid-template-columns: minmax(0, 1fr);
+}
+.bookmark-settings-browser[data-folder-open='false']:has(
+        .bookmark-workspace-tree > .bookmark-workspace-empty
+    )
+    .bookmark-workspace-list-pane {
+    display: none;
 }
 .bookmark-settings-editor {
     position: static;
