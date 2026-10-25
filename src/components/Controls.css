@@ -2490,7 +2490,7 @@ a.bookmark-workspace-tree-item {
     min-height: 0;
     padding: 2rem;
     display: grid;
-    grid-template-columns: 13rem minmax(0, 1fr);
+    grid-template-columns: 15rem minmax(0, 1fr);
     gap: 2rem;
     align-items: stretch;
 }
@@ -2503,6 +2503,8 @@ a.bookmark-workspace-tree-item {
     gap: 0.75rem;
     overflow: auto;
     padding: 0.25rem;
+    padding-inline-end: 1rem;
+    border-inline-end: 1px solid var(--clr-text-alpha-2);
 }
 
 .settings-page-sidebar h1 {
@@ -3278,6 +3280,10 @@ a.bookmark-workspace-tree-item {
         grid-template-columns: minmax(0, 1fr) auto;
         overflow: visible;
         gap: 0.5rem;
+        padding-inline-end: 0.25rem;
+        padding-bottom: 0.75rem;
+        border-inline-end: 0;
+        border-bottom: 1px solid var(--clr-text-alpha-2);
     }
 
     .settings-page-sidebar h1 {
