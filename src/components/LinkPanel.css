@@ -3,11 +3,9 @@
     --indicator-gap: 0.5rem;
     --indicator-width: 2.5rem;
     --link-height: 3.5rem;
-    --font-size: var(--fs-lg);
-    --bookmark-link-inline-start: calc(
-        var(--bookmark-folder-inline-padding) + var(--font-size) + 0.75rem
-    );
-    --bookmark-link-inline-end: 1rem;
+    --font-size: var(--fs-md);
+    --bookmark-link-inline-start: var(--bookmark-folder-inline-padding);
+    --bookmark-link-inline-end: var(--bookmark-folder-inline-padding);
     --bookmark-folder-inline-padding: 2rem;
     --bookmark-panel-radius: 1rem;
     --bookmark-row-radius: 0.75rem;
@@ -254,7 +252,7 @@
 
     .mobile-bookmark-list {
         display: grid;
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         gap: 0.5rem;
         padding-bottom: 1rem;
 
@@ -303,7 +301,7 @@
         background-color: var(--clr-text-alpha-2);
         color: var(--clr-text);
         cursor: pointer;
-        font: var(--fontBoldSm);
+        font: var(--fontBoldMd);
         text-align: left;
         text-decoration: none;
         transition:
@@ -314,6 +312,12 @@
         display: flex;
         align-items: center;
         gap: 0.75rem;
+
+        > .icon {
+            flex: 0 0 auto;
+            width: var(--font-size);
+            height: var(--font-size);
+        }
 
         &:active {
             scale: var(--motion-press-scale);
@@ -326,12 +330,6 @@
 
     .mobile-bookmark-folder {
         justify-content: space-between;
-
-        > .icon {
-            flex: 0 0 auto;
-            width: 1.25rem;
-            height: 1.25rem;
-        }
     }
 
     .mobile-bookmark-node-label {
@@ -381,7 +379,6 @@
     @media (width < 37.5rem) {
         --width: 10rem;
         --link-height: 2rem;
-        --font-size: var(--fs-sm);
         --height: 55svh;
         bottom: calc((100% - var(--height)) / 2);
         top: auto;
@@ -537,6 +534,13 @@
 
         display: flex;
         align-items: center;
+        gap: 0.75rem;
+
+        .bookmark-link-icon {
+            flex: 0 0 auto;
+            width: var(--font-size);
+            height: var(--font-size);
+        }
 
         span {
             min-width: 0;
