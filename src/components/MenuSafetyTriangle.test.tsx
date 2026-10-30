@@ -18,6 +18,10 @@ test.each([false, true])(
             getComputedStyle: browser.getComputedStyle.bind(browser),
             addEventListener: browser.addEventListener.bind(browser),
             removeEventListener: browser.removeEventListener.bind(browser),
+            requestAnimationFrame: browser.requestAnimationFrame.bind(browser),
+            cancelAnimationFrame: browser.cancelAnimationFrame.bind(browser),
+            innerWidth: 1440,
+            innerHeight: 900,
             IS_REACT_ACT_ENVIRONMENT: true,
         };
         const originals = new Map(
@@ -38,6 +42,9 @@ test.each([false, true])(
             await import('@/hooks/useMenuAim');
         const container = document.createElement('div');
         document.body.append(container);
+        const layerHost = document.createElement('div');
+        layerHost.getAnimations = () => [];
+        document.body.append(layerHost);
         const root = createRoot(container);
         let clicks = 0;
         function Item({ id }: { id: string }) {
@@ -164,34 +171,50 @@ test.each([false, true])(
                 showPopover: { configurable: true, value: () => undefined },
                 hidePopover: { configurable: true, value: () => undefined },
             });
-            const { LinkCategory } = await import('./LinkCategory');
+            const { BookmarkPanelLayersContext, LinkCategory } =
+                await import('./LinkCategory');
             await act(async () => {
                 root.render(
                     <MenuAimDebugContext value={debug}>
                         <FloatingTree>
-                            <LinkCategory
-                                categoryData={{
-                                    category: 'Short list',
-                                    icon: <span />,
-                                    iconName: 'Folder',
-                                    links: [],
-                                    children: [
-                                        {
-                                            id: 'leaf',
-                                            title: 'Item',
-                                            type: 'link',
-                                            url: 'https://example.com',
-                                        },
-                                    ],
-                                }}
-                                clickedFolderPath={[]}
-                                index={0}
-                                isMouseNav
-                                padding='100px'
-                                onSelectCategory={() => undefined}
-                                onSelectFolder={() => undefined}
-                                onSelectLink={() => undefined}
-                            />
+                            <BookmarkPanelLayersContext value={layerHost}>
+                                <LinkCategory
+                                    categoryData={{
+                                        category: 'Short list',
+                                        icon: <span />,
+                                        iconName: 'Folder',
+                                        links: [],
+                                        children: [
+                                            {
+                                                id: 'leaf',
+                                                title: 'Item',
+                                                type: 'link',
+                                                url: 'https://example.com',
+                                            },
+                                            {
+                                                id: 'folder',
+                                                title: 'Folder',
+                                                type: 'folder',
+                                                children: [
+                                                    {
+                                                        id: 'nested',
+                                                        title: 'Destination',
+                                                        type: 'link',
+                                                        url: 'https://example.com/nested',
+                                                    },
+                                                ],
+                                            },
+                                        ],
+                                    }}
+                                    clickedFolderPath={[]}
+                                    index={0}
+                                    isMouseNav
+                                    padding='100px'
+                                    onSelectCategory={() => undefined}
+                                    onSelectFolder={() => undefined}
+                                    onSelectLink={() => undefined}
+                                />
+                            </BookmarkPanelLayersContext>
                         </FloatingTree>
                     </MenuAimDebugContext>
                 );
@@ -226,11 +249,38 @@ test.each([false, true])(
             // Inside the old full-panel triangle, but outside the item-list triangle.
             await dispatch(document.body, 'mousemove', 225, 300);
             expect(category.getAttribute('aria-expanded')).toBe('false');
-            expect(items.textContent).toBe('Item');
+            expect(items.textContent).toBe('ItemFolder');
             expect(items.inert).toBe(true);
             expect(
                 container.querySelectorAll('.menu-safety-overlay')
             ).toHaveLength(0);
+            await dispatch(category, 'mouseenter', 100, 140);
+            const folder = items.querySelector<HTMLElement>('.folder-link');
+            const folderNode = folder?.parentElement;
+            if (!folder || !folderNode) {
+                throw new Error('Missing nested folder fixture');
+            }
+            folderNode.getBoundingClientRect = () =>
+                new browser.DOMRect(240, 156, 240, 56);
+            await act(async () => {
+                folder.focus();
+                await Promise.resolve();
+            });
+            const nestedPanel =
+                layerHost.querySelector<HTMLElement>('.bookmark-submenu');
+            expect(nestedPanel?.textContent).toBe('Destination');
+            expect(nestedPanel?.parentElement).toBe(layerHost);
+            expect(nestedPanel?.hasAttribute('popover')).toBe(false);
+            expect(items.contains(nestedPanel)).toBe(false);
+            await act(async () => {
+                folder.blur();
+                await Promise.resolve();
+            });
+            await dispatch(category, 'mouseleave', 200, 156);
+            await dispatch(document.body, 'mousemove', 225, 300);
+            expect(nestedPanel?.dataset.open).toBe('false');
+            expect(nestedPanel?.textContent).toBe('Destination');
+            expect(nestedPanel?.inert).toBe(true);
         } finally {
             await act(async () => {
                 root.unmount();
@@ -243,6 +293,7 @@ test.each([false, true])(
                     Reflect.deleteProperty(globalThis, key);
                 }
             }
+            layerHost.remove();
             await browser.happyDOM.close();
         }
     }

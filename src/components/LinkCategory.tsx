@@ -1,5 +1,13 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, {
+    createContext,
+    useCallback,
+    useContext,
+    useEffect,
+    useRef,
+    useState,
+} from 'react';
 import { FloatingNode } from '@floating-ui/react';
+import { createPortal } from 'react-dom';
 
 import { useMenuAim } from '@/hooks/useMenuAim';
 import type { BookmarkFolderData, BookmarkNodeData } from '@/types/bookmarks';
@@ -69,6 +77,10 @@ interface BookmarkFolderNodeProps {
     ) => void;
 }
 
+export const BookmarkPanelLayersContext = createContext<
+    HTMLDivElement | undefined
+>(undefined);
+
 const submenuViewportPadding = 16;
 
 const useRetainedMenuContent = (isOpen: boolean): boolean => {
@@ -101,6 +113,7 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
     onSelectFolder,
     onSelectLink,
 }) => {
+    const layerRoot = useContext(BookmarkPanelLayersContext);
     const [isFocused, setIsFocused] = useState(false);
     const folderNodeRef = useRef<HTMLDivElement>(null);
     const submenuRef = useRef<HTMLDivElement>(null);
@@ -133,11 +146,16 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
             viewportTop + viewportHeight - submenuViewportPadding;
         const availableHeight = bottomLimit - topLimit;
         const anchor = folderNode.getBoundingClientRect();
-        const { width } = submenu.getBoundingClientRect();
+        const { width } = anchor;
+        const rootLeft = layerRoot?.getBoundingClientRect().left ?? 0;
         const opensLeft =
             anchor.right + width >
             globalThis.innerWidth - submenuViewportPadding;
-        submenu.style.left = `${opensLeft ? anchor.left - width : anchor.right}px`;
+        const left =
+            (opensLeft ? anchor.left - width : anchor.right) - rootLeft;
+        submenu.style.left = `${left}px`;
+        submenu.style.setProperty('--submenu-offset', `${left}px`);
+        submenu.style.zIndex = String(9 - Math.round(left / width));
         submenu.dataset.side = opensLeft ? 'left' : 'right';
         aim.setPlacement(opensLeft ? 'left-start' : 'right-start');
         const items = aim.refs.floating.current;
@@ -153,31 +171,36 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
             ),
             maxTop
         );
-        submenu.style.top = `${viewportTop}px`;
+        submenu.style.top = `${viewportTop - (layerRoot?.getBoundingClientRect().top ?? 0)}px`;
         submenu.style.height = `${viewportHeight}px`;
         submenu.style.setProperty(
             '--padding',
             `${Math.round(submenuTop - viewportTop)}px`
         );
-    }, [aim.refs.floating, aim.setPlacement]);
+    }, [aim.refs.floating, aim.setPlacement, layerRoot]);
 
     useEffect(() => {
         const submenu = submenuRef.current;
-        if (!submenu) {
+        if (!submenu || !isOpen) {
             return undefined;
         }
-        if (!isOpen) {
-            submenu.hidePopover();
-            return undefined;
-        }
-        submenu.showPopover();
         updateSubmenuPlacement();
         let frame: number | undefined;
+        let remainingFrames = 2;
+        const trackPlacement = () => {
+            frame = undefined;
+            updateSubmenuPlacement();
+            const isSliding = layerRoot
+                ?.getAnimations({ subtree: true })
+                .some((animation) => animation.playState === 'running');
+            remainingFrames--;
+            if (remainingFrames > 0 || isSliding) {
+                frame = globalThis.requestAnimationFrame(trackPlacement);
+            }
+        };
         const schedulePlacement = () => {
-            frame ??= globalThis.requestAnimationFrame(() => {
-                frame = undefined;
-                updateSubmenuPlacement();
-            });
+            remainingFrames = 2;
+            frame ??= globalThis.requestAnimationFrame(trackPlacement);
         };
         schedulePlacement();
         globalThis.addEventListener('resize', schedulePlacement);
@@ -190,7 +213,47 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
             globalThis.removeEventListener('resize', schedulePlacement);
             globalThis.removeEventListener('scroll', schedulePlacement, true);
         };
-    }, [isOpen, updateSubmenuPlacement]);
+    }, [isOpen, layerRoot, updateSubmenuPlacement]);
+
+    const submenu = (
+        <div
+            className='bookmark-submenu'
+            data-open={isOpen}
+            inert={!isOpen}
+            aria-hidden={!isOpen}
+            ref={submenuRef}
+        >
+            <div className='panel' />
+            {aim.triangle.length > 0 && (
+                <MenuSafetyTriangle points={aim.triangle} />
+            )}
+            <div className='bookmark-submenu-panel'>
+                <div
+                    className='bookmark-submenu-items'
+                    ref={aim.refs.setFloating}
+                    {...aim.getFloatingProps({
+                        onMouseEnter: aim.clearTriangle,
+                    })}
+                >
+                    {renderContent && (
+                        <BookmarkNodeList
+                            categoryIndex={categoryIndex}
+                            clickedFolderPath={clickedFolderPath}
+                            currentFolderPath={folderPath}
+                            depth={depth + 1}
+                            highlightedFolderPath={highlightedFolderPath}
+                            highlightedLinkId={highlightedLinkId}
+                            isMouseNav={isMouseNav}
+                            isParentOpen={isOpen}
+                            nodes={node.children}
+                            onSelectFolder={onSelectFolder}
+                            onSelectLink={onSelectLink}
+                        />
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <div
@@ -237,45 +300,7 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
                 <span>{node.title}</span>
             </button>
             <FloatingNode id={aim.nodeId}>
-                <div
-                    className='bookmark-submenu'
-                    data-open={isOpen}
-                    inert={!isOpen}
-                    aria-hidden={!isOpen}
-                    popover='manual'
-                    ref={submenuRef}
-                >
-                    {aim.triangle.length > 0 && (
-                        <MenuSafetyTriangle points={aim.triangle} />
-                    )}
-                    <div className='bookmark-submenu-panel'>
-                        <div
-                            className='bookmark-submenu-items'
-                            ref={aim.refs.setFloating}
-                            {...aim.getFloatingProps({
-                                onMouseEnter: aim.clearTriangle,
-                            })}
-                        >
-                            {renderContent && (
-                                <BookmarkNodeList
-                                    categoryIndex={categoryIndex}
-                                    clickedFolderPath={clickedFolderPath}
-                                    currentFolderPath={folderPath}
-                                    depth={depth + 1}
-                                    highlightedFolderPath={
-                                        highlightedFolderPath
-                                    }
-                                    highlightedLinkId={highlightedLinkId}
-                                    isMouseNav={isMouseNav}
-                                    isParentOpen={isOpen}
-                                    nodes={node.children}
-                                    onSelectFolder={onSelectFolder}
-                                    onSelectLink={onSelectLink}
-                                />
-                            )}
-                        </div>
-                    </div>
-                </div>
+                {layerRoot ? createPortal(submenu, layerRoot) : submenu}
             </FloatingNode>
         </div>
     );

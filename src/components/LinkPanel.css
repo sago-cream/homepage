@@ -469,7 +469,8 @@
     opacity: var(--bookmark-category-clicked-opacity);
 }
 
-.links {
+.links,
+.bookmark-submenu {
     position: absolute;
     inset: 0;
 
@@ -574,67 +575,48 @@
         flex: 1 1 auto;
     }
 
-    .bookmark-submenu {
-        --submenu-closed-translate: -100%;
-        position: fixed;
-        inset: auto;
-        margin: 0;
-        border: 0;
-        width: var(--width);
-        height: var(--height);
-        padding: 0;
-        background: transparent;
-        overflow: clip;
-        clip-path: inset(0 -1rem 0 0);
-        pointer-events: none;
-        transition:
-            display var(--motion-duration-base) allow-discrete,
-            overlay var(--motion-duration-base) allow-discrete;
-    }
-
-    .bookmark-submenu[data-side='left'] {
-        --submenu-closed-translate: 100%;
-        clip-path: inset(0 0 0 -1rem);
-    }
-
-    .bookmark-submenu-panel {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        padding-block: var(--padding, 1rem)
-            var(--bookmark-submenu-viewport-padding);
-        background: var(--clr-panel-bg);
-        box-shadow: var(--shadow-panel);
-        backdrop-filter: blur(0.75rem);
-        border-radius: 0 var(--bookmark-panel-radius)
-            var(--bookmark-panel-radius) 0;
-        translate: var(--submenu-closed-translate);
-        transition: translate var(--motion-duration-base) var(--motion-ease-out);
-    }
-
-    .bookmark-submenu[data-side='left'] > .bookmark-submenu-panel {
-        border-radius: var(--bookmark-panel-radius) 0 0
-            var(--bookmark-panel-radius);
-    }
-
-    .bookmark-submenu[data-open='true'] > .bookmark-submenu-panel {
-        translate: none;
-    }
-
-    .bookmark-submenu[data-open='true'] .bookmark-submenu-items {
-        pointer-events: auto;
-    }
-
-    @starting-style {
-        .bookmark-submenu[data-open='true'] > .bookmark-submenu-panel {
-            translate: var(--submenu-closed-translate);
-        }
-    }
-
     @media (width < 37.5rem) {
         padding-top: 1rem;
     }
+}
+
+.bookmark-submenu {
+    --submenu-offset: var(--width);
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: var(--width);
+    height: var(--height);
+    z-index: 7;
+    pointer-events: none;
+    visibility: hidden;
+    translate: calc(-1 * (var(--submenu-offset) + var(--width)));
+    transition:
+        translate var(--motion-duration-base) var(--motion-ease-out),
+        visibility var(--motion-duration-base);
+
+    > .panel {
+        left: calc(-1 * var(--submenu-offset));
+        width: calc(var(--submenu-offset) + var(--width));
+        pointer-events: none;
+    }
+}
+
+.bookmark-submenu-panel {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding-block: var(--padding, 1rem) var(--bookmark-submenu-viewport-padding);
+    z-index: 10;
+}
+
+.bookmark-submenu[data-open='true'] {
+    visibility: visible;
+    translate: none;
+}
+
+.bookmark-submenu[data-open='true'] .bookmark-submenu-items {
+    pointer-events: auto;
 }
 
 .link-panel.hoverEffective:not(.category-layer-locked)
@@ -718,7 +700,8 @@
 }
 
 /* Keep descendants above neighboring rows when flyouts turn back at the edge. */
-.links .folder-node:is(:hover, :focus-within, .expanded) {
+:is(.links, .bookmark-submenu)
+    .folder-node:is(:hover, :focus-within, .expanded) {
     z-index: 11;
 }
 
@@ -774,13 +757,12 @@
     pointer-events: none;
 }
 
-.menu-safety-overlay::backdrop,
-.bookmark-submenu::backdrop {
+.menu-safety-overlay::backdrop {
     pointer-events: none;
 }
 
 @media (width < 37.5rem) {
-    .links .bookmark-submenu,
+    .bookmark-submenu,
     .menu-safety-overlay {
         display: none;
     }
@@ -813,8 +795,8 @@
 @media (prefers-reduced-motion: reduce) {
     .link-tree,
     .links,
-    .links .bookmark-submenu,
-    .links .bookmark-submenu-panel {
+    .bookmark-submenu,
+    .bookmark-submenu-panel {
         transition: none;
     }
 }
