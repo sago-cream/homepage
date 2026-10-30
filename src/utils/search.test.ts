@@ -1,7 +1,11 @@
 import { expect, test } from 'bun:test';
 
 import type { LinkItem } from './search';
-import { getSearchResults } from './search';
+import {
+    getSearchResults,
+    getSlashCommandResults,
+    isSlashCommandSearch,
+} from './search';
 
 const bookmark = (title: string, pathLabel = 'Bookmarks'): LinkItem => ({
     category: 1,
@@ -52,4 +56,39 @@ test('literal Chinese text remains searchable alongside recorded keys', () => {
     const items = [bookmark('中文'), bookmark('Google Maps')];
 
     expect(getSearchResults(items, '中文', 'google')).toEqual(items);
+});
+
+test('slash commands accept Latin, Zhuyin, mixed text, and the Zhuyin slash key', () => {
+    const feeds = [{ command: 'feeds', label: '/feeds' }];
+    for (const query of [
+        '/',
+        '/FEEDS',
+        '/ㄑ',
+        '/ㄑㄍㄍㄎㄋ',
+        '/fㄍeㄎs',
+        'ㄥㄑㄍㄍㄎㄋ',
+        '  ㄥㄑe  ',
+    ]) {
+        expect(isSlashCommandSearch(query)).toBe(true);
+        expect(getSlashCommandResults(query)).toEqual(feeds);
+    }
+    for (const query of [
+        '',
+        'feeds',
+        'ㄑㄍㄍㄎㄋ',
+        '/unknown',
+        '/ㄑㄍㄍㄎㄋx',
+    ]) {
+        expect(getSlashCommandResults(query)).toEqual([]);
+    }
+});
+
+test('slash commands use recorded keys when the IME leaves residual text', () => {
+    const feeds = getSlashCommandResults('/feeds');
+    expect(getSlashCommandResults('/ㄋ', '/feeds')).toEqual(feeds);
+    expect(getSlashCommandResults('ㄥㄋ', 'feeds')).toEqual(feeds);
+    expect(getSlashCommandResults('/ㄑ', '/unknown')).toEqual([]);
+    expect(getSlashCommandResults('feeds', '/feeds')).toEqual([]);
+    expect(getSlashCommandResults('/feeds!', '/feeds')).toEqual([]);
+    expect(getSlashCommandResults('/ㄑㄍㄍㄎㄋx', '/')).toEqual([]);
 });

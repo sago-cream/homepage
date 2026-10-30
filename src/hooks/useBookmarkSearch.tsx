@@ -13,6 +13,7 @@ import { useKeybinds } from '@/hooks/useKeybinds';
 import type { BookmarkCategoryData } from '@/types/bookmarks';
 import { getFeedBookmarks } from '@/utils/feeds';
 import { getHotkey } from '@/utils/keybinds';
+import { getKeyboardKey } from '@/utils/keyboard';
 import type {
     FeedsLink,
     LinkItem,
@@ -179,7 +180,7 @@ export const useBookmarkSearch = (
     const isSlashCommandQuery = isSlashCommandSearch(trimmedSearchValue);
     const slashCommandResults = bookmarksLoading
         ? []
-        : getSlashCommandResults(searchValue);
+        : getSlashCommandResults(searchValue, searchKeySequence);
     const searchResults = useMemo(
         () =>
             hasSearchQuery && !isSlashCommandQuery
@@ -430,7 +431,9 @@ export const useBookmarkSearch = (
 
     const executeSearchValue = useCallback(
         (value: string, keySequence: string) => {
-            const slashCommand = getSlashCommandResults(value).at(0);
+            const slashCommand = getSlashCommandResults(value, keySequence).at(
+                0
+            );
 
             if (isSlashCommandSearch(value)) {
                 if (slashCommand !== undefined) {
@@ -585,7 +588,13 @@ export const useBookmarkSearch = (
                 return;
             }
 
-            if (e.key === '/') {
+            if (
+                getKeyboardKey(e) === '/' &&
+                !e.ctrlKey &&
+                !e.metaKey &&
+                !e.altKey &&
+                !e.isComposing
+            ) {
                 e.preventDefault();
                 setSearchValue('/');
                 setSearchKeySequence('/');
