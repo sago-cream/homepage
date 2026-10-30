@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Bookmark, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bookmark, ChevronLeft, ChevronRight, Link2 } from 'lucide-react';
 
 import type { BookmarkNodeData } from '@/types/bookmarks';
 import type { CategoryData } from '@/utils/bookmarkPresentation';
@@ -148,6 +148,7 @@ export const MobileBookmarks: React.FC<MobileBookmarksProps> = ({
                     href={node.url}
                     key={node.id}
                 >
+                    <Link2 className='icon' aria-hidden='true' />
                     <span className='mobile-bookmark-node-label'>
                         {node.title}
                     </span>

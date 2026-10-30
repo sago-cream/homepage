@@ -4,9 +4,7 @@
     --indicator-width: 2.5rem;
     --link-height: 3.5rem;
     --font-size: var(--fs-md);
-    --bookmark-link-inline-start: calc(
-        var(--bookmark-folder-inline-padding) + var(--font-size) + 0.75rem
-    );
+    --bookmark-link-inline-start: var(--bookmark-folder-inline-padding);
     --bookmark-link-inline-end: var(--bookmark-folder-inline-padding);
     --bookmark-folder-inline-padding: 2rem;
     --bookmark-panel-radius: 1rem;
@@ -315,6 +313,12 @@
         align-items: center;
         gap: 0.75rem;
 
+        > .icon {
+            flex: 0 0 auto;
+            width: var(--font-size);
+            height: var(--font-size);
+        }
+
         &:active {
             scale: var(--motion-press-scale);
         }
@@ -326,12 +330,6 @@
 
     .mobile-bookmark-folder {
         justify-content: space-between;
-
-        > .icon {
-            flex: 0 0 auto;
-            width: var(--font-size);
-            height: var(--font-size);
-        }
     }
 
     .mobile-bookmark-node-label {
@@ -536,6 +534,13 @@
 
         display: flex;
         align-items: center;
+        gap: 0.75rem;
+
+        .bookmark-link-icon {
+            flex: 0 0 auto;
+            width: var(--font-size);
+            height: var(--font-size);
+        }
 
         span {
             min-width: 0;

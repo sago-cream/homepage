@@ -7,6 +7,7 @@ import React, {
     useState,
 } from 'react';
 import { FloatingNode } from '@floating-ui/react';
+import { Link2 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
 import { useMenuAim } from '@/hooks/useMenuAim';
@@ -384,6 +385,10 @@ const BookmarkNodeList: React.FC<BookmarkNodeListProps> = ({
                             onSelectLink(categoryIndex, currentFolderPath);
                         }}
                     >
+                        <Link2
+                            className='bookmark-link-icon'
+                            aria-hidden='true'
+                        />
                         <span>{node.title}</span>
                     </a>
                 </div>
