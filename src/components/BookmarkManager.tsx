@@ -1956,6 +1956,22 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                 ? t.bookmarksEmptyDescription
                                                 : t.bookmarkSearchEmptyDescription}
                                         </span>
+                                        {normalizedQuery === '' &&
+                                        bookmarkTree.length === 0 ? (
+                                            <button
+                                                className='bookmark-workspace-primary-button'
+                                                type='button'
+                                                disabled={
+                                                    !bookmarkControls.canEdit
+                                                }
+                                                onClick={() =>
+                                                    importInputRef.current?.click()
+                                                }
+                                            >
+                                                <Upload aria-hidden='true' />
+                                                {t.importBookmarks}
+                                            </button>
+                                        ) : undefined}
                                     </div>
                                 ) : (
                                     visibleSidebarItems.map(
@@ -2197,6 +2213,17 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                         <span>
                                             {t.bookmarksEmptyDescription}
                                         </span>
+                                        <button
+                                            className='bookmark-workspace-primary-button'
+                                            type='button'
+                                            disabled={!bookmarkControls.canEdit}
+                                            onClick={() =>
+                                                importInputRef.current?.click()
+                                            }
+                                        >
+                                            <Upload aria-hidden='true' />
+                                            {t.importBookmarks}
+                                        </button>
                                     </div>
                                 ) : visibleNodes.length === 0 ? (
                                     <div className='bookmark-workspace-empty'>

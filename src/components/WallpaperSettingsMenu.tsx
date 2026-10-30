@@ -1,5 +1,6 @@
 import React from 'react';
 
+import { useHomepageAuth } from '@/auth/AuthProvider';
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useWallpaper } from '@/hooks/useWallpaper';
 import type { InitialAppPreferences } from '@/types/preferences';
@@ -25,6 +26,7 @@ export const WallpaperSettingsMenu: React.FC<WallpaperSettingsMenuProps> = ({
     placement,
 }) => {
     const wallpaperControls = useWallpaper();
+    const { openSignIn } = useHomepageAuth();
 
     return (
         <SettingsMenu
@@ -36,6 +38,7 @@ export const WallpaperSettingsMenu: React.FC<WallpaperSettingsMenuProps> = ({
             onOpenChange={onOpenChange}
             placement={placement}
             wallpaperControls={wallpaperControls}
+            onSignIn={openSignIn}
         />
     );
 };

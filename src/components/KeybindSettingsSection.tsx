@@ -63,7 +63,10 @@ export const KeybindSettingsSection = ({
     };
 
     return (
-        <section className='settings-page-section settings-keybinds'>
+        <section
+            className='settings-page-section settings-keybinds'
+            data-setting='keybinds'
+        >
             <div className='settings-section-heading'>
                 <h2>{t.keybinds}</h2>
             </div>

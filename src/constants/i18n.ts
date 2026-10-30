@@ -121,6 +121,7 @@ const messages = {
         moreActions: 'More actions',
         myLocation: 'My location',
         locationTracking: 'Track current location',
+        useCurrentLocation: 'Use current location',
         enableLocationTracking: 'Turn on location tracking',
         disableLocationTracking: 'Turn off location tracking',
         locationTrackingDescription:
@@ -166,6 +167,7 @@ const messages = {
         wallpaper: 'Wallpaper',
         wallpaperDescription: 'Use a personal image behind your homepage.',
         wallpaperUnavailable: 'Sign in to upload wallpaper',
+        signInToUpload: 'Sign in to upload',
         wallpaperUploading: 'Uploading wallpaper',
     },
     'zh-TW': {
@@ -272,6 +274,7 @@ const messages = {
         moreActions: '更多操作',
         myLocation: '我的位置',
         locationTracking: '追蹤目前位置',
+        useCurrentLocation: '使用目前位置',
         enableLocationTracking: '開啟位置追蹤',
         disableLocationTracking: '關閉位置追蹤',
         locationTrackingDescription: '自動依目前位置更新天氣與空氣品質。',
@@ -314,6 +317,7 @@ const messages = {
         wallpaper: '桌布',
         wallpaperDescription: '使用個人圖片作為首頁背景。',
         wallpaperUnavailable: '登入後上傳桌布',
+        signInToUpload: '登入以上傳',
         wallpaperUploading: '桌布上傳中',
     },
 } as const satisfies Record<AppLocale, Record<string, string>>;

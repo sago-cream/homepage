@@ -2426,6 +2426,24 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-page {
+    --settings-accent-lightness: 42%;
+    --clr-primary: hsl(
+        var(--theme-primary-hue),
+        var(--theme-primary-saturation),
+        var(--settings-accent-lightness)
+    );
+    --clr-primary-alpha: color-mix(
+        in srgb,
+        var(--clr-primary) 80%,
+        transparent
+    );
+    --clr-text: var(--clr-neutral-dark);
+    --clr-text-alpha: color-mix(
+        in srgb,
+        var(--clr-neutral-dark) 72%,
+        var(--clr-neutral-light)
+    );
+    --clr-search-field-text: var(--clr-text);
     pointer-events: auto;
     position: fixed;
     inset: 0;
@@ -2441,6 +2459,12 @@ a.bookmark-workspace-tree-item {
     overflow: hidden;
     animation: settings-page-enter var(--motion-duration-fast)
         var(--motion-ease-out);
+}
+
+:root[data-theme='dark'] .settings-page {
+    --settings-accent-lightness: calc(var(--theme-primary-lightness) + 4%);
+    --clr-text: var(--clr-on-dark);
+    --clr-text-alpha: var(--clr-neutral);
 }
 
 .settings-section-heading h2 {
@@ -2646,8 +2670,9 @@ a.bookmark-workspace-tree-item {
     padding: 0 0.25rem;
 }
 
-.settings-section-heading h2 {
-    font: var(--fontBoldMd);
+.settings-section-heading h2,
+.settings-page .bookmark-workspace-title-group h2 {
+    font: var(--fontBoldLg);
 }
 
 .settings-card {
@@ -2660,8 +2685,8 @@ a.bookmark-workspace-tree-item {
 
 .settings-page .settings-row {
     width: 100%;
-    min-height: 4.5rem;
-    padding: 1rem 1.25rem;
+    min-height: 4rem;
+    padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--clr-text-alpha-2);
     border-radius: 0;
     color: var(--clr-text);
@@ -2691,8 +2716,17 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-page .settings-row-label {
-    color: var(--clr-neutral);
-    font: var(--fontBoldMd);
+    color: var(--clr-text);
+    font: var(--fontBaseMd);
+}
+
+.settings-page
+    :is(.settings-action-button, .bookmark-workspace-primary-button) {
+    color: var(--clr-neutral-light);
+}
+.settings-page .bookmark-workspace-primary-button:focus-visible {
+    outline: 2px solid var(--clr-primary);
+    outline-offset: 2px;
 }
 
 .settings-page .settings-choice-group {
@@ -2710,9 +2744,39 @@ a.bookmark-workspace-tree-item {
     content: none;
 }
 
+.settings-page .settings-theme-group {
+    gap: 0.25rem;
+    padding: 0.25rem;
+    border-radius: 0.75rem;
+    background: var(--clr-text-alpha-2);
+}
+.settings-theme-group .settings-theme-choice {
+    box-shadow: none;
+    border-radius: 0.5rem;
+}
+.settings-theme-group .settings-theme-choice.selected {
+    background: var(--clr-neutral-light);
+    box-shadow: var(--shadow-panel);
+}
+.settings-theme-choice > svg,
+.settings-accent-swatch {
+    flex-shrink: 0;
+}
+.settings-search-result {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.25rem;
+}
+.settings-search-result small {
+    color: var(--clr-text-alpha);
+    font: var(--fontBaseSm);
+}
+
 .settings-theme-choice {
-    min-width: 7rem;
-    min-height: 3rem;
+    min-width: 5rem;
+    min-height: 2.5rem;
     padding: 0.5rem 0.75rem;
     border-radius: 0.75rem;
     background-color: transparent;
@@ -2759,7 +2823,7 @@ a.bookmark-workspace-tree-item {
 
 .settings-accent-group {
     display: grid;
-    grid-template-columns: repeat(2, minmax(9rem, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .settings-accent-choice {
@@ -2894,36 +2958,6 @@ a.bookmark-workspace-tree-item {
     align-items: center;
     gap: 0.5rem;
     min-width: 0;
-}
-
-.settings-location-tracking {
-    display: grid;
-    place-items: center;
-    flex: 0 0 2.5rem;
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 0.75rem;
-    background: transparent;
-    color: var(--clr-text);
-    cursor: pointer;
-}
-
-.settings-location-tracking[aria-pressed='true'] {
-    color: var(--clr-primary);
-    background: var(--clr-neutral-light);
-}
-
-.settings-location-tracking:hover:not(:disabled) {
-    box-shadow: var(--shadow-panel-hover);
-}
-
-.settings-location-tracking:focus-visible {
-    outline: 2px solid var(--clr-text-alpha);
-    outline-offset: 2px;
-}
-
-.settings-location-tracking:active:not(:disabled) {
-    scale: 0.96;
 }
 
 .settings-page .settings-select {
@@ -3309,6 +3343,12 @@ a.bookmark-workspace-tree-item {
         overflow-x: auto;
     }
 
+    .settings-page-navigation[data-searching='true'] {
+        display: grid;
+        max-height: 12rem;
+        overflow-y: auto;
+    }
+
     .settings-page-navigation .settings-page-sidebar-button {
         width: auto;
         min-width: max-content;
@@ -3339,8 +3379,19 @@ a.bookmark-workspace-tree-item {
         grid-template-columns: repeat(3, minmax(0, 1fr));
     }
 
+    .settings-page .settings-row:has(> .settings-animation-switch) {
+        grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .settings-page .settings-row > .settings-animation-switch {
+        width: auto;
+    }
+
     .settings-theme-choice {
         min-width: 0;
+        min-height: 2.75rem;
+        padding-inline: 0.25rem;
+        gap: 0.25rem;
+        font: var(--fontBaseSm);
     }
 
     .settings-accent-group {
@@ -3360,9 +3411,9 @@ a.bookmark-workspace-tree-item {
     }
 }
 
-@media (width < 30rem) {
-    .settings-action-button span {
-        display: none;
+@media (width < 24rem) {
+    .settings-theme-group .settings-theme-choice {
+        flex-direction: column;
     }
 }
 
@@ -4704,13 +4755,6 @@ a.bookmark-workspace-tree-item {
     }
 }
 
-.settings-location-controls {
-    position: relative;
-}
-.settings-location-controls .settings-location-tracking {
-    position: absolute;
-    right: calc(100% + 0.5rem);
-}
 .settings-location-controls .settings-select-control {
     width: 100%;
 }
@@ -4747,12 +4791,6 @@ a.bookmark-workspace-tree-item {
 }
 .settings-feed-heading .settings-section-heading {
     flex: 1 1 18rem;
-}
-@media (width < 48rem) {
-    .settings-location-controls .settings-location-tracking {
-        right: 0;
-        bottom: calc(100% + 0.5rem);
-    }
 }
 
 /* Each workspace pane owns its scrolling inside the fixed settings viewport. */
