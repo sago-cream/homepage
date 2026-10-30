@@ -7,7 +7,7 @@
     --bookmark-link-inline-start: calc(
         var(--bookmark-folder-inline-padding) + var(--font-size) + 0.75rem
     );
-    --bookmark-link-inline-end: 1rem;
+    --bookmark-link-inline-end: var(--bookmark-folder-inline-padding);
     --bookmark-folder-inline-padding: 2rem;
     --bookmark-panel-radius: 1rem;
     --bookmark-row-radius: 0.75rem;
@@ -525,7 +525,7 @@
             var(--bookmark-link-inline-end);
 
         color: var(--clr-neutral);
-        font-size: var(--font-size);
+        font-size: var(--fs-md);
         font-weight: var(--fw-bold);
         background: transparent;
 

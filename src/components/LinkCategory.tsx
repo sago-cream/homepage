@@ -374,6 +374,7 @@ const BookmarkNodeList: React.FC<BookmarkNodeListProps> = ({
                         data-bookmark-id={node.id}
                         href={isDisabled ? undefined : node.url}
                         className={linkClassName}
+                        title={node.title}
                         onClick={(event) => {
                             if (isDisabled) {
                                 event.preventDefault();
