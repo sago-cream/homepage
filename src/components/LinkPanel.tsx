@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FloatingTree } from '@floating-ui/react';
 import { Moon, PanelLeft, PanelLeftClose, Sun } from 'lucide-react';
 
@@ -11,7 +11,7 @@ import { decorateBookmarkTree } from '@/utils/bookmarkPresentation';
 import { isBrowser } from '@/utils/browserEnv';
 import { runThemeTransition } from '@/utils/themeTransition';
 import { BookmarkEmptyState } from './BookmarkEmptyState';
-import { LinkCategory } from './LinkCategory';
+import { BookmarkPanelLayersContext, LinkCategory } from './LinkCategory';
 import { MobileBookmarks } from './MobileBookmarks';
 import { UserFloatingBar } from './UserFloatingBar';
 
@@ -55,6 +55,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
         mouseLeaveCloseSignal,
         startMouseNav,
         endMouseNav,
+        resetMouseNav,
     } = useLinkNavigation(isSearchNav, onClearSearch, highlightedCategory);
     const { t } = useLocale(initialPreferences.locale);
     useEffect(() => {
@@ -83,6 +84,11 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [clickedCategory, setClickedCategory] = useState<number>();
     const [clickedFolderPath, setClickedFolderPath] = useState<string[]>([]);
+    const panelRef = useRef<HTMLElement>(null);
+    const [layerRoot, setLayerRoot] = useState<HTMLDivElement>();
+    const attachLayerRoot = useCallback((element: HTMLDivElement | null) => {
+        setLayerRoot(element ?? undefined);
+    }, []);
     const isExpanded = selectedCategory !== 0 || clickedCategory !== undefined;
     const bookmarkTree = useMemo(
         () => decorateBookmarkTree(bookmarkControls.bookmarkTree),
@@ -119,6 +125,39 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
         setClickedCategory(undefined);
         setClickedFolderPath([]);
     }, [hidden, isSearchNav]);
+
+    useEffect(() => {
+        if (clickedCategory === undefined) {
+            return undefined;
+        }
+
+        const onOutsidePointerDown = (event: PointerEvent) => {
+            if (
+                event.target instanceof Node &&
+                !panelRef.current?.contains(event.target)
+            ) {
+                const focused = document.activeElement;
+                if (
+                    focused instanceof HTMLElement &&
+                    panelRef.current?.contains(focused)
+                ) {
+                    focused.blur();
+                }
+                setClickedCategory(undefined);
+                setClickedFolderPath([]);
+                resetMouseNav();
+            }
+        };
+
+        document.addEventListener('pointerdown', onOutsidePointerDown, true);
+        return () => {
+            document.removeEventListener(
+                'pointerdown',
+                onOutsidePointerDown,
+                true
+            );
+        };
+    }, [clickedCategory, resetMouseNav]);
 
     const selectCategory = useCallback(
         (categoryIndex: number) => {
@@ -182,6 +221,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
         <MenuAimDebugContext value={debugMenuAim}>
             <FloatingTree>
                 <nav
+                    ref={panelRef}
                     className={[
                         'link-panel',
                         debugMenuAim && 'debug-menu-aim',
@@ -298,59 +338,62 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                                 </button>
                             )}
                     </div>
-                    <div
-                        data-menu-level
-                        className={[
-                            'link-tree',
-                            (isExpanded || isLockedOpen) && 'expanded',
-                        ]
-                            .filter(Boolean)
-                            .join(' ')}
-                    >
-                        <div className='panel' />
-                        {bookmarkTree.length === 0 ? (
-                            <BookmarkEmptyState
-                                bookmarkControls={bookmarkControls}
-                                className='bookmark-panel-empty-state'
-                                ctaLabel={t.importBookmarksFromBrowser}
-                                description={t.bookmarksEmptyDescription}
-                                statusMessage={bookmarkStatusMessage}
-                                statusType={bookmarkControls.status?.type}
-                                title={t.bookmarksEmpty}
-                            />
-                        ) : (
-                            bookmarkTree.map((categoryData, i) => (
-                                <LinkCategory
-                                    key={`${categoryData.category}-${i}`}
-                                    categoryData={categoryData}
-                                    index={i}
-                                    clickedCategory={clickedCategory}
-                                    clickedFolderPath={
-                                        clickedCategory === i + 1
-                                            ? clickedFolderPath
-                                            : []
-                                    }
-                                    selectedCategory={selectedCategory}
-                                    isMouseNav={isMouseNav && !hidden}
-                                    padding={panelPaddings[i]}
-                                    highlightedLinkId={highlightedLink}
-                                    highlightedFolderPath={
-                                        highlightedFolderPath
-                                    }
-                                    onSelectCategory={selectCategory}
-                                    onSelectFolder={selectFolder}
-                                    onSelectLink={selectLink}
+                    <BookmarkPanelLayersContext value={layerRoot}>
+                        <div
+                            ref={attachLayerRoot}
+                            data-menu-level
+                            className={[
+                                'link-tree',
+                                (isExpanded || isLockedOpen) && 'expanded',
+                            ]
+                                .filter(Boolean)
+                                .join(' ')}
+                        >
+                            <div className='panel' />
+                            {bookmarkTree.length === 0 ? (
+                                <BookmarkEmptyState
+                                    bookmarkControls={bookmarkControls}
+                                    className='bookmark-panel-empty-state'
+                                    ctaLabel={t.importBookmarksFromBrowser}
+                                    description={t.bookmarksEmptyDescription}
+                                    statusMessage={bookmarkStatusMessage}
+                                    statusType={bookmarkControls.status?.type}
+                                    title={t.bookmarksEmpty}
                                 />
-                            ))
-                        )}
-                        <UserFloatingBar
-                            bookmarkControls={bookmarkControls}
-                            className='desktop-user-floating-bar'
-                            closeMenusSignal={mouseLeaveCloseSignal}
-                            initialPreferences={initialPreferences}
-                            isSupabaseEnabled={isSupabaseEnabled}
-                        />
-                    </div>
+                            ) : (
+                                bookmarkTree.map((categoryData, i) => (
+                                    <LinkCategory
+                                        key={`${categoryData.category}-${i}`}
+                                        categoryData={categoryData}
+                                        index={i}
+                                        clickedCategory={clickedCategory}
+                                        clickedFolderPath={
+                                            clickedCategory === i + 1
+                                                ? clickedFolderPath
+                                                : []
+                                        }
+                                        selectedCategory={selectedCategory}
+                                        isMouseNav={isMouseNav && !hidden}
+                                        padding={panelPaddings[i]}
+                                        highlightedLinkId={highlightedLink}
+                                        highlightedFolderPath={
+                                            highlightedFolderPath
+                                        }
+                                        onSelectCategory={selectCategory}
+                                        onSelectFolder={selectFolder}
+                                        onSelectLink={selectLink}
+                                    />
+                                ))
+                            )}
+                            <UserFloatingBar
+                                bookmarkControls={bookmarkControls}
+                                className='desktop-user-floating-bar'
+                                closeMenusSignal={mouseLeaveCloseSignal}
+                                initialPreferences={initialPreferences}
+                                isSupabaseEnabled={isSupabaseEnabled}
+                            />
+                        </div>
+                    </BookmarkPanelLayersContext>
                 </nav>
             </FloatingTree>
         </MenuAimDebugContext>
