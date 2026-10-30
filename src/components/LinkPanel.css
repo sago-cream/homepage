@@ -3,7 +3,7 @@
     --indicator-gap: 0.5rem;
     --indicator-width: 2.5rem;
     --link-height: 3.5rem;
-    --font-size: var(--fs-lg);
+    --font-size: var(--fs-md);
     --bookmark-link-inline-start: calc(
         var(--bookmark-folder-inline-padding) + var(--font-size) + 0.75rem
     );
@@ -254,7 +254,7 @@
 
     .mobile-bookmark-list {
         display: grid;
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
         gap: 0.5rem;
         padding-bottom: 1rem;
 
@@ -303,7 +303,7 @@
         background-color: var(--clr-text-alpha-2);
         color: var(--clr-text);
         cursor: pointer;
-        font: var(--fontBoldSm);
+        font: var(--fontBoldMd);
         text-align: left;
         text-decoration: none;
         transition:
@@ -329,8 +329,8 @@
 
         > .icon {
             flex: 0 0 auto;
-            width: 1.25rem;
-            height: 1.25rem;
+            width: var(--font-size);
+            height: var(--font-size);
         }
     }
 
@@ -381,7 +381,6 @@
     @media (width < 37.5rem) {
         --width: 10rem;
         --link-height: 2rem;
-        --font-size: var(--fs-sm);
         --height: 55svh;
         bottom: calc((100% - var(--height)) / 2);
         top: auto;
@@ -525,7 +524,7 @@
             var(--bookmark-link-inline-end);
 
         color: var(--clr-neutral);
-        font-size: var(--fs-md);
+        font-size: var(--font-size);
         font-weight: var(--fw-bold);
         background: transparent;
 
