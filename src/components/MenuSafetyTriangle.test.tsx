@@ -362,6 +362,6 @@ test('renders nested folders beyond the fourth layer without flattening their la
     expect(closed.match(/class="bookmark-submenu"/g)).toHaveLength(1);
     expect(closed).not.toContain('Destination');
     expect(html.match(/class="bookmark-submenu"/g)).toHaveLength(4);
-    expect(html).toContain('<span>Four</span>');
+    expect(html).toContain('class="bookmark-folder-title">Four</span>');
     expect(html).toContain('<span>Destination</span>');
 });

@@ -77,6 +77,19 @@ interface BookmarkFolderNodeProps {
     ) => void;
 }
 
+const BookmarkFolderButton: React.FC<
+    React.ComponentProps<'button'> & { icon: React.ReactNode }
+> = ({ className, children, icon, ...props }) => (
+    <button
+        {...props}
+        className={`bookmark-folder-trigger ${className ?? ''}`}
+        type='button'
+    >
+        <span className='bookmark-folder-icon'>{icon}</span>
+        <span className='bookmark-folder-title'>{children}</span>
+    </button>
+);
+
 export const BookmarkPanelLayersContext = createContext<
     HTMLDivElement | undefined
 >(undefined);
@@ -279,13 +292,13 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
             }}
             ref={folderNodeRef}
         >
-            <button
+            <BookmarkFolderButton
                 ref={aim.refs.setReference}
                 {...aim.getReferenceProps()}
                 className={[
-                    'link',
                     'folder-link',
-                    isMouseNav && 'hoverEffective',
+                    isExpanded && 'selected',
+                    isOpen && 'hover-open',
                 ]
                     .filter(Boolean)
                     .join(' ')}
@@ -294,11 +307,10 @@ const BookmarkFolderNode: React.FC<BookmarkFolderNodeProps> = ({
                 onClick={() => {
                     onSelectFolder(categoryIndex, folderPath);
                 }}
-                type='button'
+                icon={createBookmarkIcon(node.icon)}
             >
-                {createBookmarkIcon(node.icon, 'icon folder-icon-display')}
-                <span>{node.title}</span>
-            </button>
+                {node.title}
+            </BookmarkFolderButton>
             <FloatingNode id={aim.nodeId}>
                 {layerRoot ? createPortal(submenu, layerRoot) : submenu}
             </FloatingNode>
@@ -415,21 +427,20 @@ export const LinkCategory: React.FC<LinkCategoryProps> = ({
 
     return (
         <FloatingNode id={aim.nodeId}>
-            <button
+            <BookmarkFolderButton
                 ref={aim.refs.setReference}
                 {...aim.getReferenceProps()}
                 data-menu-row={String(categoryIndex)}
                 className={categoryClassName}
-                type='button'
+                icon={categoryData.icon}
                 aria-expanded={isCategoryOpen}
                 aria-pressed={isCategoryClicked}
                 onClick={() => {
                     onSelectCategory(categoryIndex);
                 }}
             >
-                {categoryData.icon}
-                <span className='category-title'>{categoryData.category}</span>
-            </button>
+                {categoryData.category}
+            </BookmarkFolderButton>
             <div
                 className={`links ${isMouseNav ? 'hoverEffective' : ''}`}
                 style={{ '--padding': padding } as React.CSSProperties}
