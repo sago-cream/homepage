@@ -1760,6 +1760,7 @@ a.bookmark-workspace-tree-item {
 
 .user-menu-email,
 .user-menu-action {
+    text-decoration: none;
     min-height: 2.5rem;
     padding: 0.5rem;
     border-radius: 0.75rem;
@@ -2573,6 +2574,7 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-page-sidebar-button {
+    text-decoration: none;
     width: 100%;
     min-height: 2.75rem;
     padding: 0.625rem 0.75rem;

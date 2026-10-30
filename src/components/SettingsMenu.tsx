@@ -23,6 +23,8 @@ import {
     Upload,
     X,
 } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { createPortal } from 'react-dom';
 
 import { isAppLocale, localeOptions } from '@/constants/i18n';
@@ -52,6 +54,11 @@ import {
     clearPreferenceCookie,
     writePreferenceCookie,
 } from '@/utils/preferenceCookies';
+import {
+    getSettingsSection,
+    settingsSectionPaths,
+} from '@/utils/settingsNavigation';
+import type { SettingsSectionId } from '@/utils/settingsNavigation';
 import { getCssUrlValue } from '@/utils/wallpaperStyle';
 import { wallpaperAcceptedContentTypes } from '../../shared/wallpaper';
 import { BookmarkManager } from './BookmarkManager';
@@ -60,13 +67,6 @@ import { FeedSettingsSection } from './FeedSettingsSection';
 import { KeybindSettingsSection } from './KeybindSettingsSection';
 import { SettingsDropdown } from './SettingsDropdown';
 import type { SettingsDropdownOption } from './SettingsDropdown';
-
-type SettingsSectionId =
-    | 'appearance'
-    | 'preferences'
-    | 'feeds'
-    | 'content'
-    | 'keybinds';
 
 interface ThemeHydrationRoot extends HTMLElement {
     __homepageThemeHydrationObserver?: MutationObserver;
@@ -198,6 +198,20 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     placement = 'below',
     wallpaperControls,
 }) => {
+    const pathname = usePathname();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const selectedSection = getSettingsSection(pathname) ?? 'content';
+    const bookmarksHrefRef = useRef<string>(settingsSectionPaths.content);
+    if (selectedSection === 'content') {
+        bookmarksHrefRef.current = `${pathname}${searchParams.size > 0 ? `?${searchParams.toString()}` : ''}`;
+    }
+    const setSelectedSection = useCallback(
+        (section: SettingsSectionId) => {
+            router.push(settingsSectionPaths[section], { scroll: false });
+        },
+        [router]
+    );
     const {
         isSyncingLocation,
         selectLocationId,
@@ -227,8 +241,6 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         initialPreferences.themeColor
     );
     const [openDropdownId, setOpenDropdownId] = useState<string>();
-    const [selectedSection, setSelectedSection] =
-        useState<SettingsSectionId>('content');
     const [settingsQuery, setSettingsQuery] = useState('');
     const settingsSearchRef = useRef<HTMLInputElement>(null);
     const openDropdownIdRef = useRef(openDropdownId);
@@ -275,7 +287,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         } else if (!bookmarkManagerRef.current.requestClose()) {
             setSelectedSection('content');
         }
-    }, [setMenuOpen]);
+    }, [setMenuOpen, setSelectedSection]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -608,10 +620,17 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                               selectedSection === section.id;
 
                                           return (
-                                              <button
+                                              <Link
                                                   className='settings-page-sidebar-button'
                                                   key={section.id}
-                                                  type='button'
+                                                  href={
+                                                      section.id === 'content'
+                                                          ? bookmarksHrefRef.current
+                                                          : settingsSectionPaths[
+                                                                section.id
+                                                            ]
+                                                  }
+                                                  scroll={false}
                                                   aria-current={
                                                       isSelected
                                                           ? 'page'
@@ -621,9 +640,6 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                       setOpenDropdownId(
                                                           undefined
                                                       );
-                                                      setSelectedSection(
-                                                          section.id
-                                                      );
                                                   }}
                                               >
                                                   <Icon
@@ -632,7 +648,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                       aria-hidden
                                                   />
                                                   <span>{section.label}</span>
-                                              </button>
+                                              </Link>
                                           );
                                       })}
                                   </nav>
@@ -1081,7 +1097,6 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                               {selectedSection === 'feeds' ? (
                                   <FeedSettingsSection
                                       onOpenBookmark={(bookmarkId) => {
-                                          setSelectedSection('content');
                                           bookmarkManagerRef.current?.openBookmark(
                                               bookmarkId
                                           );

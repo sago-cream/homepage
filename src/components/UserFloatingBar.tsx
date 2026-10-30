@@ -6,30 +6,24 @@ import {
     Settings as SettingsIcon,
     UserRound,
 } from 'lucide-react';
+import Link from 'next/link';
 
 import { useHomepageAuth } from '@/auth/AuthProvider';
-import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useLocale } from '@/hooks/useLocale';
 import type { InitialAppPreferences } from '@/types/preferences';
-import { SettingsMenu } from './SettingsMenu';
-import { WallpaperSettingsMenu } from './WallpaperSettingsMenu';
 
 interface UserFloatingBarProps {
-    bookmarkControls: BookmarkControls;
     className?: string;
     closeMenusSignal?: number;
     initialPreferences: InitialAppPreferences;
     isSupabaseEnabled: boolean;
-    settingsPlacement?: 'above' | 'mobile';
     showSettingsInMenu?: boolean;
 }
 
 interface CloseableMenuProps {
-    bookmarkControls: BookmarkControls;
     className?: string;
     closeMenusSignal?: number;
     initialPreferences: InitialAppPreferences;
-    settingsPlacement?: 'above' | 'mobile';
     showSettingsInMenu?: boolean;
 }
 
@@ -46,17 +40,14 @@ const getDisplayName = (emailAddress?: string, name?: string | null) => {
 };
 
 const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
-    bookmarkControls,
     className,
     closeMenusSignal,
     initialPreferences,
-    settingsPlacement = 'above',
     showSettingsInMenu = false,
 }) => {
     const { isSignedIn, openSignIn, signOut, user } = useHomepageAuth();
     const { t } = useLocale(initialPreferences.locale);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
     const emailAddress = user?.email;
     const displayName = getDisplayName(
@@ -131,13 +122,12 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                                     </span>
                                 </div>
                                 {showSettingsInMenu ? (
-                                    <button
+                                    <Link
                                         className='user-menu-action'
-                                        type='button'
+                                        href='/settings/bookmarks'
                                         role='menuitem'
                                         onClick={() => {
                                             setIsMenuOpen(false);
-                                            setIsSettingsOpen(true);
                                         }}
                                     >
                                         <SettingsIcon
@@ -145,7 +135,7 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                                             size={16}
                                         />
                                         <span>{t.settings}</span>
-                                    </button>
+                                    </Link>
                                 ) : undefined}
                                 <button
                                     className='user-menu-action'
@@ -163,13 +153,12 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                         ) : (
                             <>
                                 {showSettingsInMenu ? (
-                                    <button
+                                    <Link
                                         className='user-menu-action'
-                                        type='button'
+                                        href='/settings/bookmarks'
                                         role='menuitem'
                                         onClick={() => {
                                             setIsMenuOpen(false);
-                                            setIsSettingsOpen(true);
                                         }}
                                     >
                                         <SettingsIcon
@@ -177,7 +166,7 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                                             size={16}
                                         />
                                         <span>{t.settings}</span>
-                                    </button>
+                                    </Link>
                                 ) : undefined}
                                 <button
                                     className='user-menu-action'
@@ -196,32 +185,29 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                     </div>
                 ) : undefined}
             </div>
-            <WallpaperSettingsMenu
-                bookmarkControls={bookmarkControls}
-                closeSignal={closeMenusSignal}
-                isOpen={showSettingsInMenu ? isSettingsOpen : undefined}
-                isTriggerHidden={showSettingsInMenu}
-                initialPreferences={initialPreferences}
-                onOpenChange={
-                    showSettingsInMenu ? setIsSettingsOpen : undefined
-                }
-                placement={settingsPlacement}
-            />
+            {showSettingsInMenu ? undefined : (
+                <div className='settings-control above'>
+                    <Link
+                        className='settings-trigger'
+                        href='/settings/bookmarks'
+                        aria-label={t.settings}
+                    >
+                        <SettingsIcon className='icon' size={20} />
+                    </Link>
+                </div>
+            )}
         </div>
     );
 };
 
 const UserFloatingBarFallback: React.FC<CloseableMenuProps> = ({
-    bookmarkControls,
     className,
     closeMenusSignal,
     initialPreferences,
-    settingsPlacement = 'above',
     showSettingsInMenu = false,
 }) => {
     const { t } = useLocale(initialPreferences.locale);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -279,54 +265,49 @@ const UserFloatingBarFallback: React.FC<CloseableMenuProps> = ({
                             <span>Supabase is not configured</span>
                         </div>
                         {showSettingsInMenu ? (
-                            <button
+                            <Link
                                 className='user-menu-action'
-                                type='button'
+                                href='/settings/bookmarks'
                                 role='menuitem'
                                 onClick={() => {
                                     setIsMenuOpen(false);
-                                    setIsSettingsOpen(true);
                                 }}
                             >
                                 <SettingsIcon className='icon' size={16} />
                                 <span>{t.settings}</span>
-                            </button>
+                            </Link>
                         ) : undefined}
                     </div>
                 ) : undefined}
             </div>
-            <SettingsMenu
-                bookmarkControls={bookmarkControls}
-                closeSignal={closeMenusSignal}
-                isOpen={showSettingsInMenu ? isSettingsOpen : undefined}
-                isTriggerHidden={showSettingsInMenu}
-                initialPreferences={initialPreferences}
-                onOpenChange={
-                    showSettingsInMenu ? setIsSettingsOpen : undefined
-                }
-                placement={settingsPlacement}
-            />
+            {showSettingsInMenu ? undefined : (
+                <div className='settings-control above'>
+                    <Link
+                        className='settings-trigger'
+                        href='/settings/bookmarks'
+                        aria-label={t.settings}
+                    >
+                        <SettingsIcon className='icon' size={20} />
+                    </Link>
+                </div>
+            )}
         </div>
     );
 };
 
 export const UserFloatingBar: React.FC<UserFloatingBarProps> = ({
-    bookmarkControls,
     className,
     closeMenusSignal,
     initialPreferences,
     isSupabaseEnabled,
-    settingsPlacement,
     showSettingsInMenu,
 }) => {
     if (isSupabaseEnabled) {
         return (
             <UserFloatingBarContent
-                bookmarkControls={bookmarkControls}
                 className={className}
                 closeMenusSignal={closeMenusSignal}
                 initialPreferences={initialPreferences}
-                settingsPlacement={settingsPlacement}
                 showSettingsInMenu={showSettingsInMenu}
             />
         );
@@ -334,11 +315,9 @@ export const UserFloatingBar: React.FC<UserFloatingBarProps> = ({
 
     return (
         <UserFloatingBarFallback
-            bookmarkControls={bookmarkControls}
             className={className}
             closeMenusSignal={closeMenusSignal}
             initialPreferences={initialPreferences}
-            settingsPlacement={settingsPlacement}
             showSettingsInMenu={showSettingsInMenu}
         />
     );
