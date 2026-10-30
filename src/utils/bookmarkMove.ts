@@ -73,10 +73,10 @@ const updateNodesAtFolderPath = (
     return undefined;
 };
 
-export const moveBookmarkTreeNode = (
+export const moveBookmarkTreeNodes = (
     bookmarkTree: readonly BookmarkCategoryData[],
     source: BookmarkLocationInput,
-    nodeId: string,
+    nodeIds: readonly string[],
     destination: BookmarkLocationInput,
     destinationIndex?: number
 ): BookmarkCategoryData[] | undefined => {
@@ -103,14 +103,19 @@ export const moveBookmarkTreeNode = (
     }
     const sourceNodes = getNodesAtFolderPath(rootNodes, sourcePath);
     const destinationNodes = getNodesAtFolderPath(rootNodes, destinationPath);
-    const sourceIndex =
-        sourceNodes?.findIndex((node) => node.id === nodeId) ?? -1;
-    const node = sourceNodes?.at(sourceIndex);
+    const selectedIds = new Set(nodeIds);
+    const selectedNodes = sourceNodes?.filter((node) =>
+        selectedIds.has(node.id)
+    );
     if (
-        sourceIndex < 0 ||
-        !node ||
+        selectedIds.size === 0 ||
+        !selectedNodes ||
+        selectedNodes.length !== selectedIds.size ||
         !destinationNodes ||
-        (node.type === 'folder' && destinationPath.includes(node.id))
+        selectedNodes.some(
+            (node) =>
+                node.type === 'folder' && destinationPath.includes(node.id)
+        )
     ) {
         return undefined;
     }
@@ -125,16 +130,26 @@ export const moveBookmarkTreeNode = (
             destinationNodes.length
         )
     );
-    if (sameLocation && sourceIndex < index) {
-        index--;
-    }
-    if (sameLocation && sourceIndex === index) {
-        return undefined;
+    if (sameLocation) {
+        index -= destinationNodes
+            .slice(0, index)
+            .filter((node) => selectedIds.has(node.id)).length;
+        const reordered = destinationNodes.filter(
+            (node) => !selectedIds.has(node.id)
+        );
+        reordered.splice(index, 0, ...selectedNodes);
+        if (
+            reordered.every(
+                (node, nodeIndex) => node === destinationNodes[nodeIndex]
+            )
+        ) {
+            return undefined;
+        }
     }
     const withoutSource = updateNodesAtFolderPath(
         rootNodes,
         sourcePath,
-        (nodes) => nodes.filter((item) => item.id !== nodeId)
+        (nodes) => nodes.filter((item) => !selectedIds.has(item.id))
     );
     if (!withoutSource) {
         return undefined;
@@ -144,7 +159,7 @@ export const moveBookmarkTreeNode = (
         destinationPath,
         (nodes) => {
             const result = [...nodes];
-            result.splice(index, 0, node);
+            result.splice(index, 0, ...selectedNodes);
             return result;
         }
     );
@@ -152,3 +167,18 @@ export const moveBookmarkTreeNode = (
         ? undefined
         : replaceBookmarkRootNodes(bookmarkTree, moved);
 };
+
+export const moveBookmarkTreeNode = (
+    bookmarkTree: readonly BookmarkCategoryData[],
+    source: BookmarkLocationInput,
+    nodeId: string,
+    destination: BookmarkLocationInput,
+    destinationIndex?: number
+): BookmarkCategoryData[] | undefined =>
+    moveBookmarkTreeNodes(
+        bookmarkTree,
+        source,
+        [nodeId],
+        destination,
+        destinationIndex
+    );

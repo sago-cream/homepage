@@ -7,7 +7,7 @@ import type {
     BookmarkNodeData,
     BookmarkTrashItemData,
 } from '@/types/bookmarks';
-import { moveBookmarkTreeNode } from '@/utils/bookmarkMove';
+import { moveBookmarkTreeNodes } from '@/utils/bookmarkMove';
 import {
     coerceBookmarkTrash,
     coerceBookmarkTree,
@@ -86,9 +86,9 @@ export interface BookmarkControls {
     importBookmarks: (file: File) => Promise<void>;
     canEdit: boolean;
     isLoading: boolean;
-    moveBookmarkNode: (
+    moveBookmarkNodes: (
         source: BookmarkLocationInput,
-        nodeId: string,
+        nodeIds: readonly string[],
         destination: BookmarkLocationInput,
         destinationIndex?: number
     ) => boolean;
@@ -1060,17 +1060,17 @@ export const useBookmarks = (
         [bookmarkTrash, bookmarkTree, commitBookmarkTree]
     );
 
-    const moveBookmarkNode = useCallback(
+    const moveBookmarkNodes = useCallback(
         (
             source: BookmarkLocationInput,
-            nodeId: string,
+            nodeIds: readonly string[],
             destination: BookmarkLocationInput,
             destinationIndex?: number
         ) => {
-            const moved = moveBookmarkTreeNode(
+            const moved = moveBookmarkTreeNodes(
                 bookmarkTree,
                 source,
-                nodeId,
+                nodeIds,
                 destination,
                 destinationIndex
             );
@@ -1454,7 +1454,7 @@ export const useBookmarks = (
         exportBookmarks,
         importBookmarks,
         isLoading,
-        moveBookmarkNode,
+        moveBookmarkNodes,
         replaceBookmarkTree,
         restoreTrashItem,
         saveState,

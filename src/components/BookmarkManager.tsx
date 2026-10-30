@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import {
     DragDropProvider,
+    DragOverlay,
     useDragDropMonitor,
     useDroppable,
 } from '@dnd-kit/react';
@@ -111,6 +112,7 @@ interface FormErrors {
 }
 
 interface DragNodeData {
+    nodeIds: readonly string[];
     nodeIndex: number;
     isFolder: boolean;
     kind: 'node';
@@ -163,6 +165,10 @@ interface SortableBookmarkRowProps {
     nodeId: string;
     nodeIndex: number;
     selected: boolean;
+    multiSelected: boolean;
+    dragging: boolean;
+    selectedNodeIds: readonly string[];
+    onClickCapture: React.MouseEventHandler<HTMLDivElement>;
 }
 
 const SortableBookmarkRow: React.FC<SortableBookmarkRowProps> = ({
@@ -173,11 +179,21 @@ const SortableBookmarkRow: React.FC<SortableBookmarkRowProps> = ({
     nodeId,
     nodeIndex,
     selected,
+    multiSelected,
+    dragging,
+    selectedNodeIds,
+    onClickCapture,
 }) => {
     const [dropPosition, setDropPosition] = useState<NodeDropPosition>();
     const sortable = useSortable<DragNodeData>({
         accept: 'bookmark-node',
-        data: { isFolder, kind: 'node', location, nodeIndex },
+        data: {
+            isFolder,
+            kind: 'node',
+            location,
+            nodeIndex,
+            nodeIds: multiSelected ? selectedNodeIds : [nodeId],
+        },
         disabled,
         group: getLocationKey(location.categoryIndex, location.folderPath),
         id: nodeId,
@@ -190,8 +206,9 @@ const SortableBookmarkRow: React.FC<SortableBookmarkRowProps> = ({
         pointerY = event.operation.position.current.y
     ) => {
         const { source, target } = event.operation;
+        const sourceData = source?.data as DragNodeData | undefined;
         setDropPosition(
-            target?.id === nodeId && source?.id !== nodeId
+            target?.id === nodeId && !sourceData?.nodeIds.includes(nodeId)
                 ? getNodeDropPosition(
                       isFolder,
                       target.element?.getBoundingClientRect(),
@@ -223,8 +240,11 @@ const SortableBookmarkRow: React.FC<SortableBookmarkRowProps> = ({
             className='bookmark-workspace-list-row'
             data-dragging={sortable.isDragSource ? 'true' : undefined}
             data-drop-position={dropPosition}
-            data-selected={selected}
+            data-selected={selected || multiSelected}
+            data-multiselected={multiSelected || undefined}
+            data-group-dragging={dragging || undefined}
             data-node-id={nodeId}
+            onClickCapture={onClickCapture}
         >
             {children(sortable.sourceRef)}
         </div>
@@ -519,6 +539,14 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     const [focusedPane, setFocusedPane] = useState<'left' | 'right'>('left');
     const [selectedLocation, setSelectedLocation] =
         useState<BookmarkLocation>();
+    const [selection, setSelection] = useState<{
+        pane: 'left' | 'right';
+        location: BookmarkLocation;
+        query: string;
+        anchorId: string;
+        nodeIds: readonly string[];
+    }>();
+    const [draggingIds, setDraggingIds] = useState<readonly string[]>([]);
     const [backLocations, setBackLocations] = useState<NavigationSnapshot[]>(
         []
     );
@@ -668,6 +696,74 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             : sidebarItems.filter(({ node }) =>
                   nodeMatchesSearch(node, normalizedQuery)
               );
+    const getSelectedIds = (
+        pane: 'left' | 'right',
+        atLocation: BookmarkLocation,
+        nodes: readonly BookmarkNodeData[]
+    ) =>
+        selection?.pane === pane &&
+        selection.query === normalizedQuery &&
+        isSameLocation(selection.location, atLocation)
+            ? nodes
+                  .filter((node) => selection.nodeIds.includes(node.id))
+                  .map((node) => node.id)
+            : [];
+    const leftSelectedIds = getSelectedIds(
+        'left',
+        location,
+        visibleSidebarItems.map((item) => item.node)
+    );
+    const rightSelectedIds = getSelectedIds(
+        'right',
+        rightLocation,
+        visibleNodes
+    );
+    const selectRow = (
+        event: React.MouseEvent<HTMLDivElement>,
+        pane: 'left' | 'right',
+        atLocation: BookmarkLocation,
+        nodeId: string,
+        nodes: readonly BookmarkNodeData[]
+    ) => {
+        if (
+            !(event.target instanceof Element) ||
+            !event.target.closest('.bookmark-workspace-tree-item')
+        ) {
+            return;
+        }
+        const currentIds = getSelectedIds(pane, atLocation, nodes);
+        const anchorId =
+            currentIds.length > 0 ? (selection?.anchorId ?? nodeId) : nodeId;
+        let nodeIds = [nodeId];
+        if (event.shiftKey) {
+            const anchorIndex = Math.max(
+                0,
+                nodes.findIndex((node) => node.id === anchorId)
+            );
+            const clickedIndex = nodes.findIndex((node) => node.id === nodeId);
+            nodeIds = nodes
+                .slice(
+                    Math.min(anchorIndex, clickedIndex),
+                    Math.max(anchorIndex, clickedIndex) + 1
+                )
+                .map((node) => node.id);
+        } else if (event.metaKey || event.ctrlKey) {
+            nodeIds = currentIds.includes(nodeId)
+                ? currentIds.filter((id) => id !== nodeId)
+                : [...currentIds, nodeId];
+        }
+        setSelection({
+            pane,
+            location: atLocation,
+            query: normalizedQuery,
+            anchorId: event.shiftKey ? anchorId : nodeId,
+            nodeIds,
+        });
+        if (event.shiftKey || event.metaKey || event.ctrlKey) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+    };
     const isDraftDirty =
         editorDraft !== undefined &&
         serializeDraft(editorDraft) !== draftBaseline;
@@ -701,6 +797,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         scrollPositions: captureScrollPositions(),
     });
     const restoreNavigation = (snapshot: NavigationSnapshot) => {
+        setSelection(undefined);
         pendingScrollRef.current = snapshot.scrollPositions ?? {
             left: 0,
             right: 0,
@@ -1322,6 +1419,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     }, [bookmarkTree.length, location.categoryIndex]);
 
     const handleDragEnd = (event: DragEndEvent) => {
+        setDraggingIds([]);
         const { source, target } = event.operation;
         const sourceData = source?.data as DragNodeData | undefined;
         if (
@@ -1341,7 +1439,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         let destinationIndex: number | undefined;
 
         if (targetData?.kind === 'node') {
-            if (String(source.id) === String(target.id)) {
+            if (sourceData.nodeIds.includes(String(target.id))) {
                 return;
             }
             const dropPosition = getNodeDropPosition(
@@ -1377,13 +1475,14 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
 
         if (
             destination !== undefined &&
-            bookmarkControls.moveBookmarkNode(
+            bookmarkControls.moveBookmarkNodes(
                 sourceData.location,
-                String(source.id),
+                sourceData.nodeIds,
                 destination,
                 destinationIndex
             )
         ) {
+            setSelection(undefined);
             setEditorDraft(undefined);
             if (
                 sourceData.location.categoryIndex === -1 ||
@@ -1476,6 +1575,11 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                         setIsIconPickerOpen(false);
                         setIconQuery('');
                         iconPickerTriggerRef.current?.focus();
+                    } else if (
+                        editorDraft === undefined &&
+                        selection !== undefined
+                    ) {
+                        setSelection(undefined);
                     } else if (editorDraft === undefined) {
                         requestDialogClose();
                     } else {
@@ -1673,6 +1777,12 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                     )}
                 </div>
                 <DragDropProvider
+                    onDragStart={(event) => {
+                        const sourceData = event.operation.source?.data as
+                            | DragNodeData
+                            | undefined;
+                        setDraggingIds(sourceData?.nodeIds ?? []);
+                    }}
                     onDragOver={(event) => {
                         // Keep rows in place while their indicators preview the drop.
                         event.preventDefault();
@@ -1683,6 +1793,16 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                         className='bookmark-settings-browser bookmark-workspace-grid'
                         data-folder-open={selectedLocation !== undefined}
                         inert={editorDraft !== undefined}
+                        onPointerDownCapture={(event) => {
+                            if (
+                                event.target instanceof Element &&
+                                !event.target.closest(
+                                    '.bookmark-workspace-list-row'
+                                )
+                            ) {
+                                setSelection(undefined);
+                            }
+                        }}
                     >
                         <aside
                             className='bookmark-workspace-tree-pane'
@@ -1795,6 +1915,27 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                         folder !== undefined
                                                     }
                                                     selected={isSelected}
+                                                    multiSelected={leftSelectedIds.includes(
+                                                        itemKey
+                                                    )}
+                                                    selectedNodeIds={
+                                                        leftSelectedIds
+                                                    }
+                                                    dragging={draggingIds.includes(
+                                                        itemKey
+                                                    )}
+                                                    onClickCapture={(event) => {
+                                                        selectRow(
+                                                            event,
+                                                            'left',
+                                                            location,
+                                                            itemKey,
+                                                            visibleSidebarItems.map(
+                                                                (entry) =>
+                                                                    entry.node
+                                                            )
+                                                        );
+                                                    }}
                                                     disabled={
                                                         normalizedQuery !== ''
                                                     }
@@ -1811,7 +1952,10 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                         className='bookmark-workspace-tree-item'
                                                                         type='button'
                                                                         aria-pressed={
-                                                                            isSelected
+                                                                            isSelected ||
+                                                                            leftSelectedIds.includes(
+                                                                                itemKey
+                                                                            )
                                                                         }
                                                                         onClick={() => {
                                                                             if (
@@ -1886,6 +2030,9 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                         bookmark={
                                                                             bookmark
                                                                         }
+                                                                        selected={leftSelectedIds.includes(
+                                                                            itemKey
+                                                                        )}
                                                                         onClick={() => {
                                                                             editBookmark(
                                                                                 item.containerLocation,
@@ -2028,6 +2175,24 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                 selected={
                                                     selectedKey === rowKey
                                                 }
+                                                multiSelected={rightSelectedIds.includes(
+                                                    node.id
+                                                )}
+                                                selectedNodeIds={
+                                                    rightSelectedIds
+                                                }
+                                                dragging={draggingIds.includes(
+                                                    node.id
+                                                )}
+                                                onClickCapture={(event) => {
+                                                    selectRow(
+                                                        event,
+                                                        'right',
+                                                        rightLocation,
+                                                        node.id,
+                                                        visibleNodes
+                                                    );
+                                                }}
                                             >
                                                 {(sourceRef) => (
                                                     <>
@@ -2036,6 +2201,9 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                 ref={sourceRef}
                                                                 className='bookmark-workspace-tree-item'
                                                                 type='button'
+                                                                aria-pressed={rightSelectedIds.includes(
+                                                                    node.id
+                                                                )}
                                                                 onClick={() => {
                                                                     enterFolder(
                                                                         folderLocation
@@ -2065,6 +2233,9 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                     sourceRef
                                                                 }
                                                                 bookmark={node}
+                                                                selected={rightSelectedIds.includes(
+                                                                    node.id
+                                                                )}
                                                                 onClick={() => {
                                                                     editBookmark(
                                                                         rightLocation,
@@ -2128,6 +2299,24 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                             </BookmarkLocationDropTarget>
                         </main>
                     </div>
+                    <DragOverlay
+                        disabled={(source) =>
+                            ((source?.data as DragNodeData | undefined)?.nodeIds
+                                .length ?? 0) < 2
+                        }
+                        dropAnimation={{ duration: 0 }}
+                    >
+                        {(source) => (
+                            <div className='bookmark-workspace-drag-group'>
+                                <Bookmark aria-hidden />
+                                <strong>
+                                    {locale === 'zh-TW'
+                                        ? `${(source.data as DragNodeData).nodeIds.length} 個項目`
+                                        : `${(source.data as DragNodeData).nodeIds.length} items`}
+                                </strong>
+                            </div>
+                        )}
+                    </DragOverlay>
                 </DragDropProvider>
 
                 {editorDraft === undefined ? undefined : (

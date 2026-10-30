@@ -4872,6 +4872,28 @@ a.bookmark-workspace-tree-item {
     background: var(--clr-primary-alpha-2);
     border-color: var(--clr-primary);
 }
+.bookmark-settings .bookmark-workspace-list-row[data-multiselected='true'] {
+    background: var(--clr-primary-alpha-2);
+}
+.bookmark-settings .bookmark-workspace-list-row[data-group-dragging='true'] {
+    opacity: 0.5;
+}
+.bookmark-settings .bookmark-workspace-tree-item {
+    user-select: none;
+}
+.bookmark-workspace-drag-group {
+    display: flex;
+    width: max-content;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border: 1px solid var(--clr-primary);
+    border-radius: var(--bookmark-workspace-control-radius);
+    background: var(--clr-neutral-light);
+    color: var(--clr-text);
+    box-shadow: var(--shadow-panel-hover);
+    pointer-events: none;
+}
 :is(.bookmark-settings, .bookmark-card-list) .bookmark-workspace-tree-item,
 .bookmark-settings .bookmark-workspace-row-link,
 :is(.bookmark-settings, .bookmark-card-list)

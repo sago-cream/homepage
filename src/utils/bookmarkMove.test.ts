@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { describe, test } from 'node:test';
 
 import type { BookmarkCategoryData, BookmarkNodeData } from '@/types/bookmarks';
-import { moveBookmarkTreeNode } from './bookmarkMove';
+import { moveBookmarkTreeNode, moveBookmarkTreeNodes } from './bookmarkMove';
 import { bookmarkRootCategoryId, getBookmarkRootNodes } from './bookmarks';
 
 const link = (id: string): BookmarkNodeData => ({
@@ -11,6 +11,89 @@ const link = (id: string): BookmarkNodeData => ({
     type: 'link',
     title: id,
     url: `https://example.com/${id}`,
+});
+
+describe('bookmark group moves', () => {
+    test('moves a group atomically in source order even when dragged from its middle', () => {
+        const result = moveBookmarkTreeNodes(tree, a, ['two', 'one'], b)!;
+        assert.deepEqual(ids(result[1].children), ['nested']);
+        assert.deepEqual(ids(result[2].children), ['one', 'two']);
+    });
+    test('reorders a contiguous group down and back up', () => {
+        const down = moveBookmarkTreeNodes(tree, a, ['one', 'two'], a, 3)!;
+        assert.deepEqual(ids(down[1].children), ['nested', 'one', 'two']);
+        const up = moveBookmarkTreeNodes(down, a, ['one', 'two'], a, 0)!;
+        assert.deepEqual(ids(up[1].children), ['one', 'two', 'nested']);
+    });
+    test('adjusts the insertion index for a noncontiguous group', () => {
+        const result = moveBookmarkTreeNodes(tree, a, ['one', 'nested'], a, 2)!;
+        assert.deepEqual(ids(result[1].children), ['two', 'one', 'nested']);
+    });
+    test('moves mixed root links and folders without category-index drift', () => {
+        const result = moveBookmarkTreeNodes(tree, root, ['a', 'root'], b)!;
+        assert.equal(result.length, 1);
+        assert.equal(result[0].id, 'b');
+        assert.deepEqual(ids(result[0].children), ['root', 'a']);
+        const folder = result[0].children[1];
+        assert.ok(folder.type === 'folder');
+        assert.deepEqual(ids(folder.children), ['one', 'two', 'nested']);
+    });
+    test('promotes a folder and links together without losing nested children', () => {
+        const result = moveBookmarkTreeNodes(tree, a, ['one', 'nested'], root)!;
+        assert.deepEqual(ids(getBookmarkRootNodes(result)), [
+            'root',
+            'one',
+            'a',
+            'b',
+            'nested',
+        ]);
+        assert.deepEqual(
+            ids(result.find((category) => category.id === 'nested')!.children),
+            ['three']
+        );
+    });
+    test('rejects the whole group if any selected folder contains the destination', () => {
+        assert.equal(
+            moveBookmarkTreeNodes(tree, a, ['one', 'nested'], nested),
+            undefined
+        );
+        assert.equal(
+            moveBookmarkTreeNodes(tree, root, ['root', 'a'], nested),
+            undefined
+        );
+    });
+    test('rejects missing members, empty selections, invalid destinations, and unchanged order', () => {
+        assert.equal(
+            moveBookmarkTreeNodes(tree, a, ['one', 'missing'], b),
+            undefined
+        );
+        assert.equal(moveBookmarkTreeNodes(tree, a, [], b), undefined);
+        assert.equal(
+            moveBookmarkTreeNodes(tree, a, ['one', 'two'], {
+                categoryIndex: 50,
+            }),
+            undefined
+        );
+        assert.equal(
+            moveBookmarkTreeNodes(tree, a, ['one', 'two'], a, 2),
+            undefined
+        );
+        assert.equal(
+            moveBookmarkTreeNodes(tree, a, ['one', 'two'], a),
+            undefined
+        );
+    });
+    test('deduplicates selected IDs and does not mutate the original tree', () => {
+        const before = structuredClone(tree);
+        const result = moveBookmarkTreeNodes(
+            tree,
+            a,
+            ['two', 'one', 'two'],
+            b
+        )!;
+        assert.deepEqual(ids(result[2].children), ['one', 'two']);
+        assert.deepEqual(tree, before);
+    });
 });
 const tree: BookmarkCategoryData[] = [
     {
