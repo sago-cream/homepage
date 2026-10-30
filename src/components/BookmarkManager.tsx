@@ -38,6 +38,7 @@ import {
     Upload,
     X,
 } from 'lucide-react';
+import { usePathname, useSearchParams } from 'next/navigation';
 
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useLocale } from '@/hooks/useLocale';
@@ -56,6 +57,7 @@ import {
     normalizeCategoryIconSearch,
     resolveFolderIconName,
 } from '@/utils/bookmarkPresentation';
+import { createBookmarkRoute, readBookmarkRoute } from '@/utils/bookmarkRoute';
 import {
     getBookmarkRootNodes,
     isBookmarkFolder,
@@ -519,6 +521,10 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     onClose,
 }) => {
     const { locale, t } = useLocale();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
+    const routeQuery = searchParams.toString();
+    const lastReadRouteRef = useRef<string | undefined>(undefined);
     const titleId = useId();
     const discardDescriptionId = useId();
     const emptyTrashDescriptionId = useId();
@@ -587,6 +593,42 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     >(undefined);
 
     const { bookmarkTree } = bookmarkControls;
+    useEffect(() => {
+        if (pathname !== '/settings/bookmarks') {
+            setEditorDraft(undefined);
+            setSelection(undefined);
+            setIsTrashOpen(false);
+            setIsEmptyTrashConfirmOpen(false);
+            setIsDiscardConfirmOpen(false);
+            return;
+        }
+        if (bookmarkControls.isLoading) {
+            return;
+        }
+        const state = readBookmarkRoute(
+            bookmarkTree,
+            new URLSearchParams(routeQuery)
+        );
+        if (lastReadRouteRef.current !== routeQuery) {
+            setEditorDraft(undefined);
+            setSelection(undefined);
+        }
+        lastReadRouteRef.current = routeQuery;
+        setLocation(state.location);
+        setSelectedLocation(state.selectedLocation);
+        setFocusedPane(state.selectedLocation ? 'right' : 'left');
+        setQuery(state.query);
+        if (state.query !== '') {
+            setIsSearchOpen(true);
+        }
+        const canonicalRoute = createBookmarkRoute(bookmarkTree, state);
+        if (
+            `${pathname}${routeQuery === '' ? '' : `?${routeQuery}`}` !==
+            canonicalRoute
+        ) {
+            globalThis.history.replaceState({}, '', canonicalRoute);
+        }
+    }, [bookmarkControls.isLoading, bookmarkTree, pathname, routeQuery]);
     const decoratedTree = useMemo(
         () => decorateBookmarkTree(bookmarkTree),
         [bookmarkTree]
@@ -784,6 +826,32 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         selectedLocation,
         focusedPane,
     };
+    const writeRoute = (
+        snapshot: NavigationSnapshot,
+        nextQuery: string,
+        replace = false
+    ) => {
+        const href = createBookmarkRoute(bookmarkTree, {
+            ...snapshot,
+            query: nextQuery,
+        });
+        if (
+            `${globalThis.location.pathname}${globalThis.location.search}` ===
+            href
+        ) {
+            return;
+        }
+        if (replace) {
+            globalThis.history.replaceState({}, '', href);
+        } else {
+            globalThis.history.pushState({}, '', href);
+        }
+    };
+    const changeQuery = (nextQuery: string) => {
+        setQuery(nextQuery);
+        setSelection(undefined);
+        writeRoute(navigationSnapshot, nextQuery, true);
+    };
     const captureScrollPositions = () => ({
         left:
             dialogRef.current?.querySelector('.bookmark-workspace-tree-pane')
@@ -807,6 +875,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         setFocusedPane(snapshot.focusedPane);
         setEditorDraft(undefined);
         setQuery('');
+        writeRoute(snapshot, '');
     };
     const navigateTo = (snapshot: NavigationSnapshot) => {
         setBackLocations((current: readonly NavigationSnapshot[]) => [
@@ -981,7 +1050,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             ),
             pane: focusedPane,
         };
-        setQuery('');
+        changeQuery('');
         setIsSearchOpen(false);
         const count = bookmarkControls.addBookmarksToLocation(
             activeAddLocation,
@@ -1033,7 +1102,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                 ),
                 pane: focusedPane,
             };
-            setQuery('');
+            changeQuery('');
             setIsSearchOpen(false);
         }
         let didSave = false;
@@ -1493,6 +1562,11 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                 setFocusedPane('left');
                 setBackLocations([]);
                 setForwardLocations([]);
+                writeRoute(
+                    { location: bookmarkRootLocation, focusedPane: 'left' },
+                    query,
+                    true
+                );
             }
         }
     };
@@ -1713,13 +1787,13 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                 placeholder={t.bookmarkSearch}
                                 value={query}
                                 onChange={(event) => {
-                                    setQuery(event.target.value);
+                                    changeQuery(event.target.value);
                                 }}
                                 onKeyDown={(event) => {
                                     if (event.key === 'Escape') {
                                         event.preventDefault();
                                         event.stopPropagation();
-                                        setQuery('');
+                                        changeQuery('');
                                         setIsSearchOpen(false);
                                         requestAnimationFrame(() =>
                                             searchTriggerRef.current?.focus()
@@ -1732,7 +1806,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                 aria-label={t.closeSearch}
                                 title={t.closeSearch}
                                 onClick={() => {
-                                    setQuery('');
+                                    changeQuery('');
                                     setIsSearchOpen(false);
                                     requestAnimationFrame(() =>
                                         searchTriggerRef.current?.focus()

@@ -19,6 +19,13 @@ const LinkPanel = lazy(
         }))
 );
 
+const RoutedSettings = lazy(
+    async () =>
+        await import('./RoutedSettings').then((module) => ({
+            default: module.RoutedSettings,
+        }))
+);
+
 const Weather = lazy(
     async () =>
         await import('./Weather').then((module) => ({
@@ -212,6 +219,11 @@ const CoverContent: React.FC<CoverContentProps> = ({
             )}
 
             <Suspense fallback={undefined}>
+                <RoutedSettings
+                    bookmarkControls={bookmarkControls}
+                    initialPreferences={initialPreferences}
+                    isSupabaseEnabled={isSupabaseEnabled}
+                />
                 <LinkPanel
                     bookmarkControls={bookmarkControls}
                     hidden={hideLinks}

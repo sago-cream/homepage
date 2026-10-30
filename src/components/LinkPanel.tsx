@@ -274,12 +274,10 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                         onOpenChange={setIsMobileOpen}
                     />
                     <UserFloatingBar
-                        bookmarkControls={bookmarkControls}
                         className='mobile-user-floating-bar'
                         closeMenusSignal={mouseLeaveCloseSignal}
                         initialPreferences={initialPreferences}
                         isSupabaseEnabled={isSupabaseEnabled}
-                        settingsPlacement='mobile'
                         showSettingsInMenu
                     />
                     <div className={`trigger ${hidden && 'hidden'}`} />
@@ -386,7 +384,6 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                                 ))
                             )}
                             <UserFloatingBar
-                                bookmarkControls={bookmarkControls}
                                 className='desktop-user-floating-bar'
                                 closeMenusSignal={mouseLeaveCloseSignal}
                                 initialPreferences={initialPreferences}
