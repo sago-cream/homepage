@@ -8,22 +8,18 @@
         var(--bookmark-folder-inline-padding) + var(--font-size) + 0.75rem
     );
     --bookmark-link-inline-end: 1rem;
-    --bookmark-folder-inline-padding: 1rem;
+    --bookmark-folder-inline-padding: 2rem;
     --bookmark-panel-radius: 1rem;
     --bookmark-row-radius: 0.75rem;
     --bookmark-submenu-viewport-padding: 1rem;
     --bookmark-category-hover-opacity: 0.32;
-    --bookmark-category-clicked-opacity: 0.44;
+    --bookmark-category-clicked-opacity: 0.34;
     --bookmark-item-hover-bg: linear-gradient(
         to right,
         transparent,
         var(--clr-primary-alpha-2)
     );
-    --bookmark-item-clicked-bg: linear-gradient(
-        to right,
-        var(--clr-primary-alpha-2),
-        var(--clr-neutral-light-alpha)
-    );
+    --bookmark-item-clicked-bg: var(--bookmark-item-hover-bg);
     --height: 100vh;
     --height: 100svh;
     position: fixed;
@@ -402,7 +398,7 @@
     position: relative;
     width: var(--width);
     height: var(--link-height);
-    padding: 0 1rem;
+    padding: 0 var(--bookmark-folder-inline-padding);
     background: transparent;
     cursor: pointer;
     text-align: left;
@@ -437,7 +433,6 @@
         position: relative;
         width: var(--font-size);
         height: var(--font-size);
-        margin-left: 1rem;
         margin-right: 0.75rem;
         color: var(--clr-neutral);
         flex: 0 0 auto;
@@ -580,52 +575,61 @@
     }
 
     .bookmark-submenu {
+        --submenu-closed-translate: -100%;
         position: fixed;
         inset: auto;
         margin: 0;
         border: 0;
         width: var(--width);
-        min-height: var(--link-height);
-        max-height: calc(100svh - 2 * var(--bookmark-submenu-viewport-padding));
+        height: var(--height);
         padding: 0;
+        background: transparent;
+        overflow: clip;
+        clip-path: inset(0 -1rem 0 0);
+        pointer-events: none;
+        transition:
+            display var(--motion-duration-base) allow-discrete,
+            overlay var(--motion-duration-base) allow-discrete;
+    }
+
+    .bookmark-submenu[data-side='left'] {
+        --submenu-closed-translate: 100%;
+        clip-path: inset(0 0 0 -1rem);
+    }
+
+    .bookmark-submenu-panel {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        padding-block: var(--padding, 1rem)
+            var(--bookmark-submenu-viewport-padding);
         background: var(--clr-panel-bg);
         box-shadow: var(--shadow-panel);
         backdrop-filter: blur(0.75rem);
         border-radius: 0 var(--bookmark-panel-radius)
             var(--bookmark-panel-radius) 0;
-        overflow-y: auto;
-        overscroll-behavior: contain;
+        translate: var(--submenu-closed-translate);
+        transition: translate var(--motion-duration-base) var(--motion-ease-out);
     }
 
-    .bookmark-submenu:popover-open {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+    .bookmark-submenu[data-side='left'] > .bookmark-submenu-panel {
+        border-radius: var(--bookmark-panel-radius) 0 0
+            var(--bookmark-panel-radius);
     }
 
-    .bookmark-submenu > .bookmark-node-list > .bookmark-node {
-        flex-shrink: 0;
-    }
-
-    .bookmark-submenu
-        > .bookmark-node-list
-        > .bookmark-node:first-child
-        > .link {
-        border-top-right-radius: var(--bookmark-panel-radius);
-    }
-
-    .bookmark-submenu
-        > .bookmark-node-list
-        > .bookmark-node:last-of-type
-        > .link {
-        border-bottom-right-radius: var(--bookmark-panel-radius);
-    }
-
-    .folder-node:focus-within > .bookmark-submenu,
-    .folder-node.expanded > .bookmark-submenu {
-        opacity: 1;
-        pointer-events: inherit;
+    .bookmark-submenu[data-open='true'] > .bookmark-submenu-panel {
         translate: none;
+    }
+
+    .bookmark-submenu[data-open='true'] .bookmark-submenu-items {
+        pointer-events: auto;
+    }
+
+    @starting-style {
+        .bookmark-submenu[data-open='true'] > .bookmark-submenu-panel {
+            translate: var(--submenu-closed-translate);
+        }
     }
 
     @media (width < 37.5rem) {
@@ -655,7 +659,7 @@
 .hoverEffective .bookmark-node:not(.layer-locked) > .link:hover,
 .hoverEffective .bookmark-node.layer-locked.clicked > .link:hover {
     text-decoration: none;
-    color: var(--clr-secondary);
+    color: var(--clr-primary);
     background: var(--bookmark-item-hover-bg);
 }
 
@@ -664,7 +668,6 @@
 @supports (content-visibility: hidden) and (transition-behavior: allow-discrete) {
     .link-tree,
     .links,
-    .links .bookmark-submenu,
     .mobile-bookmark-page {
         content-visibility: hidden;
     }
@@ -672,7 +675,9 @@
     .link-tree {
         transition:
             translate var(--motion-duration-fast) var(--motion-ease-out),
-            content-visibility var(--motion-duration-fast) allow-discrete;
+            content-visibility
+                calc(var(--motion-duration-base) + var(--motion-duration-fast))
+                allow-discrete;
     }
 
     .links {
@@ -681,12 +686,6 @@
                 var(--motion-ease-out),
             content-visibility var(--motion-duration-base)
                 var(--motion-duration-fast) allow-discrete;
-    }
-
-    .links .bookmark-submenu {
-        transition:
-            opacity var(--motion-duration-fast) var(--motion-ease-out),
-            content-visibility var(--motion-duration-fast) allow-discrete;
     }
 
     .mobile-bookmark-page {
@@ -704,8 +703,6 @@
     .category.selected + .links,
     .category.clicked + .links,
     .links:has(:focus-visible),
-    .links .folder-node:focus-within > .bookmark-submenu,
-    .links .folder-node.expanded > .bookmark-submenu,
     .mobile-bookmark-page.open {
         content-visibility: visible;
     }
@@ -799,7 +796,8 @@
 }
 
 /* Hover geometry follows the visible item list, not its full-height backdrop. */
-.bookmark-category-items {
+.bookmark-category-items,
+.bookmark-submenu-items {
     display: flex;
     flex-direction: column;
     width: var(--width);
@@ -809,5 +807,14 @@
 
     > .bookmark-node-list > .bookmark-node {
         flex-shrink: 0;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .link-tree,
+    .links,
+    .links .bookmark-submenu,
+    .links .bookmark-submenu-panel {
+        transition: none;
     }
 }

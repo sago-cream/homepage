@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FloatingTree } from '@floating-ui/react';
 import { Moon, PanelLeft, PanelLeftClose, Sun } from 'lucide-react';
 
@@ -55,6 +55,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
         mouseLeaveCloseSignal,
         startMouseNav,
         endMouseNav,
+        resetMouseNav,
     } = useLinkNavigation(isSearchNav, onClearSearch, highlightedCategory);
     const { t } = useLocale(initialPreferences.locale);
     useEffect(() => {
@@ -83,6 +84,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [clickedCategory, setClickedCategory] = useState<number>();
     const [clickedFolderPath, setClickedFolderPath] = useState<string[]>([]);
+    const panelRef = useRef<HTMLElement>(null);
     const isExpanded = selectedCategory !== 0 || clickedCategory !== undefined;
     const bookmarkTree = useMemo(
         () => decorateBookmarkTree(bookmarkControls.bookmarkTree),
@@ -119,6 +121,39 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
         setClickedCategory(undefined);
         setClickedFolderPath([]);
     }, [hidden, isSearchNav]);
+
+    useEffect(() => {
+        if (clickedCategory === undefined) {
+            return undefined;
+        }
+
+        const onOutsidePointerDown = (event: PointerEvent) => {
+            if (
+                event.target instanceof Node &&
+                !panelRef.current?.contains(event.target)
+            ) {
+                const focused = document.activeElement;
+                if (
+                    focused instanceof HTMLElement &&
+                    panelRef.current?.contains(focused)
+                ) {
+                    focused.blur();
+                }
+                setClickedCategory(undefined);
+                setClickedFolderPath([]);
+                resetMouseNav();
+            }
+        };
+
+        document.addEventListener('pointerdown', onOutsidePointerDown, true);
+        return () => {
+            document.removeEventListener(
+                'pointerdown',
+                onOutsidePointerDown,
+                true
+            );
+        };
+    }, [clickedCategory, resetMouseNav]);
 
     const selectCategory = useCallback(
         (categoryIndex: number) => {
@@ -182,6 +217,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
         <MenuAimDebugContext value={debugMenuAim}>
             <FloatingTree>
                 <nav
+                    ref={panelRef}
                     className={[
                         'link-panel',
                         debugMenuAim && 'debug-menu-aim',

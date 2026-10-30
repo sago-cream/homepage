@@ -226,6 +226,8 @@ test.each([false, true])(
             // Inside the old full-panel triangle, but outside the item-list triangle.
             await dispatch(document.body, 'mousemove', 225, 300);
             expect(category.getAttribute('aria-expanded')).toBe('false');
+            expect(items.textContent).toBe('Item');
+            expect(items.inert).toBe(true);
             expect(
                 container.querySelectorAll('.menu-safety-overlay')
             ).toHaveLength(0);

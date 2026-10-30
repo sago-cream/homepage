@@ -10,6 +10,7 @@ export const useLinkNavigation = (
     mouseLeaveCloseSignal: number;
     startMouseNav: () => void;
     endMouseNav: () => void;
+    resetMouseNav: () => void;
 } => {
     const hoverExitTimeoutRef = useRef<
         ReturnType<typeof globalThis.setTimeout> | undefined
@@ -42,6 +43,15 @@ export const useLinkNavigation = (
         onClearSearch();
     }, [onClearSearch]);
 
+    const resetMouseNav = useCallback(() => {
+        if (hoverExitTimeoutRef.current) {
+            clearTimeout(hoverExitTimeoutRef.current);
+            hoverExitTimeoutRef.current = undefined;
+        }
+        setIsMouseNav(false);
+        setMouseLeaveCloseSignal((signal) => signal + 1);
+    }, []);
+
     const endMouseNav = useCallback(() => {
         if (hoverExitTimeoutRef.current) {
             clearTimeout(hoverExitTimeoutRef.current);
@@ -52,11 +62,9 @@ export const useLinkNavigation = (
                 hoverExitTimeoutRef.current = undefined;
                 return;
             }
-            setIsMouseNav(false);
-            setMouseLeaveCloseSignal((signal) => signal + 1);
-            hoverExitTimeoutRef.current = undefined;
+            resetMouseNav();
         }, 40);
-    }, []);
+    }, [resetMouseNav]);
 
     return {
         selectedCategory,
@@ -64,5 +72,6 @@ export const useLinkNavigation = (
         mouseLeaveCloseSignal,
         startMouseNav,
         endMouseNav,
+        resetMouseNav,
     };
 };
