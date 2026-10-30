@@ -1,3 +1,5 @@
+import { getKeyboardKey, getLatinKeySequenceAlias } from '@/utils/keyboard';
+
 export interface Keybind {
     id: string;
     target: string;
@@ -7,8 +9,10 @@ export interface Keybind {
 export const keybindStorageKey = 'homepage.keybinds';
 export const keybindChangeEvent = 'homepage-keybinds-change';
 
-export const normalizeHotkey = (value: string): string | undefined =>
-    value === '' || /^[a-z]$/i.test(value) ? value.toLowerCase() : undefined;
+export const normalizeHotkey = (value: string): string | undefined => {
+    const key = getLatinKeySequenceAlias(value) ?? value;
+    return key === '' || /^[a-z]$/i.test(key) ? key.toLowerCase() : undefined;
+};
 
 export const parseKeybinds = (value: string | null | undefined): Keybind[] => {
     try {
@@ -72,6 +76,6 @@ export const getHotkey = (event: KeyboardEvent): string | undefined => {
     ) {
         return undefined;
     }
-    const key = normalizeHotkey(event.key);
+    const key = normalizeHotkey(getKeyboardKey(event));
     return key === '' ? undefined : key;
 };

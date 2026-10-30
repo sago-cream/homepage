@@ -7,6 +7,7 @@ import { useKeybinds } from '@/hooks/useKeybinds';
 import { useLocale } from '@/hooks/useLocale';
 import { normalizeHotkey } from '@/utils/keybinds';
 import type { Keybind } from '@/utils/keybinds';
+import { getKeyboardKey } from '@/utils/keyboard';
 import { getSearchItems, getSlashCommandResults } from '@/utils/search';
 import { SettingsDropdown } from './SettingsDropdown';
 
@@ -154,15 +155,16 @@ export const KeybindSettingsSection = ({
                                         event.currentTarget.select();
                                     }}
                                     onKeyDown={(event) => {
+                                        const key = getKeyboardKey(event);
                                         if (
                                             !event.nativeEvent.isComposing &&
                                             !event.ctrlKey &&
                                             !event.metaKey &&
                                             !event.altKey &&
-                                            event.key.length === 1
+                                            key.length === 1
                                         ) {
                                             event.preventDefault();
-                                            setHotkey(binding.id, event.key);
+                                            setHotkey(binding.id, key);
                                         }
                                     }}
                                     onPaste={(event) => {
