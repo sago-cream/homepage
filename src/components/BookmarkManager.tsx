@@ -594,7 +594,15 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
 
     const { bookmarkTree } = bookmarkControls;
     useEffect(() => {
-        if (pathname !== '/settings/bookmarks' || bookmarkControls.isLoading) {
+        if (pathname !== '/settings/bookmarks') {
+            setEditorDraft(undefined);
+            setSelection(undefined);
+            setIsTrashOpen(false);
+            setIsEmptyTrashConfirmOpen(false);
+            setIsDiscardConfirmOpen(false);
+            return;
+        }
+        if (bookmarkControls.isLoading) {
             return;
         }
         const state = readBookmarkRoute(
