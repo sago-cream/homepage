@@ -10,8 +10,6 @@ import {
     Bookmark,
     Keyboard,
     Mailbox,
-    MapPin,
-    MapPinOff,
     Monitor,
     Moon,
     Palette,
@@ -59,22 +57,21 @@ import {
     settingsSectionPaths,
 } from '@/utils/settingsNavigation';
 import type { SettingsSectionId } from '@/utils/settingsNavigation';
+import { getSettingsSearchResults } from '@/utils/settingsSearch';
+import type { SettingsSearchResult } from '@/utils/settingsSearch';
 import { getCssUrlValue } from '@/utils/wallpaperStyle';
 import { wallpaperAcceptedContentTypes } from '../../shared/wallpaper';
 import { BookmarkManager } from './BookmarkManager';
 import type { BookmarkManagerHandle } from './BookmarkManager';
 import { FeedSettingsSection } from './FeedSettingsSection';
 import { KeybindSettingsSection } from './KeybindSettingsSection';
+import { SettingsChoice } from './SettingsChoice';
 import { SettingsDropdown } from './SettingsDropdown';
 import type { SettingsDropdownOption } from './SettingsDropdown';
 
 interface ThemeHydrationRoot extends HTMLElement {
     __homepageThemeHydrationObserver?: MutationObserver;
 }
-
-const SettingsChoice: React.FC<
-    React.ButtonHTMLAttributes<HTMLButtonElement>
-> = (props) => <button {...props} type='button' role='radio' />;
 
 const getInitialAnimationMode = (
     initialAnimationMode: AnimationMode
@@ -185,6 +182,7 @@ interface SettingsMenuProps {
     isTriggerHidden?: boolean;
     initialPreferences: InitialAppPreferences;
     onOpenChange?: (isOpen: boolean) => void;
+    onSignIn?: () => void;
     placement?: 'above' | 'below' | 'mobile';
     wallpaperControls?: WallpaperControls;
 }
@@ -195,6 +193,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     isTriggerHidden = false,
     initialPreferences,
     onOpenChange,
+    onSignIn,
     placement = 'below',
     wallpaperControls,
 }) => {
@@ -243,6 +242,9 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     const [openDropdownId, setOpenDropdownId] = useState<string>();
     const [settingsQuery, setSettingsQuery] = useState('');
     const settingsSearchRef = useRef<HTMLInputElement>(null);
+    const navigationRef = useRef<HTMLElement>(null);
+    const [pendingSearchResult, setPendingSearchResult] =
+        useState<SettingsSearchResult>();
     const openDropdownIdRef = useRef(openDropdownId);
     const closeButtonRef = useRef<HTMLButtonElement>(null);
     const returnFocusRef = useRef<HTMLElement | undefined>(undefined);
@@ -250,6 +252,49 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     const controlRef = useRef<HTMLDivElement>(null);
     const wallpaperInputRef = useRef<HTMLInputElement>(null);
     openDropdownIdRef.current = openDropdownId;
+
+    useLayoutEffect(() => {
+        const navigation = navigationRef.current;
+        if (!navigation || settingsQuery.trim() !== '') {
+            return undefined;
+        }
+        const revealSelectedSection = () => {
+            navigation
+                .querySelector('[aria-current="page"]')
+                ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        };
+        revealSelectedSection();
+        const observer = new ResizeObserver(revealSelectedSection);
+        observer.observe(navigation);
+        return () => {
+            observer.disconnect();
+        };
+    }, [isOpen, selectedSection, settingsQuery, locale]);
+
+    useEffect(() => {
+        if (
+            !pendingSearchResult ||
+            selectedSection !== pendingSearchResult.section
+        ) {
+            return undefined;
+        }
+        const frame = requestAnimationFrame(() => {
+            const row = document.querySelector<HTMLElement>(
+                `.settings-page [data-setting="${pendingSearchResult.id}"]`
+            );
+            const control =
+                row?.querySelector<HTMLElement>('[aria-checked="true"]') ??
+                row?.querySelector<HTMLElement>(
+                    'button:not(:disabled), input:not(:disabled)'
+                );
+            row?.scrollIntoView({ block: 'nearest' });
+            control?.focus({ preventScroll: true });
+            setPendingSearchResult(undefined);
+        });
+        return () => {
+            cancelAnimationFrame(frame);
+        };
+    }, [pendingSearchResult, selectedSection]);
 
     const setMenuOpen = useCallback(
         (nextIsOpen: boolean) => {
@@ -443,38 +488,42 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             icon: Bookmark,
             id: 'content',
             label: t.bookmarks,
-            keywords: t.bookmarkSettingsKeywords,
         },
-        { icon: Mailbox, id: 'feeds', label: t.feeds, keywords: '/feeds' },
+        { icon: Mailbox, id: 'feeds', label: t.feeds },
         {
             icon: Keyboard,
             id: 'keybinds',
             label: t.keybinds,
-            keywords: t.keybindSettingsKeywords,
         },
         {
             icon: Palette,
             id: 'appearance',
             label: t.appearance,
-            keywords: `${t.theme} ${t.accent} ${t.wallpaper} ${t.skipRiseAnimations}`,
         },
         {
             icon: SlidersHorizontal,
             id: 'preferences',
             label: t.preferences,
-            keywords: `${t.location} ${t.language}`,
         },
     ] satisfies ReadonlyArray<{
         icon: typeof Palette;
         id: SettingsSectionId;
         label: string;
-        keywords: string;
     }>;
-    const visibleSections = settingsSections.filter((section) =>
-        `${section.label} ${section.keywords}`
-            .toLocaleLowerCase()
-            .includes(settingsQuery.trim().toLocaleLowerCase())
+    const searchResults = getSettingsSearchResults(
+        t,
+        settingsQuery,
+        locationOptions.map((option) => option.label).join(' ')
     );
+    const isSearching = settingsQuery.trim() !== '';
+    const openSearchResult = (result: SettingsSearchResult) => {
+        setOpenDropdownId(undefined);
+        setSettingsQuery('');
+        setPendingSearchResult(result);
+        if (selectedSection !== result.section) {
+            setSelectedSection(result.section);
+        }
+    };
 
     const getDropdownOpenHandler = (id: string) => (nextIsOpen: boolean) => {
         setOpenDropdownId(nextIsOpen ? id : undefined);
@@ -559,10 +608,9 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                       role='search'
                                       onSubmit={(event) => {
                                           event.preventDefault();
-                                          const first = visibleSections.at(0);
+                                          const first = searchResults.at(0);
                                           if (first) {
-                                              setOpenDropdownId(undefined);
-                                              setSelectedSection(first.id);
+                                              openSearchResult(first);
                                           }
                                       }}
                                   >
@@ -603,54 +651,84 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                       )}
                                   </form>
                                   <nav
+                                      ref={navigationRef}
                                       className='settings-page-navigation'
+                                      data-searching={isSearching}
                                       aria-label={t.settings}
                                   >
-                                      {visibleSections.length === 0 && (
-                                          <p
-                                              className='settings-search-empty'
-                                              role='status'
-                                          >
-                                              {t.noMatchingSettings}
-                                          </p>
-                                      )}
-                                      {visibleSections.map((section) => {
-                                          const Icon = section.icon;
-                                          const isSelected =
-                                              selectedSection === section.id;
-
-                                          return (
-                                              <Link
-                                                  className='settings-page-sidebar-button'
-                                                  key={section.id}
-                                                  href={
-                                                      section.id === 'content'
-                                                          ? bookmarksHrefRef.current
-                                                          : settingsSectionPaths[
-                                                                section.id
-                                                            ]
-                                                  }
-                                                  scroll={false}
-                                                  aria-current={
-                                                      isSelected
-                                                          ? 'page'
-                                                          : undefined
-                                                  }
-                                                  onClick={() => {
-                                                      setOpenDropdownId(
-                                                          undefined
-                                                      );
-                                                  }}
+                                      {isSearching &&
+                                          searchResults.length === 0 && (
+                                              <p
+                                                  className='settings-search-empty'
+                                                  role='status'
                                               >
-                                                  <Icon
-                                                      className='icon'
-                                                      size={18}
-                                                      aria-hidden
-                                                  />
-                                                  <span>{section.label}</span>
-                                              </Link>
-                                          );
-                                      })}
+                                                  {t.noMatchingSettings}
+                                              </p>
+                                          )}
+                                      {isSearching
+                                          ? searchResults.map((result) => (
+                                                <button
+                                                    key={result.id}
+                                                    type='button'
+                                                    className='settings-page-sidebar-button settings-search-result'
+                                                    onClick={() => {
+                                                        openSearchResult(
+                                                            result
+                                                        );
+                                                    }}
+                                                >
+                                                    <span>{result.label}</span>
+                                                    {result.sectionLabel !==
+                                                        result.label && (
+                                                        <small>
+                                                            {
+                                                                result.sectionLabel
+                                                            }
+                                                        </small>
+                                                    )}
+                                                </button>
+                                            ))
+                                          : settingsSections.map((section) => {
+                                                const Icon = section.icon;
+                                                const isSelected =
+                                                    selectedSection ===
+                                                    section.id;
+
+                                                return (
+                                                    <Link
+                                                        className='settings-page-sidebar-button'
+                                                        key={section.id}
+                                                        href={
+                                                            section.id ===
+                                                            'content'
+                                                                ? bookmarksHrefRef.current
+                                                                : settingsSectionPaths[
+                                                                      section.id
+                                                                  ]
+                                                        }
+                                                        scroll={false}
+                                                        aria-current={
+                                                            isSelected
+                                                                ? 'page'
+                                                                : undefined
+                                                        }
+                                                        onClick={() => {
+                                                            setOpenDropdownId(
+                                                                undefined
+                                                            );
+                                                        }}
+                                                    >
+                                                        <Icon
+                                                            className='icon'
+                                                            size={18}
+                                                            aria-hidden
+                                                        />
+                                                        <span>
+                                                            {section.label}
+                                                        </span>
+                                                    </Link>
+                                                );
+                                            })}
                                   </nav>
                               </aside>
 
@@ -662,13 +740,13 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                       <h2>{t.appearance}</h2>
                                   </div>
                                   <div className='settings-card'>
-                                      <div className='settings-row settings-stacked-row'>
+                                      <div
+                                          className='settings-row settings-stacked-row'
+                                          data-setting='theme'
+                                      >
                                           <div className='settings-row-copy'>
                                               <span className='settings-row-label'>
                                                   {t.theme}
-                                              </span>
-                                              <span className='settings-row-description'>
-                                                  {t.themeDescription}
                                               </span>
                                           </div>
                                           <div
@@ -724,13 +802,13 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                           </div>
                                       </div>
 
-                                      <div className='settings-row settings-stacked-row'>
+                                      <div
+                                          className='settings-row settings-stacked-row'
+                                          data-setting='accent'
+                                      >
                                           <div className='settings-row-copy'>
                                               <span className='settings-row-label'>
                                                   {t.accent}
-                                              </span>
-                                              <span className='settings-row-description'>
-                                                  {t.accentDescription}
                                               </span>
                                           </div>
                                           <div
@@ -789,15 +867,13 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
 
                                       {wallpaperControls ===
                                       undefined ? undefined : (
-                                          <div className='settings-row settings-wallpaper-row'>
+                                          <div
+                                              className='settings-row settings-wallpaper-row'
+                                              data-setting='wallpaper'
+                                          >
                                               <div className='settings-row-copy'>
                                                   <span className='settings-row-label'>
                                                       {t.wallpaper}
-                                                  </span>
-                                                  <span className='settings-row-description'>
-                                                      {wallpaperControls.isAvailable
-                                                          ? t.wallpaperDescription
-                                                          : t.wallpaperUnavailable}
                                                   </span>
                                               </div>
                                               <div className='settings-wallpaper-actions'>
@@ -859,10 +935,34 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                       className='settings-action-button'
                                                       type='button'
                                                       disabled={
-                                                          !wallpaperControls.isAvailable ||
+                                                          (!wallpaperControls.isAvailable &&
+                                                              !onSignIn) ||
                                                           wallpaperControls.isBusy
                                                       }
+                                                      aria-label={
+                                                          wallpaperControls.isAvailable
+                                                              ? t.uploadWallpaper
+                                                              : t.signInToUpload
+                                                      }
                                                       onClick={() => {
+                                                          if (
+                                                              !wallpaperControls.isAvailable
+                                                          ) {
+                                                              if (
+                                                                  bookmarkManagerRef.current?.requestClose() ===
+                                                                  false
+                                                              ) {
+                                                                  setSelectedSection(
+                                                                      'content'
+                                                                  );
+                                                                  return;
+                                                              }
+                                                              setMenuOpen(
+                                                                  false
+                                                              );
+                                                              onSignIn?.();
+                                                              return;
+                                                          }
                                                           wallpaperInputRef.current?.click();
                                                       }}
                                                   >
@@ -871,7 +971,9 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                           size={16}
                                                       />
                                                       <span>
-                                                          {t.uploadWallpaper}
+                                                          {wallpaperControls.isAvailable
+                                                              ? t.uploadWallpaper
+                                                              : t.signInToUpload}
                                                       </span>
                                                   </button>
                                                   {wallpaperControls.wallpaper ===
@@ -936,7 +1038,10 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                           </div>
                                       )}
 
-                                      <div className='settings-row'>
+                                      <div
+                                          className='settings-row'
+                                          data-setting='animations'
+                                      >
                                           <div className='settings-row-copy'>
                                               <span className='settings-row-label'>
                                                   {t.skipRiseAnimations}
@@ -984,7 +1089,48 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                       <h2>{t.preferences}</h2>
                                   </div>
                                   <div className='settings-card'>
-                                      <div className='settings-row settings-select-row'>
+                                      <div
+                                          className='settings-row'
+                                          data-setting='location-tracking'
+                                      >
+                                          <div className='settings-row-copy'>
+                                              <span className='settings-row-label'>
+                                                  {t.useCurrentLocation}
+                                              </span>
+                                              {locationTrackingFailed ||
+                                              isSyncingLocation ? (
+                                                  <span
+                                                      className='settings-row-description'
+                                                      role='status'
+                                                  >
+                                                      {locationDescription}
+                                                  </span>
+                                              ) : undefined}
+                                          </div>
+                                          <button
+                                              type='button'
+                                              className='settings-animation-switch'
+                                              role='switch'
+                                              aria-label={t.useCurrentLocation}
+                                              aria-checked={isTrackingLocation}
+                                              disabled={!isGeolocationAvailable}
+                                              onClick={() => {
+                                                  setOpenDropdownId(undefined);
+                                                  toggleLocationTracking();
+                                              }}
+                                          >
+                                              <span
+                                                  className='settings-switch-track'
+                                                  aria-hidden
+                                              >
+                                                  <span className='settings-switch-thumb' />
+                                              </span>
+                                          </button>
+                                      </div>
+                                      <div
+                                          className='settings-row settings-select-row'
+                                          data-setting='location'
+                                      >
                                           <div className='settings-row-copy'>
                                               <span
                                                   className='settings-row-label'
@@ -993,46 +1139,10 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                   {t.location}
                                               </span>
                                               <span className='settings-row-description'>
-                                                  {locationDescription}
+                                                  {t.locationDescription}
                                               </span>
                                           </div>
                                           <div className='settings-location-controls'>
-                                              <button
-                                                  type='button'
-                                                  className='settings-location-tracking'
-                                                  aria-label={
-                                                      t.locationTracking
-                                                  }
-                                                  aria-pressed={
-                                                      isTrackingLocation
-                                                  }
-                                                  title={
-                                                      isTrackingLocation
-                                                          ? t.disableLocationTracking
-                                                          : t.enableLocationTracking
-                                                  }
-                                                  disabled={
-                                                      !isGeolocationAvailable
-                                                  }
-                                                  onClick={() => {
-                                                      setOpenDropdownId(
-                                                          undefined
-                                                      );
-                                                      toggleLocationTracking();
-                                                  }}
-                                              >
-                                                  {isTrackingLocation ? (
-                                                      <MapPin
-                                                          size={20}
-                                                          aria-hidden
-                                                      />
-                                                  ) : (
-                                                      <MapPinOff
-                                                          size={20}
-                                                          aria-hidden
-                                                      />
-                                                  )}
-                                              </button>
                                               <SettingsDropdown
                                                   id='location-picker'
                                                   labelledBy='location-picker-label'
@@ -1052,16 +1162,16 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                           </div>
                                       </div>
 
-                                      <div className='settings-row settings-select-row'>
+                                      <div
+                                          className='settings-row settings-select-row'
+                                          data-setting='language'
+                                      >
                                           <div className='settings-row-copy'>
                                               <span
                                                   className='settings-row-label'
                                                   id='language-picker-label'
                                               >
                                                   {t.language}
-                                              </span>
-                                              <span className='settings-row-description'>
-                                                  {t.languageDescription}
                                               </span>
                                           </div>
                                           <SettingsDropdown
@@ -1107,6 +1217,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
 
                               <section
                                   className='settings-page-section'
+                                  data-setting='bookmarks'
                                   hidden={selectedSection !== 'content'}
                               >
                                   <BookmarkManager

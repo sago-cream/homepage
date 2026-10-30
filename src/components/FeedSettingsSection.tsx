@@ -175,7 +175,7 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
     })();
 
     return (
-        <section className='settings-page-section'>
+        <section className='settings-page-section' data-setting='feeds'>
             <div className='settings-feed-heading'>
                 <div className='settings-section-heading'>
                     <h2>{t.feeds}</h2>

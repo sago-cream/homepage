@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
 
-import type { LinkItem } from './search';
+import type { LinkItem, SlashCommandItem } from './search';
 import {
     getSearchResults,
     getSlashCommandResults,
@@ -59,7 +59,7 @@ test('literal Chinese text remains searchable alongside recorded keys', () => {
 });
 
 test('slash commands accept Latin, Zhuyin, mixed text, and the Zhuyin slash key', () => {
-    const feeds = [{ command: 'feeds', label: '/feeds' }];
+    const feeds: SlashCommandItem[] = [{ command: 'feeds', label: '/feeds' }];
     for (const query of [
         '/',
         '/FEEDS',
