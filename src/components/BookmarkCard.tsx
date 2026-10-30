@@ -5,13 +5,15 @@ import { ActionMenu } from './ActionMenu';
 export const BookmarkCard: React.FC<{
     bookmark: { title: string; url: string };
     sourceRef?: (element: Element | null) => void;
+    selected?: boolean;
     onClick: () => void;
-}> = ({ bookmark, sourceRef, onClick }) => (
+}> = ({ bookmark, sourceRef, selected, onClick }) => (
     <button
         ref={sourceRef}
         type='button'
         className='bookmark-workspace-tree-item bookmark-link-item'
         title={bookmark.title}
+        aria-pressed={selected}
         onClick={onClick}
     >
         <Link2 aria-hidden='true' />
