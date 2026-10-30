@@ -69,7 +69,10 @@ test('Zhuyin hotkeys and residual slash input execute feeds through the search h
     const container = document.createElement('div');
     document.body.append(container);
     const root = createRoot(container);
-    const press = async (target: Element, options: KeyboardEventInit) => {
+    const press = async (
+        target: Element,
+        options: Pick<KeyboardEventInit, 'key' | 'code'>
+    ) => {
         await act(async () => {
             target.dispatchEvent(
                 new browser.KeyboardEvent('keydown', {
