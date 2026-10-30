@@ -507,7 +507,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     const editorReturnFocusRef = useRef<HTMLElement | undefined>(undefined);
     const trashReturnFocusRef = useRef<HTMLElement | undefined>(undefined);
     const emptyTrashReturnFocusRef = useRef<HTMLElement | undefined>(undefined);
-    const discardReturnFocusRef = useRef<HTMLElement | undefined>(undefined);
     const importInputRef = useRef<HTMLInputElement>(null);
     const pendingDeleteFocusRef = useRef<
         { pane: 'left' | 'right'; nodeId?: string } | undefined
@@ -550,7 +549,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     const [isTrashOpen, setIsTrashOpen] = useState(false);
     const [isEmptyTrashConfirmOpen, setIsEmptyTrashConfirmOpen] =
         useState(false);
-    const [discardTarget, setDiscardTarget] = useState<'dialog' | 'editor'>();
+    const [isDiscardConfirmOpen, setIsDiscardConfirmOpen] = useState(false);
     const [undoSnapshot, setUndoSnapshot] = useState<{
         id: string;
     }>();
@@ -977,37 +976,20 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             return;
         }
 
-        if (editorDraft.mode === 'add') {
-            setEditorDraft(undefined);
-            setDraftBaseline('');
-            return;
-        }
-
-        const savedDraft = {
-            ...editorDraft,
-            title,
-            url: normalizedUrl ?? editorDraft.url,
-        };
-        setEditorDraft(savedDraft);
-        setDraftBaseline(serializeDraft(savedDraft));
+        setEditorDraft(undefined);
+        setDraftBaseline('');
         setFormErrors({});
     };
 
     const cancelEditor = () => {
-        if (isDraftDirty) {
-            const active = document.activeElement;
-            discardReturnFocusRef.current =
-                active instanceof HTMLElement ? active : undefined;
-            setDiscardTarget('editor');
-            return;
-        }
-
         setEditorDraft(undefined);
+        setDraftBaseline('');
+        setFormErrors({});
     };
 
     const requestDialogClose = () => {
         if (isDraftDirty) {
-            setDiscardTarget('dialog');
+            setIsDiscardConfirmOpen(true);
             return false;
         }
 
@@ -1051,13 +1033,10 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     }));
 
     const confirmDiscard = () => {
-        const target = discardTarget;
-        setDiscardTarget(undefined);
+        setIsDiscardConfirmOpen(false);
         setEditorDraft(undefined);
         setDraftBaseline('');
-        if (target === 'dialog') {
-            onClose();
-        }
+        onClose();
     };
 
     const deleteItem = (deleteTarget: DeleteTarget) => {
@@ -1187,14 +1166,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             emptyTrashReturnFocusRef.current = undefined;
         }
     }, [isEmptyTrashConfirmOpen]);
-    useEffect(() => {
-        if (discardTarget === undefined && discardReturnFocusRef.current) {
-            if (discardReturnFocusRef.current.isConnected) {
-                discardReturnFocusRef.current.focus({ preventScroll: true });
-            }
-            discardReturnFocusRef.current = undefined;
-        }
-    }, [discardTarget]);
 
     useEffect(() => {
         const positions = pendingScrollRef.current;
@@ -1499,8 +1470,8 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                         setIsEmptyTrashConfirmOpen(false);
                     } else if (isTrashOpen) {
                         setIsTrashOpen(false);
-                    } else if (discardTarget !== undefined) {
-                        setDiscardTarget(undefined);
+                    } else if (isDiscardConfirmOpen) {
+                        setIsDiscardConfirmOpen(false);
                     } else if (isIconPickerOpen) {
                         setIsIconPickerOpen(false);
                         setIconQuery('');
@@ -2630,7 +2601,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                     </dialog>
                 ) : undefined}
 
-                {discardTarget === undefined ? undefined : (
+                {isDiscardConfirmOpen ? (
                     <dialog
                         className='bookmark-workspace-confirm-backdrop bookmark-discard-dialog'
                         role='alertdialog'
@@ -2644,7 +2615,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                         onCancel={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
-                            setDiscardTarget(undefined);
+                            setIsDiscardConfirmOpen(false);
                         }}
                         onKeyDown={(event) => {
                             event.stopPropagation();
@@ -2664,7 +2635,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                 <button
                                     type='button'
                                     onClick={() => {
-                                        setDiscardTarget(undefined);
+                                        setIsDiscardConfirmOpen(false);
                                     }}
                                 >
                                     {t.cancel}
@@ -2679,7 +2650,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                             </div>
                         </div>
                     </dialog>
-                )}
+                ) : undefined}
 
                 {undoSnapshot === undefined ? undefined : (
                     <div
