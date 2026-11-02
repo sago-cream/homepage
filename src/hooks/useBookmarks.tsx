@@ -208,37 +208,51 @@ const readActiveUserBookmarkData = (): ActiveUserBookmarkData => {
         return { trash: [] };
     }
 
-    const activeUserId = globalThis.localStorage.getItem(
-        activeBookmarkUserStorageKey
-    );
-    const legacyCachedUserIds: string[] = [];
+    try {
+        const activeUserId = globalThis.localStorage.getItem(
+            activeBookmarkUserStorageKey
+        );
+        const legacyCachedUserIds: string[] = [];
 
-    if (activeUserId === null) {
-        const userStorageKeyPrefix = `${userBookmarkStorageKeyPrefix}.`;
+        if (activeUserId === null) {
+            const userStorageKeyPrefix = `${userBookmarkStorageKeyPrefix}.`;
 
-        for (let index = 0; index < globalThis.localStorage.length; index++) {
-            const storageKey = globalThis.localStorage.key(index);
+            for (
+                let index = 0;
+                index < globalThis.localStorage.length;
+                index++
+            ) {
+                const storageKey = globalThis.localStorage.key(index);
 
-            if (storageKey?.startsWith(userStorageKeyPrefix) === true) {
-                legacyCachedUserIds.push(
-                    storageKey.slice(userStorageKeyPrefix.length)
-                );
+                if (storageKey?.startsWith(userStorageKeyPrefix) === true) {
+                    legacyCachedUserIds.push(
+                        storageKey.slice(userStorageKeyPrefix.length)
+                    );
+                }
             }
         }
+
+        const userId =
+            activeUserId ??
+            (legacyCachedUserIds.length === 1
+                ? legacyCachedUserIds[0]
+                : undefined);
+
+        return userId === undefined
+            ? { trash: [] }
+            : { ...readUserBookmarkData(userId), userId };
+    } catch {
+        return { trash: [] };
     }
-
-    const userId =
-        activeUserId ??
-        (legacyCachedUserIds.length === 1 ? legacyCachedUserIds[0] : undefined);
-
-    return userId === undefined
-        ? { trash: [] }
-        : { ...readUserBookmarkData(userId), userId };
 };
 
 const clearActiveBookmarkUser = (): void => {
-    if (isBrowser()) {
-        globalThis.localStorage.removeItem(activeBookmarkUserStorageKey);
+    try {
+        if (isBrowser()) {
+            globalThis.localStorage.removeItem(activeBookmarkUserStorageKey);
+        }
+    } catch {
+        // Signing out must still work when browser storage is unavailable.
     }
 };
 
@@ -529,9 +543,21 @@ export const useBookmarks = (
     const [saveState, setSaveState] = useState<BookmarkSaveState>(
         hasAuth && initialStoredData.categories === undefined ? 'idle' : 'saved'
     );
+    const sessionVersionRef = useRef(0);
     const mutationVersionRef = useRef(0);
     const saveOperationRef = useRef(0);
     const remoteSaveQueueRef = useRef<Promise<void>>(Promise.resolve());
+
+    useLayoutEffect(() => {
+        sessionVersionRef.current++;
+        saveOperationRef.current++;
+        remoteSaveQueueRef.current = Promise.resolve();
+        setStatus(undefined);
+
+        return () => {
+            sessionVersionRef.current++;
+        };
+    }, [hasAuth, isAuthLoaded, remoteUserId]);
 
     const getAuthHeaders = useCallback(async (): Promise<
         Record<'Authorization', string> | undefined
@@ -555,13 +581,22 @@ export const useBookmarks = (
         async (
             nextBookmarkTree: readonly BookmarkCategoryData[],
             nextBookmarkTrash: readonly BookmarkTrashItemData[],
-            shouldReportError = true,
-            saveOperation?: number
+            saveOperation: number,
+            sessionVersion: number
         ): Promise<boolean> => {
+            const isCurrentSession = () =>
+                sessionVersion === sessionVersionRef.current;
+            if (!isCurrentSession()) {
+                return false;
+            }
+
             try {
                 const headers = await getAuthHeaders();
-                if (headers === undefined || remoteUserId === undefined) {
+                if (!isCurrentSession()) {
                     return false;
+                }
+                if (headers === undefined || remoteUserId === undefined) {
+                    throw new Error('Bookmark session is unavailable.');
                 }
 
                 const response = await fetch(bookmarkApiPath, {
@@ -576,6 +611,12 @@ export const useBookmarks = (
                     method: 'POST',
                 });
                 const payload = await readBookmarkResponse(response);
+                if (
+                    !isCurrentSession() ||
+                    saveOperation !== saveOperationRef.current
+                ) {
+                    return true;
+                }
 
                 try {
                     storeUserBookmarkTree(
@@ -593,10 +634,11 @@ export const useBookmarks = (
 
                 return true;
             } catch {
+                if (!isCurrentSession()) {
+                    return false;
+                }
                 if (saveOperation === saveOperationRef.current) {
                     setSaveState('error');
-                }
-                if (shouldReportError) {
                     setStatus({
                         messageKey: 'bookmarksSyncFailed',
                         type: 'error',
@@ -653,14 +695,15 @@ export const useBookmarks = (
                 }
                 saveOperationRef.current++;
                 const saveOperation = saveOperationRef.current;
+                const sessionVersion = sessionVersionRef.current;
                 setSaveState('saving');
                 remoteSaveQueueRef.current = remoteSaveQueueRef.current.then(
                     async () => {
                         await saveRemoteBookmarkTree(
                             normalizedBookmarkTree,
                             normalizedBookmarkTrash,
-                            true,
-                            saveOperation
+                            saveOperation,
+                            sessionVersion
                         );
                     }
                 );
@@ -729,6 +772,7 @@ export const useBookmarks = (
                 if (payload.categories !== undefined) {
                     setBookmarkTree(payload.categories);
                     setBookmarkTrash(payload.trash ?? []);
+                    setSaveState('saved');
 
                     try {
                         storeUserBookmarkTree(
@@ -789,11 +833,14 @@ export const useBookmarks = (
 
     const importBookmarks = useCallback(
         async (file: File) => {
+            const sessionVersion = sessionVersionRef.current;
             setIsLoading(true);
             try {
-                const nextBookmarkTree = parseBrowserBookmarks(
-                    await file.text()
-                );
+                const html = await file.text();
+                if (sessionVersion !== sessionVersionRef.current) {
+                    return;
+                }
+                const nextBookmarkTree = parseBrowserBookmarks(html);
                 if (nextBookmarkTree.length === 0) {
                     setStatus({
                         messageKey: 'bookmarksImportEmpty',
@@ -804,12 +851,17 @@ export const useBookmarks = (
 
                 commitBookmarkTree(nextBookmarkTree);
             } catch {
+                if (sessionVersion !== sessionVersionRef.current) {
+                    return;
+                }
                 setStatus({
                     messageKey: 'bookmarksImportFailed',
                     type: 'error',
                 });
             } finally {
-                setIsLoading(false);
+                if (sessionVersion === sessionVersionRef.current) {
+                    setIsLoading(false);
+                }
             }
         },
         [commitBookmarkTree]
@@ -857,7 +909,7 @@ export const useBookmarks = (
                         ? {
                               ...categoryData,
                               category,
-                              ...(icon === '' ? {} : { icon }),
+                              icon,
                           }
                         : categoryData
                 )
