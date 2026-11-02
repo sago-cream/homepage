@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'homepage-shell-';
-const CACHE_NAME = `${CACHE_PREFIX}v5`;
+const CACHE_NAME = `${CACHE_PREFIX}v6`;
 const SHELL_PATH = '/';
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
 const IS_LOCALHOST = LOCAL_HOSTNAMES.has(self.location.hostname);
@@ -56,8 +56,12 @@ self.addEventListener('activate', (event) => {
 });
 
 const cacheResponse = async (cache, request, response) => {
-    if (response.ok && response.type === 'basic') {
-        await cache.put(request, response.clone());
+    if (cache && response.ok && response.type === 'basic') {
+        try {
+            await cache.put(request, response.clone());
+        } catch {
+            // Cache quota or availability must not prevent a network response.
+        }
     }
 
     return response;
@@ -76,33 +80,36 @@ self.addEventListener('fetch', (event) => {
     }
 
     if (request.mode === 'navigate' && url.pathname === SHELL_PATH) {
-        event.respondWith(
-            caches.open(CACHE_NAME).then(async (cache) => {
-                const cached = await cache.match(SHELL_PATH);
-                const fresh = fetch(request)
-                    .then((response) =>
-                        cacheResponse(cache, SHELL_PATH, response)
-                    )
-                    .catch(() => cached);
-
-                return cached ?? fresh;
-            })
+        const cache = caches.open(CACHE_NAME).catch(() => undefined);
+        const cached = cache
+            .then((store) => store?.match(SHELL_PATH))
+            .catch(() => undefined);
+        const fresh = fetch(request).then(async (response) =>
+            cacheResponse(await cache, SHELL_PATH, response)
         );
+
+        event.waitUntil(fresh.catch(() => undefined));
+        event.respondWith(cached.then((response) => response ?? fresh));
         return;
     }
 
     if (url.pathname.startsWith('/_next/static/')) {
         event.respondWith(
-            caches.open(CACHE_NAME).then(async (cache) => {
-                const cached = await cache.match(request);
+            caches
+                .open(CACHE_NAME)
+                .catch(() => undefined)
+                .then(async (cache) => {
+                    const cached = await cache
+                        ?.match(request)
+                        .catch(() => undefined);
 
-                return (
-                    cached ??
-                    fetch(request).then((response) =>
-                        cacheResponse(cache, request, response)
-                    )
-                );
-            })
+                    return (
+                        cached ??
+                        fetch(request).then((response) =>
+                            cacheResponse(cache, request, response)
+                        )
+                    );
+                })
         );
     }
 });
