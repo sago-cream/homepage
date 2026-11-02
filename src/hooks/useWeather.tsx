@@ -4,13 +4,11 @@ import type { TaiwanLocation } from '@/constants/taiwanLocations';
 import type { GeolocationPermissionState } from '@/hooks/useTaiwanLocation';
 import { useTaiwanLocation } from '@/hooks/useTaiwanLocation';
 import type { WeatherData } from '@/types/environment';
-import { isBrowser } from '@/utils/browserEnv';
+import { writeStorageValue } from '@/utils/browserStorage';
+import { isWeatherData, readEnvironmentCache } from '@/utils/environmentCache';
+import type { EnvironmentCache } from '@/utils/environmentCache';
 
-interface CachedWeather {
-    data: WeatherData;
-    locationId: string;
-    timestamp: number;
-}
+type CachedWeather = EnvironmentCache<WeatherData>;
 
 interface UseWeatherOptions {
     hasInitialLocationCookie?: boolean;
@@ -19,54 +17,23 @@ interface UseWeatherOptions {
 }
 
 const BASE_API_URL = '/api/weather';
-const CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 const WEATHER_CACHE_KEY_PREFIX = 'weather_cache_cwa_v1';
 const weatherRequests = new Map<string, Promise<WeatherData | undefined>>();
-
-function readJson(key: string): unknown {
-    if (!isBrowser()) {
-        return undefined;
-    }
-
-    const value = globalThis.localStorage.getItem(key);
-
-    if (value === null) {
-        return undefined;
-    }
-
-    try {
-        return JSON.parse(value) as unknown;
-    } catch {
-        return undefined;
-    }
-}
-
-function isCacheFresh(timestamp: number, ttl: number): boolean {
-    return Date.now() - timestamp < ttl;
-}
 
 function getWeatherCacheKey(locationId: string): string {
     return `${WEATHER_CACHE_KEY_PREFIX}_${locationId}`;
 }
 
-function getCachedWeather(
+const getCachedWeather = (
     locationId: string,
-    { allowStale = false }: { allowStale?: boolean } = {}
-): CachedWeather | undefined {
-    const cached = readJson(getWeatherCacheKey(locationId)) as
-        | CachedWeather
-        | undefined;
-
-    if (
-        cached === undefined ||
-        cached.locationId !== locationId ||
-        (!allowStale && !isCacheFresh(cached.timestamp, CACHE_TTL))
-    ) {
-        return undefined;
-    }
-
-    return cached;
-}
+    options: { allowStale?: boolean } = {}
+): CachedWeather | undefined =>
+    readEnvironmentCache(
+        getWeatherCacheKey(locationId),
+        locationId,
+        isWeatherData,
+        options
+    );
 
 async function requestWeather(
     location: TaiwanLocation
@@ -92,7 +59,11 @@ async function requestWeather(
             throw new Error('Failed to fetch weather data');
         }
 
-        return (await res.json()) as WeatherData;
+        const data: unknown = await res.json();
+        if (!isWeatherData(data)) {
+            throw new Error('Invalid weather data');
+        }
+        return data;
     })().finally(() => {
         weatherRequests.delete(location.id);
     });
@@ -126,8 +97,6 @@ export const useWeatherWithInitialData = ({
         hasInitialLocationCookie,
         initialLocationId,
     });
-    const selectedLocationIdRef = useRef(selectedLocation.id);
-    selectedLocationIdRef.current = selectedLocation.id;
     const initialCachedWeatherRef = useRef<CachedWeather | undefined>(
         initialWeather === undefined
             ? undefined
@@ -150,7 +119,7 @@ export const useWeatherWithInitialData = ({
                 locationId: location.id,
                 timestamp: Date.now(),
             };
-            globalThis.localStorage.setItem(
+            writeStorageValue(
                 getWeatherCacheKey(location.id),
                 JSON.stringify(cache)
             );
@@ -159,67 +128,49 @@ export const useWeatherWithInitialData = ({
         []
     );
 
-    const fetchWeather = useCallback(
-        async (location: TaiwanLocation) => {
-            setIsLoading(true);
-            try {
-                const data = await requestWeather(location);
-                if (selectedLocationIdRef.current !== location.id) {
-                    return;
-                }
-
-                if (data !== undefined) {
-                    updateCache(data, location);
-                    return;
-                }
-
-                const cached = getCachedWeather(location.id, {
-                    allowStale: true,
-                });
-
-                if (cached !== undefined) {
-                    setCachedWeather(cached);
-                }
-            } catch (error) {
-                console.error(error);
-            } finally {
-                if (selectedLocationIdRef.current === location.id) {
-                    setIsLoading(false);
-                }
-            }
-        },
-        [updateCache]
-    );
-
     useEffect(() => {
+        const initialCache = initialCachedWeatherRef.current;
+        initialCachedWeatherRef.current = undefined;
         const cached = getCachedWeather(selectedLocation.id);
 
         if (cached !== undefined) {
             setCachedWeather(cached);
             setIsLoading(false);
-            return;
+            return undefined;
         }
 
-        if (
-            initialCachedWeatherRef.current?.locationId === selectedLocation.id
-        ) {
-            updateCache(initialCachedWeatherRef.current.data, selectedLocation);
-            initialCachedWeatherRef.current = undefined;
+        if (initialCache?.locationId === selectedLocation.id) {
+            updateCache(initialCache.data, selectedLocation);
             setIsLoading(false);
-            return;
+            return undefined;
         }
 
-        setCachedWeather(undefined);
-        const staleCached = getCachedWeather(selectedLocation.id, {
-            allowStale: true,
-        });
-
-        if (staleCached !== undefined) {
-            setCachedWeather(staleCached);
-        }
-
-        fetchWeather(selectedLocation).catch(console.error);
-    }, [fetchWeather, selectedLocation, updateCache]);
+        setCachedWeather(
+            getCachedWeather(selectedLocation.id, { allowStale: true })
+        );
+        setIsLoading(true);
+        let isCurrent = true;
+        const load = async () => {
+            try {
+                const data = await requestWeather(selectedLocation);
+                if (isCurrent && data !== undefined) {
+                    updateCache(data, selectedLocation);
+                }
+            } catch (error) {
+                if (isCurrent) {
+                    console.error(error);
+                }
+            } finally {
+                if (isCurrent) {
+                    setIsLoading(false);
+                }
+            }
+        };
+        load().catch(console.error);
+        return () => {
+            isCurrent = false;
+        };
+    }, [selectedLocation, updateCache]);
 
     return {
         weather,
