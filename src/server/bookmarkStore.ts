@@ -19,7 +19,7 @@ const validateBookmarkTree = (value: unknown): BookmarkCategoryData[] => {
     const bookmarkTree = coerceBookmarkTree(value);
 
     if (bookmarkTree === undefined) {
-        throw new ApiError('Bookmarks are empty or invalid.', 400);
+        throw new ApiError('Bookmarks are invalid.', 400);
     }
 
     return bookmarkTree;

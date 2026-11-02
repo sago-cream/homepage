@@ -357,7 +357,7 @@ export const coerceBookmarkTree = (
 
     const normalizedBookmarkTree = normalizeBookmarkTree(bookmarkTree);
 
-    return normalizedBookmarkTree.length > 0
+    return value.length === 0 || normalizedBookmarkTree.length > 0
         ? normalizedBookmarkTree
         : undefined;
 };
