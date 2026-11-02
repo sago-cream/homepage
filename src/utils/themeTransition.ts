@@ -1,5 +1,6 @@
 import { themeResolvedStorageKey, themeStorageKey } from '@/constants/theme';
 import { createBlobPath } from '@/hooks/themeTransitionUtils';
+import { writeStorageValue } from '@/utils/browserStorage';
 import { writePreferenceCookie } from '@/utils/preferenceCookies';
 
 interface ThemeTransitionOptions {
@@ -16,7 +17,7 @@ const applyTheme = (nextDarkMode: boolean) => {
     root.dataset.theme = nextTheme;
     root.dataset.themeMode = nextTheme;
     root.style.colorScheme = nextTheme;
-    globalThis.localStorage.setItem(themeStorageKey, nextTheme);
+    writeStorageValue(themeStorageKey, nextTheme);
     writePreferenceCookie(themeStorageKey, nextTheme);
     writePreferenceCookie(themeResolvedStorageKey, nextTheme);
 };
