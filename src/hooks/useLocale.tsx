@@ -9,6 +9,7 @@ import {
     localeStorageKey,
 } from '@/constants/i18n';
 import { isBrowser } from '@/utils/browserEnv';
+import { readStorageValue, writeStorageValue } from '@/utils/browserStorage';
 import { writePreferenceCookie } from '@/utils/preferenceCookies';
 
 const LOCALE_CHANGE_EVENT = 'homepage-locale-change';
@@ -23,7 +24,7 @@ function getInitialLocale(initialLocale: AppLocale = defaultLocale): AppLocale {
         return documentLocale;
     }
 
-    const savedLocale = globalThis.localStorage.getItem(localeStorageKey);
+    const savedLocale = readStorageValue(localeStorageKey);
 
     return isAppLocale(savedLocale) ? savedLocale : initialLocale;
 }
@@ -48,7 +49,7 @@ export const useLocale = (
     );
 
     const setLocale = useCallback((nextLocale: AppLocale) => {
-        globalThis.localStorage.setItem(localeStorageKey, nextLocale);
+        writeStorageValue(localeStorageKey, nextLocale);
         writePreferenceCookie(localeCookieName, nextLocale);
         globalThis.document.documentElement.lang = nextLocale;
         setLocaleState(nextLocale);

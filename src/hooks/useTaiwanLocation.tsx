@@ -9,6 +9,7 @@ import {
     taiwanLocationCookieName,
 } from '@/constants/taiwanLocations';
 import { isBrowser } from '@/utils/browserEnv';
+import { readStorageValue, writeStorageValue } from '@/utils/browserStorage';
 
 const LOCATION_CHANGE_EVENT = 'homepage-location-change';
 const LOCATION_STORAGE_KEY = 'homepage_location_id';
@@ -43,7 +44,7 @@ function stopWatching() {
 }
 
 function publishLocation(location: TaiwanLocation) {
-    globalThis.localStorage.setItem(LOCATION_STORAGE_KEY, location.id);
+    writeStorageValue(LOCATION_STORAGE_KEY, location.id);
     writeLocationCookie(location.id);
     globalThis.dispatchEvent(
         new CustomEvent(LOCATION_CHANGE_EVENT, { detail: location })
@@ -101,7 +102,7 @@ function startWatching() {
 }
 
 function setLocationTracking(enabled: boolean) {
-    globalThis.localStorage.setItem(TRACKING_STORAGE_KEY, String(enabled));
+    writeStorageValue(TRACKING_STORAGE_KEY, String(enabled));
     trackingState = {
         ...trackingState,
         enabled,
@@ -118,9 +119,7 @@ function setLocationTracking(enabled: boolean) {
 
 function onTrackingStorage(event: StorageEvent) {
     if (event.key === TRACKING_STORAGE_KEY || event.key === null) {
-        setLocationTracking(
-            globalThis.localStorage.getItem(TRACKING_STORAGE_KEY) === 'true'
-        );
+        setLocationTracking(readStorageValue(TRACKING_STORAGE_KEY) === 'true');
     }
 }
 
@@ -130,9 +129,7 @@ function subscribeTracking(listener: () => void) {
         globalThis.addEventListener('storage', onTrackingStorage);
         trackingState = {
             ...trackingState,
-            enabled:
-                globalThis.localStorage.getItem(TRACKING_STORAGE_KEY) ===
-                'true',
+            enabled: readStorageValue(TRACKING_STORAGE_KEY) === 'true',
         };
         startWatching();
     }
@@ -158,7 +155,7 @@ function readJson(key: string): unknown {
         return undefined;
     }
 
-    const value = globalThis.localStorage.getItem(key);
+    const value = readStorageValue(key);
 
     if (value === null) {
         return undefined;
@@ -204,14 +201,14 @@ function getStoredLocation(): TaiwanLocation {
         return findTaiwanLocation(undefined);
     }
 
-    const savedLocation = globalThis.localStorage.getItem(LOCATION_STORAGE_KEY);
+    const savedLocation = readStorageValue(LOCATION_STORAGE_KEY);
 
     if (savedLocation !== null) {
         return findTaiwanLocation(savedLocation);
     }
 
     const legacyAqiLocation = findTaiwanLocationByAqiSiteName(
-        globalThis.localStorage.getItem(LEGACY_AQI_SITE_STORAGE_KEY)
+        readStorageValue(LEGACY_AQI_SITE_STORAGE_KEY)
     );
 
     if (legacyAqiLocation !== undefined) {
@@ -292,23 +289,21 @@ export const useTaiwanLocation = ({
     }, []);
 
     useEffect(() => {
+        const initialLocation = findTaiwanLocation(initialLocationId);
         if (hasInitialLocationCookie === true) {
-            globalThis.localStorage.setItem(
-                LOCATION_STORAGE_KEY,
-                selectedLocation.id
-            );
+            writeStorageValue(LOCATION_STORAGE_KEY, initialLocation.id);
             return;
         }
 
         const storedLocation = getStoredLocation();
 
-        if (storedLocation.id !== selectedLocation.id) {
+        if (storedLocation.id !== initialLocation.id) {
             selectLocation(storedLocation);
             return;
         }
 
-        writeLocationCookie(selectedLocation.id);
-    }, [hasInitialLocationCookie, selectLocation, selectedLocation]);
+        writeLocationCookie(initialLocation.id);
+    }, [hasInitialLocationCookie, initialLocationId, selectLocation]);
 
     useEffect(() => {
         if (!('geolocation' in navigator)) {

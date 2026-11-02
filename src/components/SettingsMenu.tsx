@@ -49,6 +49,11 @@ import type { WallpaperControls } from '@/hooks/useWallpaper';
 import type { InitialAppPreferences } from '@/types/preferences';
 import { isBrowser } from '@/utils/browserEnv';
 import {
+    readStorageValue,
+    removeStorageValue,
+    writeStorageValue,
+} from '@/utils/browserStorage';
+import {
     clearPreferenceCookie,
     writePreferenceCookie,
 } from '@/utils/preferenceCookies';
@@ -82,7 +87,7 @@ const getInitialAnimationMode = (
 
     const savedAnimationMode =
         globalThis.document.documentElement.dataset.animationMode ??
-        globalThis.localStorage.getItem(animationStorageKey);
+        readStorageValue(animationStorageKey);
 
     return isAnimationMode(savedAnimationMode)
         ? savedAnimationMode
@@ -96,7 +101,7 @@ const getInitialThemeMode = (initialThemeMode: ThemeMode): ThemeMode => {
 
     const savedThemeMode =
         globalThis.document.documentElement.dataset.themeMode ??
-        globalThis.localStorage.getItem(themeStorageKey);
+        readStorageValue(themeStorageKey);
 
     return isThemeMode(savedThemeMode) ? savedThemeMode : initialThemeMode;
 };
@@ -108,7 +113,7 @@ const getInitialThemeColor = (initialThemeColor: ThemeColor): ThemeColor => {
 
     const savedThemeColor =
         globalThis.document.documentElement.dataset.themeColor ??
-        globalThis.localStorage.getItem(themeColorStorageKey);
+        readStorageValue(themeColorStorageKey);
 
     return isThemeColor(savedThemeColor) ? savedThemeColor : initialThemeColor;
 };
@@ -136,7 +141,7 @@ const applyResolvedTheme = (
 };
 
 const applyThemeMode = (themeMode: ThemeMode) => {
-    globalThis.localStorage.setItem(themeStorageKey, themeMode);
+    writeStorageValue(themeStorageKey, themeMode);
     writePreferenceCookie(themeStorageKey, themeMode);
     applyResolvedTheme(resolveThemeMode(themeMode), themeMode);
 };
@@ -158,13 +163,13 @@ const applyThemeColor = (themeColor: ThemeColor) => {
 
     if (themeColor === defaultThemeColor) {
         delete root.dataset.themeColor;
-        globalThis.localStorage.removeItem(themeColorStorageKey);
+        removeStorageValue(themeColorStorageKey);
         clearPreferenceCookie(themeColorStorageKey);
         return;
     }
 
     root.dataset.themeColor = themeColor;
-    globalThis.localStorage.setItem(themeColorStorageKey, themeColor);
+    writeStorageValue(themeColorStorageKey, themeColor);
     writePreferenceCookie(themeColorStorageKey, themeColor);
 };
 
@@ -431,10 +436,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         (nextAnimationMode: AnimationMode) => {
             globalThis.document.documentElement.dataset.animationMode =
                 nextAnimationMode;
-            globalThis.localStorage.setItem(
-                animationStorageKey,
-                nextAnimationMode
-            );
+            writeStorageValue(animationStorageKey, nextAnimationMode);
             writePreferenceCookie(animationStorageKey, nextAnimationMode);
             setAnimationMode(nextAnimationMode);
         },

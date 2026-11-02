@@ -2,13 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useTaiwanLocation } from '@/hooks/useTaiwanLocation';
 import type { AqiData } from '@/types/environment';
-import { isBrowser } from '@/utils/browserEnv';
+import { writeStorageValue } from '@/utils/browserStorage';
+import { isAqiData, readEnvironmentCache } from '@/utils/environmentCache';
+import type { EnvironmentCache } from '@/utils/environmentCache';
 
-interface CachedAqi {
-    data: AqiData;
-    locationId: string;
-    timestamp: number;
-}
+type CachedAqi = EnvironmentCache<AqiData>;
 
 interface UseAqiOptions {
     hasInitialLocationCookie?: boolean;
@@ -17,52 +15,52 @@ interface UseAqiOptions {
 }
 
 const AQI_CACHE_KEY_PREFIX = 'aqi_cache';
-const AQI_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
 const BASE_API_URL = '/api/aqi';
 
-function readJson(key: string): unknown {
-    if (!isBrowser()) {
-        return undefined;
-    }
-
-    const value = globalThis.localStorage.getItem(key);
-
-    if (value === null) {
-        return undefined;
-    }
-
-    try {
-        return JSON.parse(value) as unknown;
-    } catch {
-        return undefined;
-    }
-}
+const aqiRequests = new Map<string, Promise<AqiData | undefined>>();
 
 function getAqiCacheKey(locationId: string): string {
     return `${AQI_CACHE_KEY_PREFIX}_${locationId}`;
 }
 
-function isCacheFresh(timestamp: number, ttl: number): boolean {
-    return Date.now() - timestamp < ttl;
-}
-
-function getCachedAqi(
+const getCachedAqi = (
     locationId: string,
-    { allowStale = false }: { allowStale?: boolean } = {}
-): AqiData | undefined {
-    const cached = readJson(getAqiCacheKey(locationId)) as
-        | CachedAqi
-        | undefined;
+    options: { allowStale?: boolean } = {}
+): AqiData | undefined =>
+    readEnvironmentCache(
+        getAqiCacheKey(locationId),
+        locationId,
+        isAqiData,
+        options
+    )?.data;
 
-    if (
-        cached === undefined ||
-        cached.locationId !== locationId ||
-        (!allowStale && !isCacheFresh(cached.timestamp, AQI_CACHE_TTL))
-    ) {
-        return undefined;
+async function requestAqi(
+    locationId: string,
+    siteName: string
+): Promise<AqiData | undefined> {
+    const pending = aqiRequests.get(locationId);
+    if (pending !== undefined) {
+        return await pending;
     }
-
-    return cached.data;
+    const request = (async () => {
+        const params = new URLSearchParams({ site: siteName });
+        const response = await fetch(`${BASE_API_URL}?${params.toString()}`);
+        if (response.status === 204) {
+            return undefined;
+        }
+        if (!response.ok) {
+            throw new Error('Failed to fetch AQI data');
+        }
+        const data: unknown = await response.json();
+        if (!isAqiData(data)) {
+            throw new Error('Invalid AQI data');
+        }
+        return data;
+    })().finally(() => {
+        aqiRequests.delete(locationId);
+    });
+    aqiRequests.set(locationId, request);
+    return await request;
 }
 
 export const useAqiWithInitialData = ({
@@ -92,39 +90,21 @@ export const useAqiWithInitialData = ({
     );
     const [isLoading, setIsLoading] = useState(false);
 
-    const selectedLocationIdRef = useRef(selectedLocation.id);
-    selectedLocationIdRef.current = selectedLocation.id;
+    const requestVersionRef = useRef(0);
 
     const fetchAqi = useCallback(async () => {
+        requestVersionRef.current++;
+        const requestVersion = requestVersionRef.current;
         setIsLoading(true);
         try {
-            const params = new URLSearchParams({
-                site: selectedLocation.aqiSiteName,
-            });
-            const res = await fetch(`${BASE_API_URL}?${params.toString()}`);
-
-            if (selectedLocationIdRef.current !== selectedLocation.id) {
+            const data = await requestAqi(
+                selectedLocation.id,
+                selectedLocation.aqiSiteName
+            );
+            if (requestVersion !== requestVersionRef.current) {
                 return;
             }
-
-            if (res.status === 204) {
-                const cached = getCachedAqi(selectedLocation.id, {
-                    allowStale: true,
-                });
-
-                if (cached !== undefined) {
-                    setAqi(cached);
-                }
-
-                return;
-            }
-
-            if (!res.ok) {
-                throw new Error('Failed to fetch AQI data');
-            }
-
-            const data = (await res.json()) as AqiData;
-            if (selectedLocationIdRef.current !== selectedLocation.id) {
+            if (data === undefined) {
                 return;
             }
             const cache: CachedAqi = {
@@ -132,39 +112,52 @@ export const useAqiWithInitialData = ({
                 locationId: selectedLocation.id,
                 timestamp: Date.now(),
             };
-            globalThis.localStorage.setItem(
+            writeStorageValue(
                 getAqiCacheKey(selectedLocation.id),
                 JSON.stringify(cache)
             );
             setAqi(data);
         } catch (error) {
-            console.error(error);
+            if (requestVersion === requestVersionRef.current) {
+                console.error(error);
+            }
         } finally {
-            if (selectedLocationIdRef.current === selectedLocation.id) {
+            if (requestVersion === requestVersionRef.current) {
                 setIsLoading(false);
             }
         }
     }, [selectedLocation]);
+
+    useEffect(
+        () => () => {
+            requestVersionRef.current++;
+        },
+        [selectedLocation.id]
+    );
 
     const refreshAqi = useCallback(() => {
         fetchAqi().catch(console.error);
     }, [fetchAqi]);
 
     useEffect(() => {
+        const initialCache = initialCachedAqiRef.current;
+        initialCachedAqiRef.current = undefined;
         const cached = getCachedAqi(selectedLocation.id);
 
         if (cached !== undefined) {
             setAqi(cached);
-            return;
+            setIsLoading(false);
+            return undefined;
         }
 
-        if (initialCachedAqiRef.current?.locationId === selectedLocation.id) {
-            globalThis.localStorage.setItem(
+        if (initialCache?.locationId === selectedLocation.id) {
+            writeStorageValue(
                 getAqiCacheKey(selectedLocation.id),
-                JSON.stringify(initialCachedAqiRef.current)
+                JSON.stringify(initialCache)
             );
-            initialCachedAqiRef.current = undefined;
-            return;
+            setAqi(initialCache.data);
+            setIsLoading(false);
+            return undefined;
         }
 
         const staleCached = getCachedAqi(selectedLocation.id, {
@@ -178,6 +171,7 @@ export const useAqiWithInitialData = ({
         }
 
         fetchAqi().catch(console.error);
+        return undefined;
     }, [fetchAqi, selectedLocation.id]);
 
     return {
