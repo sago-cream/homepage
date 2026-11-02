@@ -357,15 +357,28 @@
 
 .bookmark-workspace-search input,
 .bookmark-workspace-field input,
+.bookmark-workspace-field select,
+.bookmark-workspace-location-trigger,
+.bookmark-workspace-icon-picker-trigger {
+    background-color: var(--clr-neutral-light);
+    color: var(--clr-text);
+}
+
+.bookmark-workspace-search input::placeholder,
+.bookmark-workspace-field input::placeholder {
+    color: var(--clr-text-alpha);
+    opacity: 1;
+}
+
+.bookmark-workspace-search input,
+.bookmark-workspace-field input,
 .bookmark-workspace-field select {
     width: 100%;
     min-width: 0;
     min-height: 2.75rem;
     border: 1px solid var(--bookmark-workspace-column-border);
     border-radius: var(--bookmark-workspace-control-radius);
-    background-color: var(--clr-search-field-bg-active);
     box-shadow: var(--shadow-panel);
-    color: var(--clr-search-field-text);
     outline: 2px solid transparent;
     outline-offset: 2px;
     transition:
@@ -407,10 +420,6 @@
     border-color: transparent;
     box-shadow: none;
     outline-color: transparent;
-}
-
-.bookmark-workspace-search.quiet input::placeholder {
-    color: var(--clr-text-alpha);
 }
 
 .bookmark-workspace-search.quiet:has(button) input {
@@ -1019,8 +1028,6 @@ a.bookmark-workspace-tree-item {
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--bookmark-workspace-column-border);
     border-radius: var(--bookmark-workspace-control-radius);
-    background-color: var(--clr-search-field-bg-active);
-    color: var(--clr-search-field-text);
     cursor: pointer;
     text-align: left;
     display: grid;
@@ -1102,8 +1109,6 @@ a.bookmark-workspace-tree-item {
     padding: 0.5rem 0.75rem;
     border: 1px solid var(--bookmark-workspace-column-border);
     border-radius: var(--bookmark-workspace-control-radius);
-    background-color: var(--clr-search-field-bg-active);
-    color: var(--clr-search-field-text);
     cursor: pointer;
     display: grid;
     grid-template-columns: 1.25rem minmax(0, 1fr) 1rem;
