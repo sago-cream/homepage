@@ -1,3 +1,4 @@
+/* eslint-disable no-await-in-loop -- Keyboard cases run sequentially against one mounted search field. */
 import { act } from 'react';
 import type { ChangeEvent } from 'react';
 import { expect, test } from 'bun:test';
@@ -8,7 +9,7 @@ import { createRoot } from 'react-dom/client';
 import { keybindStorageKey } from '@/utils/keybinds';
 import { useBookmarkSearch } from './useBookmarkSearch';
 
-test('Zhuyin hotkeys and residual slash input execute feeds through the search hook', async () => {
+test('search respects native controls and handles Zhuyin hotkeys and slash commands', async () => {
     const browser = new Window({ url: 'https://example.com' });
     const opened: string[] = [];
     const bindings = {
@@ -71,7 +72,17 @@ test('Zhuyin hotkeys and residual slash input execute feeds through the search h
     const root = createRoot(container);
     const press = async (
         target: Element,
-        options: Pick<KeyboardEventInit, 'key' | 'code'>
+        options: Pick<
+            KeyboardEventInit,
+            | 'key'
+            | 'code'
+            | 'ctrlKey'
+            | 'metaKey'
+            | 'altKey'
+            | 'shiftKey'
+            | 'repeat'
+            | 'isComposing'
+        >
     ) => {
         await act(async () => {
             target.dispatchEvent(
@@ -101,6 +112,53 @@ test('Zhuyin hotkeys and residual slash input execute feeds through the search h
         if (!input) {
             throw new Error('Missing search input');
         }
+        for (const markup of [
+            '<button>Action</button>',
+            '<a href="/settings">Settings</a>',
+            '<div role="dialog"><button>Close</button></div>',
+            '<div contenteditable="true"><span>Editor</span></div>',
+            '<div role="listbox"><div role="option">Choice</div></div>',
+        ]) {
+            const host = document.createElement('div');
+            host.innerHTML = markup;
+            document.body.append(host);
+            const target = host.querySelector(
+                'button, a, span, [role="option"]'
+            );
+            if (!target) {
+                throw new Error('Missing keyboard target');
+            }
+            for (const key of [' ', '/']) {
+                await press(target, { key });
+                expect(document.activeElement).not.toBe(input);
+                expect(search.searchInputValue).toBe('');
+            }
+            host.remove();
+        }
+        for (const modifier of [
+            { ctrlKey: true },
+            { metaKey: true },
+            { altKey: true },
+            { isComposing: true },
+            { repeat: true },
+        ]) {
+            for (const key of [' ', '/']) {
+                await press(document.body, { key, ...modifier });
+                expect(document.activeElement).not.toBe(input);
+            }
+        }
+        await press(document.body, { key: ' ', shiftKey: true });
+        expect(document.activeElement).not.toBe(input);
+        document.body.addEventListener(
+            'keydown',
+            (event) => {
+                event.preventDefault();
+            },
+            { once: true }
+        );
+        await press(document.body, { key: '/' });
+        expect(document.activeElement).not.toBe(input);
+
         await press(document.body, { key: 'ㄑ' });
         await press(document.body, { key: 'Process', code: 'KeyF' });
         expect(opened).toEqual([feed.url, feed.url]);

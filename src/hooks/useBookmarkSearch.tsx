@@ -572,29 +572,34 @@ export const useBookmarkSearch = (
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const { target } = e;
-            const isEditableTarget =
+            const isInteractiveTarget =
                 target instanceof HTMLElement &&
                 (target.isContentEditable ||
-                    ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName));
+                    target.closest(
+                        'input, textarea, select, button, a[href], summary, [contenteditable], [role="dialog"], dialog, [role="button"], [role="menu"], [role="listbox"], [role="combobox"], [role="slider"], [role="tablist"], [role="tree"]'
+                    ) !== null);
 
-            if (inputFocused || isEditableTarget) {
+            if (
+                inputFocused ||
+                isInteractiveTarget ||
+                e.defaultPrevented ||
+                e.repeat ||
+                e.isComposing ||
+                e.ctrlKey ||
+                e.metaKey ||
+                e.altKey
+            ) {
                 return;
             }
 
-            if (e.key === ' ') {
+            if (e.key === ' ' && !e.shiftKey) {
                 e.preventDefault();
                 setInputFocused(true);
                 focusSearchInput();
                 return;
             }
 
-            if (
-                getKeyboardKey(e) === '/' &&
-                !e.ctrlKey &&
-                !e.metaKey &&
-                !e.altKey &&
-                !e.isComposing
-            ) {
+            if (getKeyboardKey(e) === '/') {
                 e.preventDefault();
                 setSearchValue('/');
                 setSearchKeySequence('/');
