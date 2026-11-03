@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
     Cloud,
     CloudDrizzle,
@@ -60,6 +60,9 @@ export const Weather: React.FC<WeatherProps> = ({
     });
     const { locale, t } = useLocale(initialPreferences.locale);
     const [showLocationGranted, setShowLocationGranted] = useState(false);
+    const locationSyncRequestRef = useRef<
+        { previousSuccessAt: number | undefined } | undefined
+    >(undefined);
     const hasWeather = weather !== undefined;
     const hasAqi = aqi !== undefined;
     const locationLabel = getLocationLabel(selectedLocation, locale);
@@ -93,13 +96,24 @@ export const Weather: React.FC<WeatherProps> = ({
 
     useEffect(() => {
         if (
+            locationSyncRequestRef.current === undefined ||
             lastLocationSyncSucceededAt === undefined ||
+            lastLocationSyncSucceededAt ===
+                locationSyncRequestRef.current.previousSuccessAt ||
             geolocationPermission !== 'granted'
         ) {
             return undefined;
         }
 
+        locationSyncRequestRef.current = undefined;
         setShowLocationGranted(true);
+    }, [geolocationPermission, lastLocationSyncSucceededAt]);
+
+    useEffect(() => {
+        if (!showLocationGranted) {
+            return undefined;
+        }
+
         const timeoutId = setTimeout(() => {
             setShowLocationGranted(false);
         }, locationGrantFeedbackDuration);
@@ -107,7 +121,7 @@ export const Weather: React.FC<WeatherProps> = ({
         return () => {
             clearTimeout(timeoutId);
         };
-    }, [geolocationPermission, lastLocationSyncSucceededAt]);
+    }, [showLocationGranted]);
 
     return (
         <div
@@ -149,7 +163,12 @@ export const Weather: React.FC<WeatherProps> = ({
                     data-state={locationControlState}
                     data-syncing={isSyncingLocation}
                     disabled={isSyncingLocation || showLocationGranted}
-                    onClick={syncCurrentLocation}
+                    onClick={() => {
+                        locationSyncRequestRef.current = {
+                            previousSuccessAt: lastLocationSyncSucceededAt,
+                        };
+                        syncCurrentLocation();
+                    }}
                 >
                     <span className='weather-location-sync-icons' aria-hidden>
                         <MapPinOff
