@@ -148,6 +148,7 @@ const unsupportedGeolocationPermission = 'unsupported';
 
 export type GeolocationPermissionState =
     | PermissionState
+    | 'pending'
     | typeof unsupportedGeolocationPermission;
 
 function readJson(key: string): unknown {
@@ -264,7 +265,7 @@ export const useTaiwanLocation = ({
         findTaiwanLocation(initialLocationId)
     );
     const [geolocationPermission, setGeolocationPermission] =
-        useState<GeolocationPermissionState>(unsupportedGeolocationPermission);
+        useState<GeolocationPermissionState>('pending');
     const tracking = useSyncExternalStore(
         subscribeTracking,
         getTrackingSnapshot,
@@ -311,9 +312,8 @@ export const useTaiwanLocation = ({
             return undefined;
         }
 
-        setGeolocationPermission('prompt');
-
         if (!('permissions' in navigator)) {
+            setGeolocationPermission('prompt');
             return undefined;
         }
 
@@ -342,7 +342,12 @@ export const useTaiwanLocation = ({
                 updatePermission();
                 permissionStatus.addEventListener('change', updatePermission);
             })
-            .catch(console.error);
+            .catch((error: unknown) => {
+                if (isSubscribed) {
+                    setGeolocationPermission('prompt');
+                    console.error(error);
+                }
+            });
 
         return () => {
             isSubscribed = false;
@@ -378,7 +383,9 @@ export const useTaiwanLocation = ({
     return {
         selectedLocation,
         geolocationPermission,
-        isGeolocationAvailable: geolocationPermission !== 'unsupported',
+        isGeolocationAvailable:
+            geolocationPermission !== 'pending' &&
+            geolocationPermission !== 'unsupported',
         isSyncingLocation: tracking.syncing,
         lastLocationSyncSucceededAt: tracking.updatedAt,
         isTrackingLocation: tracking.enabled,
