@@ -75,5 +75,22 @@
         "screenshots/selected-desktop-appearance.webp",
         "screenshots/selected-desktop-home.webp",
         "screenshots/selected-mobile-home.webp"
-    ]
+    ],
+    "approval": {
+        "source": "approved-decisions.json",
+        "revision": {
+            "base": "334cebc82f530793ed5f1d938082de66d8b398ac",
+            "head": "e9222adf235ca0e019b82bc0729f1d99c845e9f8"
+        },
+        "acceptedChangeIds": [
+            "mobile-section-chooser",
+            "homepage-control-contrast",
+            "settings-heading-hierarchy",
+            "settings-selected-navigation",
+            "keybind-empty-state",
+            "disabled-save-legibility",
+            "settings-placeholder-contrast"
+        ],
+        "status": "all-accepted"
+    }
 }
