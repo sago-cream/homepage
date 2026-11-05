@@ -1159,6 +1159,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             return false;
         }
 
+        cancelEditor();
         onClose();
         return true;
     };

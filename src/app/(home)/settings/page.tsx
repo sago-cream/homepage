@@ -1,5 +1,8 @@
-import { redirect } from 'next/navigation';
+import type { ReactNode } from 'react';
+import type { Metadata } from 'next';
 
-export default function Settings(): never {
-    redirect('/settings/bookmarks');
+export const metadata: Metadata = { title: 'Settings · Homepage' };
+
+export default function Settings(): ReactNode {
+    return undefined;
 }

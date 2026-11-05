@@ -154,9 +154,11 @@
         top: 1rem;
         left: 1rem;
         padding: 0.5rem;
+        min-width: 2.75rem;
+        min-height: 2.75rem;
         border-radius: 50%;
         background: transparent;
-        color: var(--clr-primary-alpha);
+        color: var(--clr-home-control);
         cursor: pointer;
         z-index: 18;
 

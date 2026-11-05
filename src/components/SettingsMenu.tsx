@@ -8,6 +8,7 @@ import React, {
 import {
     ArrowLeft,
     Bookmark,
+    ChevronRight,
     Keyboard,
     Mailbox,
     Monitor,
@@ -44,6 +45,7 @@ import {
 } from '@/constants/theme';
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useLocale } from '@/hooks/useLocale';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { useTaiwanLocation } from '@/hooks/useTaiwanLocation';
 import type { WallpaperControls } from '@/hooks/useWallpaper';
 import type { InitialAppPreferences } from '@/types/preferences';
@@ -205,9 +207,13 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     const pathname = usePathname();
     const router = useRouter();
     const searchParams = useSearchParams();
-    const selectedSection = getSettingsSection(pathname) ?? 'content';
+    const routeSection = getSettingsSection(pathname);
+    const selectedSection = routeSection ?? 'content';
+    const isSettingsIndex = pathname === '/settings';
+    const isCompactViewport = useMediaQuery('(width < 48rem)');
+    const isMobileDetail = isCompactViewport && !isSettingsIndex;
     const bookmarksHrefRef = useRef<string>(settingsSectionPaths.content);
-    if (selectedSection === 'content') {
+    if (routeSection === 'content') {
         bookmarksHrefRef.current = `${pathname}${searchParams.size > 0 ? `?${searchParams.toString()}` : ''}`;
     }
     const setSelectedSection = useCallback(
@@ -256,7 +262,16 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     const triggerRef = useRef<HTMLButtonElement>(null);
     const controlRef = useRef<HTMLDivElement>(null);
     const wallpaperInputRef = useRef<HTMLInputElement>(null);
+    const categoryBackRef = useRef<HTMLButtonElement>(null);
+    const pendingSettingsPathRef = useRef<string | undefined>(undefined);
+    const lastSectionRef = useRef<SettingsSectionId | undefined>(routeSection);
+    const isMobileDetailRef = useRef(isMobileDetail);
+    const focusedViewRef = useRef<string | undefined>(undefined);
     openDropdownIdRef.current = openDropdownId;
+    isMobileDetailRef.current = isMobileDetail;
+    if (routeSection !== undefined) {
+        lastSectionRef.current = routeSection;
+    }
 
     useLayoutEffect(() => {
         const navigation = navigationRef.current;
@@ -275,31 +290,6 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             observer.disconnect();
         };
     }, [isOpen, selectedSection, settingsQuery, locale]);
-
-    useEffect(() => {
-        if (
-            !pendingSearchResult ||
-            selectedSection !== pendingSearchResult.section
-        ) {
-            return undefined;
-        }
-        const frame = requestAnimationFrame(() => {
-            const row = document.querySelector<HTMLElement>(
-                `.settings-page [data-setting="${pendingSearchResult.id}"]`
-            );
-            const control =
-                row?.querySelector<HTMLElement>('[aria-checked="true"]') ??
-                row?.querySelector<HTMLElement>(
-                    'button:not(:disabled), input:not(:disabled)'
-                );
-            row?.scrollIntoView({ block: 'nearest' });
-            control?.focus({ preventScroll: true });
-            setPendingSearchResult(undefined);
-        });
-        return () => {
-            cancelAnimationFrame(frame);
-        };
-    }, [pendingSearchResult, selectedSection]);
 
     const setMenuOpen = useCallback(
         (nextIsOpen: boolean) => {
@@ -331,13 +321,39 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         setHasHydratedThemePreferences(true);
     }, [initialPreferences.themeColor, initialPreferences.themeMode]);
 
-    const requestSettingsClose = useCallback(() => {
-        if (bookmarkManagerRef.current === null) {
+    const finishSettingsNavigation = useCallback(() => {
+        const targetPath =
+            pendingSettingsPathRef.current ??
+            (isMobileDetailRef.current ? '/settings' : '/');
+        pendingSettingsPathRef.current = undefined;
+        if (targetPath === '/') {
             setMenuOpen(false);
-        } else if (!bookmarkManagerRef.current.requestClose()) {
-            setSelectedSection('content');
+        } else {
+            setOpenDropdownId(undefined);
+            setSettingsQuery('');
+            router.push(targetPath, { scroll: false });
         }
-    }, [setMenuOpen, setSelectedSection]);
+    }, [router, setMenuOpen]);
+
+    const requestSettingsNavigation = useCallback(
+        (targetPath?: string) => {
+            pendingSettingsPathRef.current = targetPath;
+            if (bookmarkManagerRef.current === null) {
+                finishSettingsNavigation();
+            } else if (!bookmarkManagerRef.current.requestClose()) {
+                setSelectedSection('content');
+            }
+        },
+        [finishSettingsNavigation, setSelectedSection]
+    );
+
+    const requestSettingsClose = useCallback(() => {
+        requestSettingsNavigation('/');
+    }, [requestSettingsNavigation]);
+
+    const requestSettingsCategories = useCallback(() => {
+        requestSettingsNavigation('/settings');
+    }, [requestSettingsNavigation]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -353,7 +369,11 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                     setOpenDropdownId(undefined);
                     return;
                 }
-                requestSettingsClose();
+                if (isMobileDetailRef.current) {
+                    requestSettingsCategories();
+                } else {
+                    requestSettingsClose();
+                }
             }
         };
 
@@ -380,7 +400,61 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                 fallback?.focus();
             }
         };
-    }, [isOpen, requestSettingsClose]);
+    }, [isOpen, requestSettingsClose, requestSettingsCategories]);
+
+    useLayoutEffect(() => {
+        if (!isOpen) {
+            focusedViewRef.current = undefined;
+            return undefined;
+        }
+        const view = `${pathname}:${isCompactViewport}`;
+        if (
+            pendingSearchResult &&
+            !isSettingsIndex &&
+            selectedSection === pendingSearchResult.section
+        ) {
+            focusedViewRef.current = view;
+            const frame = requestAnimationFrame(() => {
+                const row = document.querySelector<HTMLElement>(
+                    `.settings-page [data-setting="${pendingSearchResult.id}"]`
+                );
+                const control =
+                    row?.querySelector<HTMLElement>('[aria-checked="true"]') ??
+                    row?.querySelector<HTMLElement>(
+                        'button:not(:disabled), input:not(:disabled)'
+                    );
+                row?.scrollIntoView({ block: 'nearest' });
+                control?.focus({ preventScroll: true });
+                setPendingSearchResult(undefined);
+            });
+            return () => {
+                cancelAnimationFrame(frame);
+            };
+        }
+        if (focusedViewRef.current === view) {
+            return undefined;
+        }
+        focusedViewRef.current = view;
+        if (isCompactViewport) {
+            if (isSettingsIndex) {
+                navigationRef.current
+                    ?.querySelector<HTMLElement>(
+                        `[data-section="${lastSectionRef.current}"]`
+                    )
+                    ?.focus({ preventScroll: true });
+            } else {
+                categoryBackRef.current?.focus({ preventScroll: true });
+            }
+        }
+        return undefined;
+    }, [
+        isOpen,
+        isCompactViewport,
+        isSettingsIndex,
+        selectedSection,
+        pathname,
+        pendingSearchResult,
+    ]);
 
     useEffect(() => {
         if (!isOpen) {
@@ -522,7 +596,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         setOpenDropdownId(undefined);
         setSettingsQuery('');
         setPendingSearchResult(result);
-        if (selectedSection !== result.section) {
+        if (routeSection !== result.section) {
             setSelectedSection(result.section);
         }
     };
@@ -572,7 +646,11 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                           onCancel={(event) => {
                               if (event.target === event.currentTarget) {
                                   event.preventDefault();
-                                  requestSettingsClose();
+                                  if (isMobileDetail) {
+                                      requestSettingsCategories();
+                                  } else {
+                                      requestSettingsClose();
+                                  }
                               }
                           }}
                           className='settings-page'
@@ -593,7 +671,32 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                               }
                           }}
                       >
-                          <div className='settings-page-content'>
+                          <div
+                              className='settings-page-content'
+                              data-view={
+                                  isSettingsIndex ? 'categories' : 'detail'
+                              }
+                          >
+                              <header className='settings-mobile-header'>
+                                  <button
+                                      ref={categoryBackRef}
+                                      className='settings-page-sidebar-button settings-category-back'
+                                      type='button'
+                                      aria-label={t.backToSettings}
+                                      onClick={requestSettingsCategories}
+                                  >
+                                      <ArrowLeft size={18} aria-hidden />
+                                      <span>{t.settings}</span>
+                                  </button>
+                                  <button
+                                      className='settings-icon-button'
+                                      type='button'
+                                      aria-label={t.backToHomepage}
+                                      onClick={requestSettingsClose}
+                                  >
+                                      <X size={20} aria-hidden />
+                                  </button>
+                              </header>
                               <aside className='settings-page-sidebar'>
                                   <h1 id='settings-page-title'>{t.settings}</h1>
                                   <button
@@ -693,13 +796,18 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                           : settingsSections.map((section) => {
                                                 const Icon = section.icon;
                                                 const isSelected =
+                                                    (!isCompactViewport ||
+                                                        !isSettingsIndex) &&
                                                     selectedSection ===
-                                                    section.id;
+                                                        section.id;
 
                                                 return (
                                                     <Link
                                                         className='settings-page-sidebar-button'
                                                         key={section.id}
+                                                        data-section={
+                                                            section.id
+                                                        }
                                                         href={
                                                             section.id ===
                                                             'content'
@@ -728,6 +836,11 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                         <span>
                                                             {section.label}
                                                         </span>
+                                                        <ChevronRight
+                                                            className='settings-section-chevron'
+                                                            size={18}
+                                                            aria-hidden
+                                                        />
                                                     </Link>
                                                 );
                                             })}
@@ -1225,9 +1338,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                   <BookmarkManager
                                       ref={bookmarkManagerRef}
                                       bookmarkControls={bookmarkControls}
-                                      onClose={() => {
-                                          setMenuOpen(false);
-                                      }}
+                                      onClose={finishSettingsNavigation}
                                   />
                               </section>
                           </div>

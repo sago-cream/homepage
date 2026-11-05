@@ -164,7 +164,7 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                 aria-haspopup={searchLabel ? 'dialog' : 'listbox'}
                 aria-expanded={isOpen}
                 aria-controls={`${id}-listbox`}
-                aria-labelledby={labelledBy}
+                aria-labelledby={`${labelledBy} ${id}-value`}
                 onClick={() => {
                     setInitialSearch('');
                     onOpenChange(!isOpen);
@@ -197,7 +197,7 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                     }
                 }}
             >
-                <span className='settings-select-value'>
+                <span className='settings-select-value' id={`${id}-value`}>
                     {selectedOption.label}
                 </span>
                 <ChevronDown

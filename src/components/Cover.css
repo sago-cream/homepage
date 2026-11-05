@@ -307,7 +307,7 @@
     border-radius: 50%;
     display: grid;
     place-items: center;
-    opacity: 0.75;
+    opacity: 1;
 
     font-size: var(--fs-lg);
 
