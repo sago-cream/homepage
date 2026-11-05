@@ -1,6 +1,6 @@
 import type { ReactElement } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Keyboard, Plus, Trash2 } from 'lucide-react';
 
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useKeybinds } from '@/hooks/useKeybinds';
@@ -62,6 +62,22 @@ export const KeybindSettingsSection = ({
         }
     };
 
+    const addButton = (
+        <button
+            ref={addButtonRef}
+            className='bookmark-workspace-primary-button'
+            type='button'
+            onClick={() => {
+                const id = globalThis.crypto.randomUUID();
+                pendingKeybindRef.current = id;
+                save([...keybinds, { id, target: '', key: '' }]);
+            }}
+        >
+            <Plus size={18} aria-hidden />
+            {t.addKeybind}
+        </button>
+    );
+
     return (
         <section
             className='settings-page-section settings-keybinds'
@@ -70,11 +86,21 @@ export const KeybindSettingsSection = ({
             <div className='settings-section-heading'>
                 <h2>{t.keybinds}</h2>
             </div>
-            <div className='settings-card'>
+            <div
+                className={
+                    keybinds.length === 0
+                        ? 'settings-keybind-empty'
+                        : 'settings-card'
+                }
+            >
                 {keybinds.length === 0 ? (
-                    <p className='settings-row-description settings-keybind-empty'>
-                        {t.keybindsEmpty}
-                    </p>
+                    <>
+                        <Keyboard aria-hidden />
+                        <p className='settings-row-description'>
+                            {t.keybindsEmpty}
+                        </p>
+                        {addButton}
+                    </>
                 ) : undefined}
                 {keybinds.map((binding, index) => {
                     const missingBookmark =
@@ -225,21 +251,9 @@ export const KeybindSettingsSection = ({
                     {error.message}
                 </p>
             ) : undefined}
-            <div className='settings-keybind-footer'>
-                <button
-                    ref={addButtonRef}
-                    className='bookmark-workspace-primary-button'
-                    type='button'
-                    onClick={() => {
-                        const id = globalThis.crypto.randomUUID();
-                        pendingKeybindRef.current = id;
-                        save([...keybinds, { id, target: '', key: '' }]);
-                    }}
-                >
-                    <Plus size={18} aria-hidden />
-                    {t.addKeybind}
-                </button>
-            </div>
+            {keybinds.length > 0 && (
+                <div className='settings-keybind-footer'>{addButton}</div>
+            )}
         </section>
     );
 };

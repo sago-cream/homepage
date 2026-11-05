@@ -258,6 +258,21 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     const wallpaperInputRef = useRef<HTMLInputElement>(null);
     openDropdownIdRef.current = openDropdownId;
 
+    useEffect(() => {
+        const compactViewport = globalThis.matchMedia('(width < 48rem)');
+        const dismissSectionMenu = () => {
+            if (!compactViewport.matches) {
+                setOpenDropdownId((current) =>
+                    current === 'section' ? undefined : current
+                );
+            }
+        };
+        compactViewport.addEventListener('change', dismissSectionMenu);
+        return () => {
+            compactViewport.removeEventListener('change', dismissSectionMenu);
+        };
+    }, []);
+
     useLayoutEffect(() => {
         const navigation = navigationRef.current;
         if (!navigation || settingsQuery.trim() !== '') {
@@ -652,6 +667,47 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                           </button>
                                       )}
                                   </form>
+                                  <div
+                                      className='settings-mobile-navigation'
+                                      hidden={isSearching}
+                                  >
+                                      <SettingsDropdown
+                                          id='settings-section'
+                                          labelledBy='settings-page-title'
+                                          value={selectedSection}
+                                          options={settingsSections.map(
+                                              (section) => ({
+                                                  label: section.label,
+                                                  value: section.id,
+                                              })
+                                          )}
+                                          isOpen={openDropdownId === 'section'}
+                                          onOpenChange={(isSectionOpen) => {
+                                              setOpenDropdownId(
+                                                  isSectionOpen
+                                                      ? 'section'
+                                                      : undefined
+                                              );
+                                          }}
+                                          onChange={(value) => {
+                                              const section =
+                                                  settingsSections.find(
+                                                      (item) =>
+                                                          item.id === value
+                                                  );
+                                              if (section) {
+                                                  router.push(
+                                                      section.id === 'content'
+                                                          ? bookmarksHrefRef.current
+                                                          : settingsSectionPaths[
+                                                                section.id
+                                                            ],
+                                                      { scroll: false }
+                                                  );
+                                              }
+                                          }}
+                                      />
+                                  </div>
                                   <nav
                                       ref={navigationRef}
                                       className='settings-page-navigation'

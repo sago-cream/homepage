@@ -78,7 +78,7 @@
     --clr-search-field-bg-active: var(--clr-neutral-light);
     --clr-search-field-text: var(--clr-text);
     --clr-search-field-placeholder: var(--clr-text);
-    --clr-search-icon: var(--clr-on-dark);
+    --clr-search-icon: var(--clr-neutral);
     --clr-search-icon-active: var(--clr-disabled);
     --clr-search-suggestion-bg: var(--clr-search-field-bg-active);
     --clr-search-suggestion-bg-active: var(--clr-search-field-bg-active);
