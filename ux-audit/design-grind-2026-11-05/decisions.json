@@ -1,0 +1,52 @@
+{
+    "schemaVersion": 1,
+    "boardId": "homepage-design-grind-2026-11-05",
+    "revision": {
+        "base": "7f43a8fbf885089011458dfa3d56dca4dfa9308f",
+        "head": "334cebc82f530793ed5f1d938082de66d8b398ac"
+    },
+    "decisions": {
+        "mobile-section-chooser": {
+            "choice": "decline",
+            "note": "make it two-layered menu, choose category first, then show the correspoign settingsmenu, make sure navigatio works",
+            "fingerprint": "b5a07c00fad0a496532f2562b38aad2c4fa1598383e06bc84dc14a2a709197d3",
+            "updatedAt": "2026-11-05T07:23:22.103Z"
+        },
+        "homepage-control-contrast": {
+            "choice": "decline",
+            "note": "in increase contrast, only make it slightly darker else. the airy vibe will be broken",
+            "fingerprint": "41cec9390eab60943297fc8d0e00f07152ef0510e967a4556bcaf191fbb915d2",
+            "updatedAt": "2026-11-05T07:23:29.570Z"
+        },
+        "settings-heading-hierarchy": {
+            "choice": "accept",
+            "note": "",
+            "fingerprint": "e01e9bdcc9d7c654064b192d9df5393b4d26c5033993fdeabb74c0dfb53b4f72",
+            "updatedAt": "2026-11-05T07:21:19.244Z"
+        },
+        "settings-selected-navigation": {
+            "choice": "accept",
+            "note": "",
+            "fingerprint": "53628d7c1a7a7a8338d8bd8beb5ec011ef5ea7e025dc0bd8f86eb7213b7004e1",
+            "updatedAt": "2026-11-05T07:21:35.925Z"
+        },
+        "keybind-empty-state": {
+            "choice": "accept",
+            "note": "",
+            "fingerprint": "d8ef49680d7ec747b346ab055d52bdb9af48862f0e7748e108d769a6d3c64541",
+            "updatedAt": "2026-11-05T07:23:36.269Z"
+        },
+        "disabled-save-legibility": {
+            "choice": "accept",
+            "note": "",
+            "fingerprint": "5cea0bacf15eaf129a22d1b189bb673a2b0882714c3699be57c4054fc5938eb4",
+            "updatedAt": "2026-11-05T07:23:49.302Z"
+        },
+        "settings-placeholder-contrast": {
+            "choice": "accept",
+            "note": "",
+            "fingerprint": "1e22f7621d7d7974c647223c19ec54e2d6a0c784c9451aa34808f03806534ee6",
+            "updatedAt": "2026-11-05T07:21:55.808Z"
+        }
+    }
+}

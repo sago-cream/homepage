@@ -1,0 +1,79 @@
+{
+    "schemaVersion": 1,
+    "boardId": "homepage-design-grind-2026-11-05",
+    "reviewedRevision": {
+        "base": "7f43a8fbf885089011458dfa3d56dca4dfa9308f",
+        "head": "334cebc82f530793ed5f1d938082de66d8b398ac"
+    },
+    "appliedHead": "e9222adf235ca0e019b82bc0729f1d99c845e9f8",
+    "decisionSource": "decisions.json",
+    "resolutions": {
+        "mobile-section-chooser": {
+            "choice": "decline",
+            "note": "make it two-layered menu, choose category first, then show the correspoign settingsmenu, make sure navigatio works",
+            "resolution": "revised-as-requested"
+        },
+        "homepage-control-contrast": {
+            "choice": "decline",
+            "note": "in increase contrast, only make it slightly darker else. the airy vibe will be broken",
+            "resolution": "revised-as-requested"
+        },
+        "settings-heading-hierarchy": {
+            "choice": "accept",
+            "note": "",
+            "resolution": "kept-as-accepted"
+        },
+        "settings-selected-navigation": {
+            "choice": "accept",
+            "note": "",
+            "resolution": "kept-as-accepted"
+        },
+        "keybind-empty-state": {
+            "choice": "accept",
+            "note": "",
+            "resolution": "kept-as-accepted"
+        },
+        "disabled-save-legibility": {
+            "choice": "accept",
+            "note": "",
+            "resolution": "kept-as-accepted"
+        },
+        "settings-placeholder-contrast": {
+            "choice": "accept",
+            "note": "",
+            "resolution": "kept-as-accepted"
+        }
+    },
+    "verification": [
+        "ESLint passed",
+        "80 tests passed",
+        "Production build and TypeScript passed",
+        "All five mobile categories and return paths",
+        "Settings entry opens categories",
+        "Browser Back/Forward and direct category routes",
+        "Search result focuses its matching setting",
+        "Bookmark search query survives a trip to categories",
+        "Escape returns from detail to categories",
+        "Desktop sidebar remains available",
+        "390x844 and 320x568 mobile layouts",
+        "English and Traditional Chinese, light and dark themes"
+    ],
+    "screenshots": [
+        "screenshots/selected-mobile-categories.webp",
+        "screenshots/selected-mobile-appearance.webp",
+        "screenshots/selected-mobile-bookmarks.webp",
+        "screenshots/selected-mobile-feeds.webp",
+        "screenshots/selected-mobile-keybinds.webp",
+        "screenshots/selected-mobile-preferences.webp",
+        "screenshots/selected-mobile-search-empty.webp",
+        "screenshots/selected-small-categories.webp",
+        "screenshots/selected-mobile-preferences-chinese.webp",
+        "screenshots/selected-mobile-categories-chinese.webp",
+        "screenshots/selected-mobile-categories-dark.webp",
+        "screenshots/selected-mobile-appearance-dark.webp",
+        "screenshots/selected-desktop-preferences.webp",
+        "screenshots/selected-desktop-appearance.webp",
+        "screenshots/selected-desktop-home.webp",
+        "screenshots/selected-mobile-home.webp"
+    ]
+}

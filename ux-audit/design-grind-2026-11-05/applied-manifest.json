@@ -1,0 +1,244 @@
+{
+    "id": "homepage-design-grind-2026-11-05",
+    "title": "Homepage design decisions",
+    "revision": {
+        "base": "334cebc82f530793ed5f1d938082de66d8b398ac",
+        "head": "e9222adf235ca0e019b82bc0729f1d99c845e9f8"
+    },
+    "initialChange": "homepage-control-contrast",
+    "initialFilter": "all",
+    "changes": [
+        {
+            "id": "mobile-section-chooser",
+            "group": "Settings",
+            "title": "Mobile categories and detail screens",
+            "reason": "Choose a settings category first, then work in its dedicated screen.",
+            "beforeText": "The reviewed proposal puts a category dropdown above the settings content.",
+            "afterText": "Settings opens a category list. Each category opens its own detail route with a parent Settings control and a separate close button.",
+            "kind": "behavior",
+            "context": "Implements the exported note. Category selection, returning to categories, browser Back/Forward, direct links, settings-search focus, bookmark search preservation, and Escape were verified. Desktop keeps its sidebar. The first comparison shows category selection; the second shows detail content.",
+            "stages": [
+                {
+                    "id": "categories",
+                    "label": "Choose category",
+                    "variants": {
+                        "mobile": {
+                            "before": {
+                                "file": "screenshots/after-mobile-appearance.webp",
+                                "width": 780,
+                                "height": 1688
+                            },
+                            "after": {
+                                "file": "screenshots/selected-mobile-categories.webp",
+                                "width": 780,
+                                "height": 1688
+                            }
+                        }
+                    }
+                },
+                {
+                    "id": "details",
+                    "label": "Category detail",
+                    "variants": {
+                        "mobile": {
+                            "before": {
+                                "file": "screenshots/after-mobile-appearance.webp",
+                                "width": 780,
+                                "height": 1688
+                            },
+                            "after": {
+                                "file": "screenshots/selected-mobile-appearance.webp",
+                                "width": 780,
+                                "height": 1688
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "id": "homepage-control-contrast",
+            "group": "Homepage",
+            "title": "Airy homepage controls",
+            "reason": "Keep the soft palette with a small increase in contrast.",
+            "beforeText": "The reviewed proposal uses neutral-colored homepage glyphs.",
+            "afterText": "Corner icons use lavender with slightly lower lightness. Search keeps its white glyph on a subtly deeper pink button.",
+            "kind": "visual",
+            "context": "Implements the exported note to preserve the airy feel. The mountain scene, clock, and collapsed-search behavior are preserved. Captures differ in time; the earlier proposal includes no development overlays.",
+            "variants": {
+                "desktop": {
+                    "before": {
+                        "file": "screenshots/after-desktop-home.webp",
+                        "width": 1280,
+                        "height": 800
+                    },
+                    "after": {
+                        "file": "screenshots/selected-desktop-home.webp",
+                        "width": 1280,
+                        "height": 800
+                    }
+                },
+                "mobile": {
+                    "before": {
+                        "file": "screenshots/after-mobile-home.webp",
+                        "width": 780,
+                        "height": 1688
+                    },
+                    "after": {
+                        "file": "screenshots/selected-mobile-home.webp",
+                        "width": 780,
+                        "height": 1688
+                    }
+                }
+            }
+        },
+        {
+            "id": "settings-heading-hierarchy",
+            "group": "Settings",
+            "title": "Stronger section headings",
+            "reason": "Separate page headings from settings labels at a glance.",
+            "beforeText": "Section titles use the same large-text size as other interface labels.",
+            "afterText": "A shared 24px heading token clarifies the section hierarchy while preserving Quicksand.",
+            "kind": "visual",
+            "context": "The crops include nearby unchanged controls. Sidebar selection and mobile navigation are separate decisions.",
+            "variants": {
+                "desktop": {
+                    "before": {
+                        "file": "screenshots/before-desktop-appearance.webp",
+                        "width": 1280,
+                        "height": 800,
+                        "crop": [360, 20, 840, 330]
+                    },
+                    "after": {
+                        "file": "screenshots/after-desktop-appearance.webp",
+                        "width": 1280,
+                        "height": 800,
+                        "crop": [360, 20, 840, 330]
+                    }
+                }
+            }
+        },
+        {
+            "id": "settings-selected-navigation",
+            "group": "Settings",
+            "title": "Distinct selected section",
+            "reason": "Distinguish the current settings section from ordinary hover.",
+            "beforeText": "The selected sidebar item uses the same gray surface as hover.",
+            "afterText": "The selected item uses the existing lavender surface token.",
+            "kind": "visual",
+            "variants": {
+                "desktop": {
+                    "before": {
+                        "file": "screenshots/before-desktop-appearance.webp",
+                        "width": 1280,
+                        "height": 800,
+                        "crop": [20, 176, 240, 250]
+                    },
+                    "after": {
+                        "file": "screenshots/after-desktop-appearance.webp",
+                        "width": 1280,
+                        "height": 800,
+                        "crop": [20, 176, 240, 250]
+                    }
+                }
+            }
+        },
+        {
+            "id": "keybind-empty-state",
+            "group": "Keybinds",
+            "title": "One focused empty state",
+            "reason": "Keep the first-keybind message and action together.",
+            "beforeText": "An empty card and a separate Add keybind button feel disconnected.",
+            "afterText": "A keyboard icon, existing message, and Add keybind button form one centered group.",
+            "kind": "visual",
+            "context": "Also shows the separate mobile navigation and heading proposals. Adding a keybind and returning to the empty state were verified.",
+            "variants": {
+                "mobile": {
+                    "before": {
+                        "file": "screenshots/before-mobile-keybinds.webp",
+                        "width": 780,
+                        "height": 1688,
+                        "crop": [24, 410, 732, 620]
+                    },
+                    "after": {
+                        "file": "screenshots/after-mobile-keybinds.webp",
+                        "width": 780,
+                        "height": 1688,
+                        "crop": [24, 410, 732, 620]
+                    }
+                }
+            }
+        },
+        {
+            "id": "disabled-save-legibility",
+            "group": "Bookmarks",
+            "title": "Readable disabled Save",
+            "reason": "Keep the unavailable action identifiable while the form is incomplete.",
+            "beforeText": "White text and reduced opacity make the disabled Save label almost disappear.",
+            "afterText": "A muted text token and quiet surface keep Save readable and visibly disabled.",
+            "kind": "visual",
+            "context": "Mobile form actions also use 44px targets. This changes presentation only; validation and disabled behavior are preserved.",
+            "variants": {
+                "mobile": {
+                    "before": {
+                        "file": "screenshots/before-mobile-editor.webp",
+                        "width": 780,
+                        "height": 1688,
+                        "crop": [34, 510, 712, 700]
+                    },
+                    "after": {
+                        "file": "screenshots/after-mobile-editor.webp",
+                        "width": 780,
+                        "height": 1688,
+                        "crop": [34, 510, 712, 700]
+                    }
+                }
+            }
+        },
+        {
+            "id": "settings-placeholder-contrast",
+            "group": "Settings",
+            "title": "Theme-aware search placeholder",
+            "reason": "Keep the search hint legible in dark mode.",
+            "beforeText": "The placeholder uses the browser default gray.",
+            "afterText": "The placeholder uses the existing secondary text token at full opacity.",
+            "kind": "visual",
+            "context": "The Before capture was taken after the section chooser was implemented, before this final placeholder adjustment.",
+            "variants": {
+                "mobile": {
+                    "before": {
+                        "file": "screenshots/after-mobile-appearance-dark-initial.webp",
+                        "width": 780,
+                        "height": 1688,
+                        "crop": [30, 130, 720, 120]
+                    },
+                    "after": {
+                        "file": "screenshots/after-mobile-appearance-dark.webp",
+                        "width": 780,
+                        "height": 1688,
+                        "crop": [30, 130, 720, 120]
+                    }
+                }
+            }
+        }
+    ],
+    "verification": {
+        "scope": "Local guest mode. Signed-in account and wallpaper flows were not exercised.",
+        "checks": [
+            "ESLint passed",
+            "80 tests passed",
+            "Production build and TypeScript passed",
+            "All five mobile categories and return paths",
+            "Settings entry opens categories",
+            "Browser Back/Forward and direct category routes",
+            "Search result focuses its matching setting",
+            "Bookmark search query survives a trip to categories",
+            "Escape returns from detail to categories",
+            "Desktop sidebar remains available",
+            "390x844 and 320x568 mobile layouts",
+            "English and Traditional Chinese, light and dark themes"
+        ],
+        "decisionSource": "decisions.json",
+        "applicationRecord": "applied-decisions.json"
+    }
+}
