@@ -43,6 +43,11 @@
             var(--theme-primary-lightness) /
             0.3
     );
+    --clr-home-control: hsl(
+        var(--theme-primary-hue)
+        var(--theme-primary-saturation)
+        calc(var(--theme-primary-lightness) - 4%) / 0.88
+    );
     --clr-secondary: hsl(
         var(--theme-secondary-hue),
         var(--theme-secondary-saturation),
@@ -73,12 +78,12 @@
     --clr-sky-4: hsl(var(--theme-sky-hue-4), 38%, 94%);
 
     --clr-search-button: hsl(var(--theme-search-hue), 47%, 64%);
-    --clr-search-button-light: hsl(var(--theme-search-hue), 47%, 80%);
+    --clr-search-button-light: hsl(var(--theme-search-hue), 47%, 77%);
     --clr-search-field-bg: var(--clr-search-button-light);
     --clr-search-field-bg-active: var(--clr-neutral-light);
     --clr-search-field-text: var(--clr-text);
     --clr-search-field-placeholder: var(--clr-text);
-    --clr-search-icon: var(--clr-neutral);
+    --clr-search-icon: var(--clr-on-dark);
     --clr-search-icon-active: var(--clr-disabled);
     --clr-search-suggestion-bg: var(--clr-search-field-bg-active);
     --clr-search-suggestion-bg-active: var(--clr-search-field-bg-active);

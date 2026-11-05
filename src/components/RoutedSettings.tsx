@@ -32,7 +32,9 @@ export const RoutedSettings: React.FC<{
     const props = {
         bookmarkControls,
         initialPreferences,
-        isOpen: getSettingsSection(pathname) !== undefined,
+        isOpen:
+            pathname === '/settings' ||
+            getSettingsSection(pathname) !== undefined,
         isTriggerHidden: true,
         onOpenChange,
     };

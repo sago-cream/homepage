@@ -124,7 +124,7 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                                 {showSettingsInMenu ? (
                                     <Link
                                         className='user-menu-action'
-                                        href='/settings/bookmarks'
+                                        href='/settings'
                                         role='menuitem'
                                         onClick={() => {
                                             setIsMenuOpen(false);
@@ -155,7 +155,7 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                                 {showSettingsInMenu ? (
                                     <Link
                                         className='user-menu-action'
-                                        href='/settings/bookmarks'
+                                        href='/settings'
                                         role='menuitem'
                                         onClick={() => {
                                             setIsMenuOpen(false);
@@ -189,7 +189,7 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                 <div className='settings-control above'>
                     <Link
                         className='settings-trigger'
-                        href='/settings/bookmarks'
+                        href='/settings'
                         aria-label={t.settings}
                     >
                         <SettingsIcon className='icon' size={20} />
@@ -267,7 +267,7 @@ const UserFloatingBarFallback: React.FC<CloseableMenuProps> = ({
                         {showSettingsInMenu ? (
                             <Link
                                 className='user-menu-action'
-                                href='/settings/bookmarks'
+                                href='/settings'
                                 role='menuitem'
                                 onClick={() => {
                                     setIsMenuOpen(false);
@@ -284,7 +284,7 @@ const UserFloatingBarFallback: React.FC<CloseableMenuProps> = ({
                 <div className='settings-control above'>
                     <Link
                         className='settings-trigger'
-                        href='/settings/bookmarks'
+                        href='/settings'
                         aria-label={t.settings}
                     >
                         <SettingsIcon className='icon' size={20} />

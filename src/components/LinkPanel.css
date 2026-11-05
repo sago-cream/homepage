@@ -158,7 +158,7 @@
         min-height: 2.75rem;
         border-radius: 50%;
         background: transparent;
-        color: var(--clr-neutral);
+        color: var(--clr-home-control);
         cursor: pointer;
         z-index: 18;
 

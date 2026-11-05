@@ -18,6 +18,7 @@ export type AppLocale = (typeof localeOptions)[number]['value'];
 const messages = {
     'en': {
         backToHomepage: 'Back to homepage',
+        backToSettings: 'Back to settings',
         searchSettings: 'Search settings',
         clearSearch: 'Clear search',
         noMatchingSettings: 'No matching settings',
@@ -172,6 +173,7 @@ const messages = {
     },
     'zh-TW': {
         backToHomepage: '返回首頁',
+        backToSettings: '返回設定',
         searchSettings: '搜尋設定',
         clearSearch: '清除搜尋',
         noMatchingSettings: '沒有符合的設定',
