@@ -73,7 +73,7 @@ export const KeybindSettingsSection = ({
                 save([...keybinds, { id, target: '', key: '' }]);
             }}
         >
-            <Plus size={18} aria-hidden />
+            <Plus aria-hidden />
             {t.addKeybind}
         </button>
     );
@@ -236,7 +236,7 @@ export const KeybindSettingsSection = ({
                                     });
                                 }}
                             >
-                                <Trash2 size={18} aria-hidden />
+                                <Trash2 aria-hidden />
                             </button>
                         </div>
                     );

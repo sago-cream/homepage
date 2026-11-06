@@ -82,7 +82,7 @@ export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
                         }}
                     >
                         <span className='search-suggestion-icon'>
-                            <Rss className='icon' size={24} />
+                            <Rss className='icon' />
                         </span>
                         <span className='search-suggestion-text'>
                             {command.label}
@@ -119,7 +119,7 @@ export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
                         }}
                     >
                         <span className='search-suggestion-icon'>
-                            <Bookmark className='icon' size={24} />
+                            <Bookmark className='icon' />
                         </span>
                         <span className='search-suggestion-text'>
                             {result.pathLabel === ''
@@ -149,7 +149,7 @@ export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
                     onClick={onSearchGoogle}
                 >
                     <span className='search-suggestion-icon'>
-                        <Search className='icon' size={24} />
+                        <Search className='icon' />
                     </span>
                     <span className='search-suggestion-text'>
                         {trimmedSearchValue}

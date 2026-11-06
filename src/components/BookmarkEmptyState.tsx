@@ -65,7 +65,7 @@ export const BookmarkEmptyState: React.FC<BookmarkEmptyStateProps> = ({
                     fileInputRef.current?.click();
                 }}
             >
-                <Upload className='icon' size={18} />
+                <Upload className='icon' />
                 <span>{ctaLabel}</span>
             </button>
             {statusMessage === undefined ? undefined : (

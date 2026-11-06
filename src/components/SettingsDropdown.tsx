@@ -200,11 +200,7 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                 <span className='settings-select-value' id={`${id}-value`}>
                     {selectedOption.label}
                 </span>
-                <ChevronDown
-                    className='settings-select-chevron'
-                    size={16}
-                    aria-hidden
-                />
+                <ChevronDown className='settings-select-chevron' aria-hidden />
             </button>
             {isOpen ? (
                 <FloatingPortal
@@ -319,7 +315,6 @@ export const SettingsDropdown: React.FC<SettingsDropdownProps> = ({
                                             {isSelected ? (
                                                 <Check
                                                     className='settings-dropdown-check'
-                                                    size={16}
                                                     aria-hidden
                                                 />
                                             ) : undefined}

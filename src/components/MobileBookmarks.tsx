@@ -102,7 +102,6 @@ export const MobileBookmarks: React.FC<MobileBookmarksProps> = ({
                     </span>
                     <ChevronRight
                         className='icon mobile-bookmark-chevron'
-                        size={18}
                         aria-hidden
                     />
                 </button>
@@ -135,7 +134,6 @@ export const MobileBookmarks: React.FC<MobileBookmarksProps> = ({
                         </span>
                         <ChevronRight
                             className='icon mobile-bookmark-chevron'
-                            size={18}
                             aria-hidden
                         />
                     </button>
@@ -170,7 +168,7 @@ export const MobileBookmarks: React.FC<MobileBookmarksProps> = ({
                     setPanelOpen(true);
                 }}
             >
-                <Bookmark className='icon' size={24} />
+                <Bookmark className='icon' />
             </button>
             <div
                 className={`mobile-bookmark-page ${isOpen ? 'open' : ''}`}
@@ -208,7 +206,7 @@ export const MobileBookmarks: React.FC<MobileBookmarksProps> = ({
                         aria-label={isRootFrame ? 'Close bookmarks' : 'Back'}
                         onClick={goBack}
                     >
-                        <ChevronLeft className='icon' size={24} />
+                        <ChevronLeft className='icon' />
                     </button>
                     <span>{headerTitle}</span>
                 </div>

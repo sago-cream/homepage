@@ -401,3 +401,12 @@
         padding-right: 1rem;
     }
 }
+
+.search-icon .icon {
+    --icon-size: var(--icon-prominent);
+}
+
+.search-suggestion-icon .icon,
+.feeds-fallback-close svg {
+    --icon-size: var(--icon-control);
+}

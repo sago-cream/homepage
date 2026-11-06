@@ -150,13 +150,13 @@ const applyThemeMode = (themeMode: ThemeMode) => {
 
 const getThemeModeIcon = (themeMode: ThemeMode) => {
     if (themeMode === 'system') {
-        return <Monitor className='icon' size={20} />;
+        return <Monitor className='icon' />;
     }
 
     return themeMode === 'dark' ? (
-        <Moon className='icon' size={20} />
+        <Moon className='icon' />
     ) : (
-        <Sun className='icon' size={20} />
+        <Sun className='icon' />
     );
 };
 
@@ -685,7 +685,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                       aria-label={t.backToSettings}
                                       onClick={requestSettingsCategories}
                                   >
-                                      <ArrowLeft size={18} aria-hidden />
+                                      <ArrowLeft aria-hidden />
                                       <span>{t.settings}</span>
                                   </button>
                                   <button
@@ -694,7 +694,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                       aria-label={t.backToHomepage}
                                       onClick={requestSettingsClose}
                                   >
-                                      <X size={20} aria-hidden />
+                                      <X aria-hidden />
                                   </button>
                               </header>
                               <aside className='settings-page-sidebar'>
@@ -705,7 +705,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                       ref={closeButtonRef}
                                       onClick={requestSettingsClose}
                                   >
-                                      <ArrowLeft size={18} aria-hidden />
+                                      <ArrowLeft aria-hidden />
                                       <span>{t.backToHomepage}</span>
                                   </button>
                                   <form
@@ -719,7 +719,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                           }
                                       }}
                                   >
-                                      <Search size={18} aria-hidden />
+                                      <Search aria-hidden />
                                       <input
                                           type='search'
                                           ref={settingsSearchRef}
@@ -751,7 +751,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                   settingsSearchRef.current?.focus();
                                               }}
                                           >
-                                              <X size={16} aria-hidden />
+                                              <X aria-hidden />
                                           </button>
                                       )}
                                   </form>
@@ -830,7 +830,6 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                     >
                                                         <Icon
                                                             className='icon'
-                                                            size={18}
                                                             aria-hidden
                                                         />
                                                         <span>
@@ -838,7 +837,6 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                         </span>
                                                         <ChevronRight
                                                             className='settings-section-chevron'
-                                                            size={18}
                                                             aria-hidden
                                                         />
                                                     </Link>
@@ -1081,10 +1079,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                           wallpaperInputRef.current?.click();
                                                       }}
                                                   >
-                                                      <Upload
-                                                          className='icon'
-                                                          size={16}
-                                                      />
+                                                      <Upload className='icon' />
                                                       <span>
                                                           {wallpaperControls.isAvailable
                                                               ? t.uploadWallpaper
@@ -1111,10 +1106,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                                   );
                                                           }}
                                                       >
-                                                          <Trash2
-                                                              className='icon'
-                                                              size={16}
-                                                          />
+                                                          <Trash2 className='icon' />
                                                       </button>
                                                   )}
                                               </div>
@@ -1363,14 +1355,8 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                     }}
                 >
                     <span className='settings-trigger-icons' aria-hidden>
-                        <Settings
-                            className='settings-trigger-icon settings-trigger-icon-settings'
-                            size={20}
-                        />
-                        <X
-                            className='settings-trigger-icon settings-trigger-icon-close'
-                            size={20}
-                        />
+                        <Settings className='settings-trigger-icon settings-trigger-icon-settings' />
+                        <X className='settings-trigger-icon settings-trigger-icon-close' />
                     </span>
                 </button>
             )}
