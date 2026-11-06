@@ -64,7 +64,7 @@ const SignInDialog: React.FC<{
                         aria-label='Close sign-in'
                         onClick={close}
                     >
-                        <X className='icon' size={20} />
+                        <X className='icon' />
                     </button>
                 </div>
                 <button

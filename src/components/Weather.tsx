@@ -20,12 +20,12 @@ import type { AqiData, WeatherData } from '@/types/environment';
 import type { InitialAppPreferences } from '@/types/preferences';
 
 const weatherIcons = {
-    Thunderstorm: <CloudLightning size={20} />,
-    Drizzle: <CloudDrizzle size={20} />,
-    Rain: <CloudRain size={20} />,
-    Snow: <CloudSnow size={20} />,
-    Clear: <Sun size={20} />,
-    Clouds: <Cloud size={20} />,
+    Thunderstorm: <CloudLightning />,
+    Drizzle: <CloudDrizzle />,
+    Rain: <CloudRain />,
+    Snow: <CloudSnow />,
+    Clear: <Sun />,
+    Clouds: <Cloud />,
 };
 const locationGrantFeedbackDuration = 1600;
 
@@ -171,14 +171,8 @@ export const Weather: React.FC<WeatherProps> = ({
                     }}
                 >
                     <span className='weather-location-sync-icons' aria-hidden>
-                        <MapPinOff
-                            className='weather-location-sync-icon weather-location-sync-icon-off'
-                            size={20}
-                        />
-                        <MapPinCheck
-                            className='weather-location-sync-icon weather-location-sync-icon-granted'
-                            size={20}
-                        />
+                        <MapPinOff className='weather-location-sync-icon weather-location-sync-icon-off' />
+                        <MapPinCheck className='weather-location-sync-icon weather-location-sync-icon-granted' />
                     </span>
                 </button>
             )}

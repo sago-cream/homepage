@@ -299,9 +299,9 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                             onClick={onToggleLockedOpen}
                         >
                             {isLockedOpen ? (
-                                <PanelLeftClose className='icon' size={20} />
+                                <PanelLeftClose className='icon' />
                             ) : (
-                                <PanelLeft className='icon' size={20} />
+                                <PanelLeft className='icon' />
                             )}
                         </button>
                         {!isLockedOpen &&
@@ -325,12 +325,10 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                                 >
                                     <Sun
                                         className='icon theme-icon-light'
-                                        size={20}
                                         aria-hidden
                                     />
                                     <Moon
                                         className='icon theme-icon-dark'
-                                        size={20}
                                         aria-hidden
                                     />
                                 </button>

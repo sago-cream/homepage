@@ -106,7 +106,7 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                         user.user_metadata.avatar_url !== '' ? (
                             <img src={user.user_metadata.avatar_url} alt='' />
                         ) : (
-                            <UserRound className='icon' size={20} />
+                            <UserRound className='icon' />
                         )}
                     </span>
                     <span className='user-card-name'>{profileLabel}</span>
@@ -116,7 +116,7 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                         {isSignedIn ? (
                             <>
                                 <div className='user-menu-email'>
-                                    <Mail className='icon' size={16} />
+                                    <Mail className='icon' />
                                     <span>
                                         {emailAddress ?? 'No email address'}
                                     </span>
@@ -130,10 +130,7 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                                             setIsMenuOpen(false);
                                         }}
                                     >
-                                        <SettingsIcon
-                                            className='icon'
-                                            size={16}
-                                        />
+                                        <SettingsIcon className='icon' />
                                         <span>{t.settings}</span>
                                     </Link>
                                 ) : undefined}
@@ -146,7 +143,7 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                                         signOut().catch(() => undefined);
                                     }}
                                 >
-                                    <LogOut className='icon' size={16} />
+                                    <LogOut className='icon' />
                                     <span>Log out</span>
                                 </button>
                             </>
@@ -161,10 +158,7 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                                             setIsMenuOpen(false);
                                         }}
                                     >
-                                        <SettingsIcon
-                                            className='icon'
-                                            size={16}
-                                        />
+                                        <SettingsIcon className='icon' />
                                         <span>{t.settings}</span>
                                     </Link>
                                 ) : undefined}
@@ -177,7 +171,7 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                                         openSignIn();
                                     }}
                                 >
-                                    <LogIn className='icon' size={16} />
+                                    <LogIn className='icon' />
                                     <span>Sign in</span>
                                 </button>
                             </>
@@ -192,7 +186,7 @@ const UserFloatingBarContent: React.FC<CloseableMenuProps> = ({
                         href='/settings'
                         aria-label={t.settings}
                     >
-                        <SettingsIcon className='icon' size={20} />
+                        <SettingsIcon className='icon' />
                     </Link>
                 </div>
             )}
@@ -254,14 +248,14 @@ const UserFloatingBarFallback: React.FC<CloseableMenuProps> = ({
                     }}
                 >
                     <span className='user-avatar' aria-hidden>
-                        <UserRound className='icon' size={20} />
+                        <UserRound className='icon' />
                     </span>
                     <span className='user-card-name'>Guest</span>
                 </button>
                 {isMenuOpen ? (
                     <div className='user-menu' role='menu'>
                         <div className='user-menu-email'>
-                            <Mail className='icon' size={16} />
+                            <Mail className='icon' />
                             <span>Supabase is not configured</span>
                         </div>
                         {showSettingsInMenu ? (
@@ -273,7 +267,7 @@ const UserFloatingBarFallback: React.FC<CloseableMenuProps> = ({
                                     setIsMenuOpen(false);
                                 }}
                             >
-                                <SettingsIcon className='icon' size={16} />
+                                <SettingsIcon className='icon' />
                                 <span>{t.settings}</span>
                             </Link>
                         ) : undefined}
@@ -287,7 +281,7 @@ const UserFloatingBarFallback: React.FC<CloseableMenuProps> = ({
                         href='/settings'
                         aria-label={t.settings}
                     >
-                        <SettingsIcon className='icon' size={20} />
+                        <SettingsIcon className='icon' />
                     </Link>
                 </div>
             )}

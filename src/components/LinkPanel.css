@@ -283,8 +283,7 @@
         font: var(--fontBoldMd);
 
         .icon {
-            width: 1.25rem;
-            height: 1.25rem;
+            --icon-size: var(--icon-control);
         }
     }
 
@@ -316,9 +315,11 @@
         gap: 0.75rem;
 
         > .icon {
-            flex: 0 0 auto;
-            width: var(--font-size);
-            height: var(--font-size);
+            --icon-size: var(--icon-control);
+        }
+
+        > .mobile-bookmark-chevron {
+            --icon-size: var(--icon-inline);
         }
 
         &:active {
@@ -431,14 +432,13 @@
 
     .bookmark-folder-icon {
         position: relative;
-        width: var(--font-size);
-        height: var(--font-size);
+        width: var(--icon-control);
+        height: var(--icon-control);
         color: var(--clr-neutral);
         flex: 0 0 auto;
 
         > svg {
-            width: 100%;
-            height: 100%;
+            --icon-size: var(--icon-control);
         }
     }
 
@@ -540,8 +540,7 @@
 
         .bookmark-link-icon {
             flex: 0 0 auto;
-            width: var(--font-size);
-            height: var(--font-size);
+            --icon-size: var(--icon-control);
         }
 
         span {
@@ -793,4 +792,9 @@
     .bookmark-folder-trigger::before {
         transition: none;
     }
+}
+
+.mobile-bookmark-button svg,
+.mobile-bookmark-back svg {
+    --icon-size: var(--icon-control);
 }

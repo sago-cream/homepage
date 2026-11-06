@@ -118,8 +118,8 @@
 }
 
 .weather-location-sync-icons {
-    width: 1.25rem;
-    height: 1.25rem;
+    width: var(--icon-control);
+    height: var(--icon-control);
     display: grid;
     place-items: center;
 }
@@ -151,4 +151,9 @@
     to {
         rotate: 1turn;
     }
+}
+
+.weather-info > svg,
+.weather-location-sync-icon {
+    --icon-size: var(--icon-control);
 }

@@ -61,7 +61,7 @@ export const SettingsSearchOptions = ({
     return (
         <>
             <div className='settings-dropdown-search'>
-                <Search size={20} aria-hidden />
+                <Search aria-hidden />
                 <input
                     ref={inputRef}
                     type='text'
@@ -113,7 +113,7 @@ export const SettingsSearchOptions = ({
                             inputRef.current?.focus();
                         }}
                     >
-                        <X size={20} aria-hidden />
+                        <X aria-hidden />
                     </button>
                 )}
             </div>
@@ -145,9 +145,7 @@ export const SettingsSearchOptions = ({
                         <span className='settings-option-label'>
                             {option.label}
                         </span>
-                        {option.value === value && (
-                            <Check size={16} aria-hidden />
-                        )}
+                        {option.value === value && <Check aria-hidden />}
                     </button>
                 ))}
                 {results.length === 0 && (

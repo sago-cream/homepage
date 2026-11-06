@@ -1,0 +1,15 @@
+:root {
+    --icon-inline: 1rem;
+    --icon-control: 1.25rem;
+    --icon-prominent: 1.5rem;
+    --icon-illustration: 2rem;
+}
+
+/* Context selectors choose a role; every glyph owns its resolved size. */
+.lucide {
+    --icon-size: var(--icon-inline);
+
+    width: var(--icon-size);
+    height: var(--icon-size);
+    flex-shrink: 0;
+}

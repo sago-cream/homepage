@@ -147,7 +147,7 @@ const CoverContent: React.FC<CoverContentProps> = ({
                         onClick={focusSearchInput}
                     >
                         <div className='search-icon'>
-                            <Search className='icon' size={24} />
+                            <Search className='icon' />
                         </div>
                         <input
                             className='search-input'
@@ -200,7 +200,7 @@ const CoverContent: React.FC<CoverContentProps> = ({
                             aria-label='Dismiss'
                             onClick={clearBlockedFeedsLinks}
                         >
-                            <X className='icon' size={20} />
+                            <X className='icon' />
                         </button>
                     </div>
                     <div className='feeds-fallback-links'>
