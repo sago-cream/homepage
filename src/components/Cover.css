@@ -402,11 +402,11 @@
     }
 }
 
-.search-icon .icon {
+.search-icon .icon,
+.search-suggestion-icon .icon {
     --icon-size: var(--icon-prominent);
 }
 
-.search-suggestion-icon .icon,
 .feeds-fallback-close svg {
     --icon-size: var(--icon-control);
 }
