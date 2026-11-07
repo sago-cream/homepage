@@ -70,13 +70,13 @@
 }
 
 .bookmark-empty-action {
-    min-height: 2.5rem;
+    min-height: 2.75rem;
     width: 100%;
     max-width: 100%;
     padding: 0.5rem 0.75rem;
     border-radius: 0.75rem;
-    background-color: var(--clr-text-alpha-2);
-    color: var(--clr-primary);
+    background-color: var(--clr-action);
+    color: var(--clr-neutral-light);
     cursor: pointer;
     font: var(--fontBoldSm);
     transition:
@@ -91,9 +91,10 @@
 
     &:hover,
     &:focus-visible {
-        background-color: var(--clr-primary-alpha-2);
-        color: var(--clr-primary);
-        outline: none;
+        background-color: var(--clr-neutral);
+        color: var(--clr-neutral-light);
+        outline: 2px solid var(--clr-action);
+        outline-offset: 2px;
     }
 
     &:active {
@@ -232,7 +233,7 @@
         height: 2.75rem;
         border-radius: 50%;
         background-color: var(--clr-text-alpha-2);
-        color: var(--clr-primary);
+        color: var(--clr-action);
         cursor: pointer;
         transition:
             background-color var(--motion-duration-fast) var(--motion-ease-out),
@@ -392,6 +393,10 @@
 .link-tree.expanded,
 .link-tree.focus-within {
     translate: 0;
+}
+
+.link-panel.search-nav .link-tree {
+    opacity: 0;
 }
 
 .bookmark-folder-trigger {
