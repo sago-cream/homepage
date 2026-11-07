@@ -1,4 +1,5 @@
 import { getKeyboardKey, getLatinKeySequenceAlias } from '@/utils/keyboard';
+import type { LinkItem, SlashCommandItem } from '@/utils/search';
 
 export interface Keybind {
     id: string;
@@ -78,4 +79,25 @@ export const getHotkey = (event: KeyboardEvent): string | undefined => {
     }
     const key = normalizeHotkey(getKeyboardKey(event));
     return key === '' ? undefined : key;
+};
+
+export const getAvailableKeybinds = (
+    keybinds: readonly Keybind[],
+    bookmarks: readonly LinkItem[],
+    commands: readonly SlashCommandItem[]
+): Array<Keybind & { label: string }> => {
+    const labels = new Map<string, string>([
+        ...bookmarks.map(
+            (bookmark) => [`bookmark:${bookmark.id}`, bookmark.title] as const
+        ),
+        ...commands.map(
+            (command) => [`command:${command.command}`, command.label] as const
+        ),
+    ]);
+    return keybinds.flatMap((binding) => {
+        const label = labels.get(binding.target);
+        return binding.key && label !== undefined
+            ? [{ ...binding, label }]
+            : [];
+    });
 };

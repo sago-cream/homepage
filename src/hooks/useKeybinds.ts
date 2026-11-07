@@ -24,6 +24,31 @@ const getSnapshot = () => {
 };
 const getServerSnapshot = () => undefined;
 
+export const hotkeyVisibilityStorageKey = 'homepage.showHotkeys';
+const getVisibilitySnapshot = () => {
+    try {
+        return (
+            globalThis.localStorage.getItem(hotkeyVisibilityStorageKey) !==
+            'false'
+        );
+    } catch {
+        return true;
+    }
+};
+const getServerVisibilitySnapshot = () => true;
+const saveShowHotkeys = (show: boolean): boolean => {
+    try {
+        globalThis.localStorage.setItem(
+            hotkeyVisibilityStorageKey,
+            String(show)
+        );
+        globalThis.dispatchEvent(new Event(keybindChangeEvent));
+        return true;
+    } catch {
+        return false;
+    }
+};
+
 const saveKeybinds = (next: readonly Keybind[]): boolean => {
     try {
         globalThis.localStorage.setItem(
@@ -40,6 +65,8 @@ const saveKeybinds = (next: readonly Keybind[]): boolean => {
 export const useKeybinds = (): {
     keybinds: Keybind[];
     saveKeybinds: (next: readonly Keybind[]) => boolean;
+    showHotkeys: boolean;
+    saveShowHotkeys: (show: boolean) => boolean;
 } => {
     const stored = useSyncExternalStore(
         subscribe,
@@ -47,5 +74,10 @@ export const useKeybinds = (): {
         getServerSnapshot
     );
     const keybinds = useMemo(() => parseKeybinds(stored), [stored]);
-    return { keybinds, saveKeybinds };
+    const showHotkeys = useSyncExternalStore(
+        subscribe,
+        getVisibilitySnapshot,
+        getServerVisibilitySnapshot
+    );
+    return { keybinds, saveKeybinds, showHotkeys, saveShowHotkeys };
 };

@@ -798,3 +798,60 @@
 .mobile-bookmark-back svg {
     --icon-size: var(--icon-control);
 }
+
+.ghost-sidebar {
+    position: absolute;
+    inset: 5rem auto 5rem 0;
+    width: var(--width);
+    overflow: hidden;
+    pointer-events: none;
+    user-select: none;
+    color: var(--clr-home-control);
+    visibility: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.ghost-sidebar[data-ready='true'] {
+    visibility: visible;
+}
+
+.ghost-sidebar[hidden],
+.link-panel:has(.link-tree:is(.expanded, .focus-within, :focus-within))
+    .ghost-sidebar {
+    display: none;
+}
+
+.ghost-sidebar ul {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.ghost-sidebar li {
+    height: var(--link-height);
+    padding-inline: var(--bookmark-folder-inline-padding);
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font: var(--fontBoldMd);
+}
+
+.ghost-sidebar kbd {
+    flex: 0 0 var(--icon-control);
+    text-align: center;
+    font: inherit;
+}
+
+.ghost-sidebar span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (width < 37.5rem) {
+    .ghost-sidebar {
+        display: none;
+    }
+}

@@ -5228,8 +5228,20 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-page .settings-keybind-row {
-    grid-template-columns: minmax(0, 1fr) 5rem 2.5rem;
+    grid-template-columns: 2.5rem minmax(0, 1fr) 5rem 2.5rem;
     gap: 0.75rem;
+}
+
+.settings-keybind-row[data-dragging='true'] {
+    position: relative;
+    z-index: 2;
+    background: var(--clr-panel-bg);
+    box-shadow: var(--shadow-panel-hover);
+}
+
+.settings-keybind-drag-handle {
+    align-self: end;
+    touch-action: none;
 }
 
 .settings-keybind-remove {
@@ -5255,8 +5267,31 @@ a.bookmark-workspace-tree-item {
 @media (max-width: 600px) {
     .settings-page .settings-keybind-row {
         padding: 1rem;
-        grid-template-columns: minmax(0, 1fr) 4rem 2.5rem;
+        grid-template-columns: 2.5rem minmax(0, 1fr) 4rem 2.5rem;
         gap: 0.5rem;
+    }
+}
+
+@media (width < 25rem) {
+    .settings-page .settings-keybind-row {
+        grid-template-columns: 2.5rem minmax(0, 1fr) 2.5rem;
+    }
+
+    .settings-keybind-action {
+        grid-column: 2 / -1;
+    }
+
+    .settings-keybind-drag-handle {
+        grid-row: 1 / 3;
+        align-self: center;
+    }
+
+    .settings-hotkey-field {
+        grid-column: 2;
+    }
+
+    .settings-hotkey-input {
+        width: 4rem;
     }
 }
 

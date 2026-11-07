@@ -1,6 +1,9 @@
-import type { ReactElement } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
-import { Keyboard, Plus, Trash2 } from 'lucide-react';
+import { DragDropProvider } from '@dnd-kit/react';
+import type { DragEndEvent } from '@dnd-kit/react';
+import { isSortable, useSortable } from '@dnd-kit/react/sortable';
+import { GripVertical, Keyboard, Plus, Trash2 } from 'lucide-react';
 
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useKeybinds } from '@/hooks/useKeybinds';
@@ -10,6 +13,42 @@ import type { Keybind } from '@/utils/keybinds';
 import { getKeyboardKey } from '@/utils/keyboard';
 import { getSearchItems, getSlashCommandResults } from '@/utils/search';
 import { SettingsDropdown } from './SettingsDropdown';
+
+const SortableKeybindRow = ({
+    id,
+    index,
+    children,
+}: {
+    id: string;
+    index: number;
+    children: ReactNode;
+}): ReactElement => {
+    const { t } = useLocale();
+    const sortable = useSortable({
+        accept: 'settings-keybind',
+        group: 'settings-keybinds',
+        id,
+        index,
+        type: 'settings-keybind',
+    });
+    return (
+        <div
+            ref={sortable.ref}
+            className='settings-row settings-keybind-row'
+            data-dragging={sortable.isDragSource ? 'true' : undefined}
+        >
+            <button
+                ref={sortable.handleRef}
+                className='settings-feed-drag-handle settings-keybind-drag-handle'
+                type='button'
+                aria-label={`${t.dragKeybind} ${index + 1}`}
+            >
+                <GripVertical aria-hidden />
+            </button>
+            {children}
+        </div>
+    );
+};
 
 export const KeybindSettingsSection = ({
     bookmarkControls,
@@ -21,7 +60,8 @@ export const KeybindSettingsSection = ({
     onOpenDropdownChange: (id: string | undefined) => void;
 }): ReactElement => {
     const { t } = useLocale();
-    const { keybinds, saveKeybinds } = useKeybinds();
+    const { keybinds, saveKeybinds, showHotkeys, saveShowHotkeys } =
+        useKeybinds();
     const addButtonRef = useRef<HTMLButtonElement>(null);
     const pendingKeybindRef = useRef<string | undefined>(undefined);
     useEffect(() => {
@@ -40,6 +80,21 @@ export const KeybindSettingsSection = ({
         setError(
             saveKeybinds(next) ? undefined : { message: t.keybindSaveFailed }
         );
+    };
+    const handleDragEnd = (event: DragEndEvent) => {
+        const { source } = event.operation;
+        if (
+            event.canceled ||
+            source === null ||
+            !isSortable(source) ||
+            source.initialIndex === source.index
+        ) {
+            return;
+        }
+        const next = [...keybinds];
+        const [binding] = next.splice(source.initialIndex, 1);
+        next.splice(source.index, 0, binding);
+        save(next);
     };
     const update = (id: string, change: Partial<Keybind>) => {
         save(
@@ -86,162 +141,198 @@ export const KeybindSettingsSection = ({
             <div className='settings-section-heading'>
                 <h2>{t.keybinds}</h2>
             </div>
-            <div
-                className={
-                    keybinds.length === 0
-                        ? 'settings-keybind-empty'
-                        : 'settings-card'
-                }
-            >
-                {keybinds.length === 0 ? (
-                    <>
-                        <Keyboard aria-hidden />
-                        <p className='settings-row-description'>
-                            {t.keybindsEmpty}
-                        </p>
-                        {addButton}
-                    </>
-                ) : undefined}
-                {keybinds.map((binding, index) => {
-                    const missingBookmark =
-                        binding.target.startsWith('bookmark:') &&
-                        !bookmarks.some(
-                            (bookmark) =>
-                                `bookmark:${bookmark.id}` === binding.target
-                        );
-                    return (
-                        <div
-                            className='settings-row settings-keybind-row'
-                            key={binding.id}
-                        >
-                            <div className='settings-keybind-action'>
-                                <span
-                                    className='settings-row-label'
-                                    id={`keybind-action-${binding.id}-label`}
-                                >
-                                    {t.keybindAction} {index + 1}
-                                </span>
-                                <SettingsDropdown
-                                    searchLabel={t.keybindSearchAction}
-                                    id={`keybind-action-${binding.id}`}
-                                    labelledBy={`keybind-action-${binding.id}-label`}
-                                    value={binding.target}
-                                    options={[
-                                        {
-                                            value: '',
-                                            label: t.keybindSelectAction,
-                                        },
-                                        ...commands.map((command) => ({
-                                            value: `command:${command.command}`,
-                                            label: command.label,
-                                        })),
-                                        ...bookmarks.map((bookmark) => ({
-                                            value: `bookmark:${bookmark.id}`,
-                                            label: `${bookmark.title} — ${bookmark.pathLabel}`,
-                                            searchText: `${bookmark.title} ${bookmark.url} ${bookmark.pathLabel}`,
-                                        })),
-                                        ...(missingBookmark
-                                            ? [
-                                                  {
-                                                      value: binding.target,
-                                                      label: t.keybindBookmarkUnavailable,
-                                                      disabled: true,
-                                                  },
-                                              ]
-                                            : []),
-                                    ]}
-                                    isOpen={openDropdownId === binding.id}
-                                    onOpenChange={(isOpen) => {
-                                        onOpenDropdownChange(
-                                            isOpen ? binding.id : undefined
-                                        );
-                                    }}
-                                    onChange={(target) => {
-                                        update(binding.id, { target });
-                                    }}
-                                />
-                            </div>
-                            <label className='settings-hotkey-field'>
-                                <span className='settings-row-label'>
-                                    {t.hotkey}
-                                </span>
-                                <input
-                                    className='settings-select settings-hotkey-input'
-                                    type='text'
-                                    value={binding.key.toUpperCase()}
-                                    maxLength={1}
-                                    autoComplete='off'
-                                    autoCapitalize='off'
-                                    spellCheck={false}
-                                    placeholder='A–Z'
-                                    aria-invalid={error?.id === binding.id}
-                                    aria-describedby={
-                                        error?.id === binding.id
-                                            ? 'keybind-error'
-                                            : undefined
-                                    }
-                                    onFocus={(event) => {
-                                        event.currentTarget.select();
-                                    }}
-                                    onKeyDown={(event) => {
-                                        const key = getKeyboardKey(event);
-                                        if (
-                                            !event.nativeEvent.isComposing &&
-                                            !event.ctrlKey &&
-                                            !event.metaKey &&
-                                            !event.altKey &&
-                                            key.length === 1
-                                        ) {
-                                            event.preventDefault();
-                                            setHotkey(binding.id, key);
-                                        }
-                                    }}
-                                    onPaste={(event) => {
-                                        event.preventDefault();
-                                        setHotkey(
-                                            binding.id,
-                                            event.clipboardData.getData('text')
-                                        );
-                                    }}
-                                    onChange={(event) => {
-                                        setHotkey(
-                                            binding.id,
-                                            event.target.value
-                                        );
-                                    }}
-                                />
-                            </label>
-                            <button
-                                className='bookmark-workspace-icon-button settings-keybind-remove'
-                                type='button'
-                                aria-label={`${t.removeKeybind} ${index + 1}`}
-                                onClick={() => {
-                                    onOpenDropdownChange(undefined);
-                                    const next =
-                                        keybinds.at(index + 1) ??
-                                        keybinds.at(index - 1);
-                                    save(
-                                        keybinds.filter(
-                                            (item) => item.id !== binding.id
-                                        )
-                                    );
-                                    requestAnimationFrame(() => {
-                                        const target =
-                                            next && next.id !== binding.id
-                                                ? document.querySelector<HTMLButtonElement>(
-                                                      `[id="keybind-action-${next.id}"]`
-                                                  )
-                                                : addButtonRef.current;
-                                        target?.focus();
-                                    });
-                                }}
-                            >
-                                <Trash2 aria-hidden />
-                            </button>
-                        </div>
-                    );
-                })}
+            <div className='settings-card'>
+                <div className='settings-row' data-setting='show-hotkeys'>
+                    <span className='settings-row-label'>
+                        {t.showHotkeysOnHomepage}
+                    </span>
+                    <button
+                        className='settings-animation-switch'
+                        type='button'
+                        role='switch'
+                        aria-checked={showHotkeys}
+                        aria-label={t.showHotkeysOnHomepage}
+                        onClick={() => {
+                            setError(
+                                saveShowHotkeys(!showHotkeys)
+                                    ? undefined
+                                    : { message: t.keybindSaveFailed }
+                            );
+                        }}
+                    >
+                        <span className='settings-switch-track' aria-hidden>
+                            <span className='settings-switch-thumb' />
+                        </span>
+                    </button>
+                </div>
             </div>
+            <DragDropProvider
+                onDragStart={() => {
+                    onOpenDropdownChange(undefined);
+                }}
+                onDragEnd={handleDragEnd}
+            >
+                <div
+                    className={
+                        keybinds.length === 0
+                            ? 'settings-keybind-empty'
+                            : 'settings-card'
+                    }
+                >
+                    {keybinds.length === 0 ? (
+                        <>
+                            <Keyboard aria-hidden />
+                            <p className='settings-row-description'>
+                                {t.keybindsEmpty}
+                            </p>
+                            {addButton}
+                        </>
+                    ) : undefined}
+                    {keybinds.map((binding, index) => {
+                        const missingBookmark =
+                            binding.target.startsWith('bookmark:') &&
+                            !bookmarks.some(
+                                (bookmark) =>
+                                    `bookmark:${bookmark.id}` === binding.target
+                            );
+                        return (
+                            <SortableKeybindRow
+                                key={binding.id}
+                                id={binding.id}
+                                index={index}
+                            >
+                                <div className='settings-keybind-action'>
+                                    <span
+                                        className='settings-row-label'
+                                        id={`keybind-action-${binding.id}-label`}
+                                    >
+                                        {t.keybindAction} {index + 1}
+                                    </span>
+                                    <SettingsDropdown
+                                        searchLabel={t.keybindSearchAction}
+                                        id={`keybind-action-${binding.id}`}
+                                        labelledBy={`keybind-action-${binding.id}-label`}
+                                        value={binding.target}
+                                        options={[
+                                            {
+                                                value: '',
+                                                label: t.keybindSelectAction,
+                                            },
+                                            ...commands.map((command) => ({
+                                                value: `command:${command.command}`,
+                                                label: command.label,
+                                            })),
+                                            ...bookmarks.map((bookmark) => ({
+                                                value: `bookmark:${bookmark.id}`,
+                                                label: `${bookmark.title} — ${bookmark.pathLabel}`,
+                                                searchText: `${bookmark.title} ${bookmark.url} ${bookmark.pathLabel}`,
+                                            })),
+                                            ...(missingBookmark
+                                                ? [
+                                                      {
+                                                          value: binding.target,
+                                                          label: t.keybindBookmarkUnavailable,
+                                                          disabled: true,
+                                                      },
+                                                  ]
+                                                : []),
+                                        ]}
+                                        isOpen={openDropdownId === binding.id}
+                                        onOpenChange={(isOpen) => {
+                                            onOpenDropdownChange(
+                                                isOpen ? binding.id : undefined
+                                            );
+                                        }}
+                                        onChange={(target) => {
+                                            update(binding.id, { target });
+                                        }}
+                                    />
+                                </div>
+                                <label className='settings-hotkey-field'>
+                                    <span className='settings-row-label'>
+                                        {t.hotkey}
+                                    </span>
+                                    <input
+                                        className='settings-select settings-hotkey-input'
+                                        type='text'
+                                        value={binding.key.toUpperCase()}
+                                        maxLength={1}
+                                        autoComplete='off'
+                                        autoCapitalize='off'
+                                        spellCheck={false}
+                                        placeholder='A–Z'
+                                        aria-invalid={error?.id === binding.id}
+                                        aria-describedby={
+                                            error?.id === binding.id
+                                                ? 'keybind-error'
+                                                : undefined
+                                        }
+                                        onFocus={(event) => {
+                                            event.currentTarget.select();
+                                        }}
+                                        onKeyDown={(event) => {
+                                            const key = getKeyboardKey(event);
+                                            if (
+                                                !event.nativeEvent
+                                                    .isComposing &&
+                                                !event.ctrlKey &&
+                                                !event.metaKey &&
+                                                !event.altKey &&
+                                                key.length === 1
+                                            ) {
+                                                event.preventDefault();
+                                                setHotkey(binding.id, key);
+                                            }
+                                        }}
+                                        onPaste={(event) => {
+                                            event.preventDefault();
+                                            setHotkey(
+                                                binding.id,
+                                                event.clipboardData.getData(
+                                                    'text'
+                                                )
+                                            );
+                                        }}
+                                        onChange={(event) => {
+                                            setHotkey(
+                                                binding.id,
+                                                event.target.value
+                                            );
+                                        }}
+                                    />
+                                </label>
+                                <button
+                                    className='bookmark-workspace-icon-button settings-keybind-remove'
+                                    type='button'
+                                    aria-label={`${t.removeKeybind} ${index + 1}`}
+                                    onClick={() => {
+                                        onOpenDropdownChange(undefined);
+                                        const next =
+                                            keybinds.at(index + 1) ??
+                                            keybinds.at(index - 1);
+                                        save(
+                                            keybinds.filter(
+                                                (item) => item.id !== binding.id
+                                            )
+                                        );
+                                        requestAnimationFrame(() => {
+                                            const target =
+                                                next && next.id !== binding.id
+                                                    ? document.querySelector<HTMLButtonElement>(
+                                                          `[id="keybind-action-${next.id}"]`
+                                                      )
+                                                    : addButtonRef.current;
+                                            target?.focus();
+                                        });
+                                    }}
+                                >
+                                    <Trash2 aria-hidden />
+                                </button>
+                            </SortableKeybindRow>
+                        );
+                    })}
+                </div>
+            </DragDropProvider>
             {error ? (
                 <p
                     id='keybind-error'

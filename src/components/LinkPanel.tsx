@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FloatingTree } from '@floating-ui/react';
 import { Moon, PanelLeft, PanelLeftClose, Sun } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useLinkNavigation } from '@/hooks/useLinkNavigation';
@@ -11,6 +12,7 @@ import { decorateBookmarkTree } from '@/utils/bookmarkPresentation';
 import { isBrowser } from '@/utils/browserEnv';
 import { runThemeTransition } from '@/utils/themeTransition';
 import { BookmarkEmptyState } from './BookmarkEmptyState';
+import { GhostSidebar } from './GhostSidebar';
 import { BookmarkPanelLayersContext, LinkCategory } from './LinkCategory';
 import { MobileBookmarks } from './MobileBookmarks';
 import { UserFloatingBar } from './UserFloatingBar';
@@ -49,6 +51,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
     onClearSearch,
     onToggleLockedOpen,
 }) => {
+    const pathname = usePathname();
     const {
         selectedCategory,
         isMouseNav,
@@ -240,6 +243,18 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                     aria-hidden={hidden}
                     aria-expanded={isLockedOpen || isExpanded || isMobileOpen}
                 >
+                    <GhostSidebar
+                        bookmarkTree={bookmarkControls.bookmarkTree}
+                        visible={
+                            pathname === '/' &&
+                            !hidden &&
+                            !isLockedOpen &&
+                            !isExpanded &&
+                            !isMobileOpen &&
+                            !isMouseNav &&
+                            !isSearchNav
+                        }
+                    />
                     {showMenuAimDebug && (
                         <button
                             className='menu-aim-debug-toggle'

@@ -41,6 +41,13 @@ export const getSettingsSearchResults = (
             keywords: t.keybindSettingsKeywords,
         },
         {
+            id: 'show-hotkeys',
+            label: t.showHotkeysOnHomepage,
+            section: 'keybinds',
+            sectionLabel: t.keybinds,
+            keywords: t.keybindSettingsKeywords,
+        },
+        {
             id: 'theme',
             label: t.theme,
             section: 'appearance',
