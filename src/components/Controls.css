@@ -2,8 +2,8 @@
     display: flex;
     gap: 0.25rem;
     position: absolute;
-    top: 0.5rem;
-    left: 0.5rem;
+    top: var(--panel-control-inset);
+    left: var(--panel-control-inset);
     z-index: 21;
 }
 
@@ -1603,8 +1603,8 @@ a.bookmark-workspace-tree-item {
 }
 
 .panel-lock-trigger {
-    min-width: 2.5rem;
-    min-height: 2.5rem;
+    min-width: var(--panel-control-size);
+    min-height: var(--panel-control-size);
     padding: 0.5rem;
     border-radius: 50%;
     background-color: transparent;

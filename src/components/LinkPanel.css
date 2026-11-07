@@ -1,5 +1,7 @@
 .link-panel {
     --width: 15rem;
+    --panel-control-inset: 0.5rem;
+    --panel-control-size: 2.5rem;
     --indicator-gap: 0.5rem;
     --indicator-width: 2.5rem;
     --link-height: 3.5rem;
@@ -801,9 +803,8 @@
 
 .ghost-sidebar {
     position: absolute;
-    inset: 5rem auto 5rem 0;
-    width: var(--width);
-    overflow: hidden;
+    inset: 5rem auto 5rem var(--panel-control-inset);
+    width: calc(var(--width) - 2 * var(--panel-control-inset));
     pointer-events: none;
     user-select: none;
     color: var(--clr-home-control);
@@ -827,11 +828,15 @@
     padding: 0;
     margin: 0;
     list-style: none;
+    border-radius: var(--bookmark-panel-radius);
+    background-color: var(--clr-panel-bg);
+    box-shadow: var(--shadow-panel);
+    backdrop-filter: blur(0.75rem);
 }
 
 .ghost-sidebar li {
     height: var(--link-height);
-    padding-inline: var(--bookmark-folder-inline-padding);
+    padding-inline: calc((var(--panel-control-size) - var(--icon-control)) / 2);
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -840,7 +845,7 @@
 
 .ghost-sidebar kbd {
     flex: 0 0 var(--icon-control);
-    text-align: center;
+    text-align: left;
     font: inherit;
 }
 
