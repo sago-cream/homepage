@@ -939,10 +939,8 @@ a.bookmark-workspace-tree-item {
     max-width: 18rem;
 }
 
-.bookmark-workspace-empty > button:not(.bookmark-workspace-primary-button),
-.bookmark-workspace-empty
-    > div
-    > button:not(.bookmark-workspace-primary-button) {
+.bookmark-workspace-empty > button,
+.bookmark-workspace-empty > div > button {
     min-height: 2.5rem;
     padding: 0.5rem 0.75rem;
     border-radius: var(--bookmark-workspace-control-radius);
@@ -1621,7 +1619,7 @@ a.bookmark-workspace-tree-item {
 
     &[aria-pressed='true'],
     &:hover {
-        color: var(--clr-neutral);
+        color: var(--clr-primary);
     }
 
     &:active {
@@ -1705,7 +1703,7 @@ a.bookmark-workspace-tree-item {
     height: 2rem;
     border-radius: 50%;
     background-color: var(--clr-text-alpha-2);
-    color: var(--clr-action);
+    color: var(--clr-primary);
     overflow: hidden;
     flex: 0 0 auto;
 
@@ -2325,7 +2323,7 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-animation-switch[aria-checked='true'] .settings-switch-thumb {
-    background-color: var(--clr-on-dark);
+    background-color: var(--clr-text);
     translate: 1.5rem 0;
 }
 
@@ -3120,14 +3118,16 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-feed-bookmark-copy,
-.settings-feed-results button > span {
+.settings-feed-results button > span,
+.settings-feed-empty > span {
     min-width: 0;
     display: grid;
     gap: 0.25rem;
 }
 
 .settings-feed-bookmark-copy strong,
-.settings-feed-results strong {
+.settings-feed-results strong,
+.settings-feed-empty strong {
     overflow: hidden;
     color: var(--clr-text);
     font: var(--fontBoldSm);
@@ -3136,7 +3136,8 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-feed-bookmark-copy small,
-.settings-feed-results small {
+.settings-feed-results small,
+.settings-feed-empty small {
     overflow: hidden;
     color: var(--clr-text-alpha);
     font: var(--fontBaseSm);
@@ -3151,6 +3152,31 @@ a.bookmark-workspace-tree-item {
 
 .settings-feed-remove {
     background-color: transparent;
+}
+
+.settings-feed-empty {
+    min-height: 9rem;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    color: var(--clr-text-alpha);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    text-align: center;
+}
+
+.settings-feed-empty strong,
+.settings-feed-empty small {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+}
+
+.settings-feed-empty > svg {
+    --icon-size: var(--icon-control);
+    flex: 0 0 auto;
 }
 
 .settings-feed-search {
@@ -4853,7 +4879,7 @@ a.bookmark-workspace-tree-item {
     min-height: 100%;
 }
 .bookmark-settings .bookmark-workspace-tree:has(> .bookmark-workspace-empty) {
-    align-content: start;
+    align-content: safe center;
 }
 .bookmark-settings
     .bookmark-settings-browser[data-folder-open='false']:has(
@@ -5211,35 +5237,19 @@ a.bookmark-workspace-tree-item {
     width: 2.5rem;
 }
 
-/* Empty settings sections share one scale below their navigation or toolbar. */
-.settings-empty-state {
-    --bookmark-workspace-control-radius: 0.75rem;
-
-    width: 100%;
+.settings-keybind-empty {
+    display: grid;
+    justify-items: center;
+    align-content: center;
+    gap: 1rem;
     min-height: 16rem;
     padding: 2rem 1rem;
-    display: grid;
-    place-content: center;
-    justify-items: center;
-    gap: 0.75rem;
-    color: var(--clr-text-alpha);
     text-align: center;
 }
 
-.settings-empty-state > svg {
+.settings-keybind-empty > svg {
     --icon-size: var(--icon-illustration);
     color: var(--clr-primary);
-}
-
-.settings-empty-state > strong {
-    color: var(--clr-text);
-    font: var(--fontBoldMd);
-}
-
-.settings-empty-state > :is(p, span) {
-    max-width: 20rem;
-    font: var(--fontBaseSm);
-    text-wrap: pretty;
 }
 
 @media (max-width: 600px) {
