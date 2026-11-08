@@ -6,6 +6,7 @@ import { useBookmarks } from '@/hooks/useBookmarks';
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useBookmarkSearch } from '@/hooks/useBookmarkSearch';
 import { useHideLinks } from '@/hooks/useHideLinks';
+import { useLocale } from '@/hooks/useLocale';
 import { useTime } from '@/hooks/useTime';
 import type { AqiData, WeatherData } from '@/types/environment';
 import type { InitialAppPreferences } from '@/types/preferences';
@@ -69,6 +70,7 @@ const CoverContent: React.FC<CoverContentProps> = ({
     isSupabaseEnabled,
 }) => {
     const { time } = useTime();
+    const { t } = useLocale(initialPreferences.locale);
     const { hideLinks } = useHideLinks();
     const [isLinkPanelLocked, setIsLinkPanelLocked] = useState(false);
     const {
@@ -106,6 +108,16 @@ const CoverContent: React.FC<CoverContentProps> = ({
         bookmarkControls.bookmarkTree,
         bookmarkControls.isLoading
     );
+    let activeSuggestionId: string | undefined;
+    if (highlightedSearchResultIndex !== undefined) {
+        if (highlightedSearchResultIndex < slashCommandResults.length) {
+            activeSuggestionId = `${searchSuggestionsId}-command-${slashCommandResults[highlightedSearchResultIndex]?.command}`;
+        } else if (highlightedSearchResultIndex === googleSearchResultIndex) {
+            activeSuggestionId = `${searchSuggestionsId}-google`;
+        } else {
+            activeSuggestionId = `${searchSuggestionsId}-${highlightedSearchResultIndex - searchResultIndexOffset}`;
+        }
+    }
 
     return (
         <section className='cover'>
@@ -153,6 +165,13 @@ const CoverContent: React.FC<CoverContentProps> = ({
                             className='search-input'
                             type='text'
                             placeholder='Search...'
+                            role='combobox'
+                            aria-label={t.searchBookmarksOrGoogle}
+                            aria-activedescendant={
+                                hasSearchSuggestions
+                                    ? activeSuggestionId
+                                    : undefined
+                            }
                             autoComplete='off'
                             value={searchInputValue}
                             ref={inputRef}

@@ -262,7 +262,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                             <BookmarkEmptyState
                                 bookmarkControls={bookmarkControls}
                                 className='mobile-bookmark-empty-state'
-                                ctaLabel={t.importBookmarksFromBrowser}
+                                ctaLabel={t.importBookmarks}
                                 description={t.bookmarksEmptyDescription}
                                 statusMessage={bookmarkStatusMessage}
                                 statusType={bookmarkControls.status?.type}
@@ -338,6 +338,8 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                         <div
                             ref={attachLayerRoot}
                             data-menu-level
+                            inert={isSearchNav}
+                            aria-hidden={isSearchNav}
                             className={[
                                 'link-tree',
                                 (isExpanded || isLockedOpen) && 'expanded',
@@ -350,7 +352,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                                 <BookmarkEmptyState
                                     bookmarkControls={bookmarkControls}
                                     className='bookmark-panel-empty-state'
-                                    ctaLabel={t.importBookmarksFromBrowser}
+                                    ctaLabel={t.importBookmarks}
                                     description={t.bookmarksEmptyDescription}
                                     statusMessage={bookmarkStatusMessage}
                                     statusType={bookmarkControls.status?.type}

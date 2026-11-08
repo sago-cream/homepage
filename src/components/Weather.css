@@ -6,8 +6,7 @@
     flex-wrap: nowrap;
     font: var(--fontBaseLg);
 
-    color: var(--clr-text);
-    opacity: 0.8;
+    color: var(--clr-neutral);
 
     /* Animation consistent with other elements */
     animation: rise-show var(--rise-show-duration) ease-in;
@@ -25,7 +24,7 @@
 }
 
 .weather-date {
-    color: var(--clr-text);
+    color: inherit;
     white-space: nowrap;
 }
 
@@ -91,7 +90,7 @@
     place-items: center;
     border-radius: 50%;
     background: transparent;
-    color: var(--clr-primary);
+    color: var(--clr-home-control);
     cursor: pointer;
     transition:
         color var(--motion-duration-fast) var(--motion-ease-out),
