@@ -43,6 +43,9 @@
             var(--theme-primary-lightness) /
             0.3
     );
+    --clr-action: hsl(
+        var(--theme-primary-hue) var(--theme-primary-saturation) 38%
+    );
     --clr-home-control: hsl(
         var(--theme-primary-hue)
         var(--theme-primary-saturation)
@@ -116,6 +119,7 @@
 }
 
 :root[data-theme='dark'] {
+    --clr-action: var(--clr-primary);
     --theme-primary-saturation: 74%;
     --theme-primary-lightness: 72%;
     --theme-secondary-hue: 246;

@@ -78,6 +78,7 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
 }) => {
     const { t } = useLocale();
     const dialogRef = useRef<HTMLDialogElement>(null);
+    const addButtonRef = useRef<HTMLButtonElement>(null);
     const [query, setQuery] = useState('');
     const selectedListRef = useRef<HTMLDivElement>(null);
     const pendingAddedRef = useRef<string | undefined>(undefined);
@@ -174,24 +175,29 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
         ));
     })();
 
+    const addButton = (
+        <button
+            ref={addButtonRef}
+            className='bookmark-workspace-primary-button'
+            type='button'
+            disabled={!bookmarkControls.canEdit}
+            onClick={() => {
+                dialogRef.current?.showModal();
+                searchInputRef.current?.focus();
+            }}
+        >
+            <Plus aria-hidden='true' />
+            {t.addFeedBookmark}
+        </button>
+    );
+
     return (
         <section className='settings-page-section' data-setting='feeds'>
             <div className='settings-feed-heading'>
                 <div className='settings-section-heading'>
                     <h2>{t.feeds}</h2>
                 </div>
-                <button
-                    className='bookmark-workspace-primary-button'
-                    type='button'
-                    disabled={!bookmarkControls.canEdit}
-                    onClick={() => {
-                        dialogRef.current?.showModal();
-                        searchInputRef.current?.focus();
-                    }}
-                >
-                    <Plus aria-hidden='true' />
-                    {t.addFeedBookmark}
-                </button>
+                {feedBookmarks.length > 0 && addButton}
             </div>
             <dialog
                 ref={dialogRef}
@@ -210,6 +216,7 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
                         pendingAddedRef.current = undefined;
                     }
                     setQuery('');
+                    addButtonRef.current?.focus({ preventScroll: true });
                 }}
                 aria-labelledby='feed-dialog-title'
                 onClick={(event) => {
@@ -256,12 +263,11 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
             </dialog>
             <div className='settings-feed-selected' ref={selectedListRef}>
                 {feedBookmarks.length === 0 ? (
-                    <div className='settings-feed-empty'>
+                    <div className='settings-empty-state'>
                         <LinkIcon aria-hidden='true' />
-                        <span>
-                            <strong>{t.feedEmpty}</strong>
-                            <small>{t.feedEmptyDescription}</small>
-                        </span>
+                        <strong>{t.feedEmpty}</strong>
+                        <p>{t.feedEmptyDescription}</p>
+                        {addButton}
                     </div>
                 ) : (
                     <DragDropProvider onDragEnd={handleDragEnd}>

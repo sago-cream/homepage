@@ -262,7 +262,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                             <BookmarkEmptyState
                                 bookmarkControls={bookmarkControls}
                                 className='mobile-bookmark-empty-state'
-                                ctaLabel={t.importBookmarksFromBrowser}
+                                ctaLabel={t.importBookmarks}
                                 description={t.bookmarksEmptyDescription}
                                 statusMessage={bookmarkStatusMessage}
                                 statusType={bookmarkControls.status?.type}
@@ -350,7 +350,7 @@ export const LinkPanel: React.FC<LinkPanelProps> = ({
                                 <BookmarkEmptyState
                                     bookmarkControls={bookmarkControls}
                                     className='bookmark-panel-empty-state'
-                                    ctaLabel={t.importBookmarksFromBrowser}
+                                    ctaLabel={t.importBookmarks}
                                     description={t.bookmarksEmptyDescription}
                                     statusMessage={bookmarkStatusMessage}
                                     statusType={bookmarkControls.status?.type}
