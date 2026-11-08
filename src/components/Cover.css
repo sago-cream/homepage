@@ -110,7 +110,7 @@
     box-shadow: var(--shadow-search-field-hover);
 }
 
-.search-form:focus-within {
+.search-form:has(:focus-visible) {
     outline: 2px solid var(--clr-action);
     outline-offset: 4px;
 }
