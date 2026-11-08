@@ -1,7 +1,6 @@
-import { ArrowUpRight, Bookmark, Rss, Search } from 'lucide-react';
+import { Bookmark, Rss, Search } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
-import { useLocale } from '@/hooks/useLocale';
 import type {
     LinkItem,
     SearchSuggestionsPosition,
@@ -40,15 +39,13 @@ export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
     searchResultIndexOffset,
     slashCommandResults,
     trimmedSearchValue,
-}) => {
-    const { t } = useLocale();
-
-    return createPortal(
+}) =>
+    createPortal(
         <div
             className='search-suggestions'
             id={id}
             role='listbox'
-            aria-label={t.searchBookmarksOrGoogle}
+            aria-label='Other bookmark matches'
             style={
                 {
                     '--suggestion-left': `${position.left}px`,
@@ -124,15 +121,10 @@ export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
                         <span className='search-suggestion-icon'>
                             <Bookmark className='icon' />
                         </span>
-                        <span className='search-suggestion-copy'>
-                            <span className='search-suggestion-text'>
-                                {result.title}
-                            </span>
-                            {result.pathLabel !== '' && (
-                                <span className='search-suggestion-path'>
-                                    {result.pathLabel}
-                                </span>
-                            )}
+                        <span className='search-suggestion-text'>
+                            {result.pathLabel === ''
+                                ? result.title
+                                : `${result.title} · ${result.pathLabel}`}
                         </span>
                     </button>
                 );
@@ -146,7 +138,6 @@ export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
                     }`}
                     type='button'
                     role='option'
-                    id={`${id}-google`}
                     aria-selected={
                         highlightedSearchResultIndex === googleSearchResultIndex
                     }
@@ -161,15 +152,10 @@ export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
                         <Search className='icon' />
                     </span>
                     <span className='search-suggestion-text'>
-                        {t.searchGoogleFor} “{trimmedSearchValue}”
+                        {trimmedSearchValue}
                     </span>
-                    <ArrowUpRight
-                        className='search-suggestion-action'
-                        aria-hidden
-                    />
                 </button>
             )}
         </div>,
         globalThis.document.body
     );
-};
