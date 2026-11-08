@@ -89,13 +89,14 @@ export const KeybindSettingsSection = ({
             <div
                 className={
                     keybinds.length === 0
-                        ? 'settings-keybind-empty'
+                        ? 'settings-empty-state'
                         : 'settings-card'
                 }
             >
                 {keybinds.length === 0 ? (
                     <>
                         <Keyboard aria-hidden />
+                        <strong>{t.keybindsEmptyTitle}</strong>
                         <p className='settings-row-description'>
                             {t.keybindsEmpty}
                         </p>
