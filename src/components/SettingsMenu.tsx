@@ -1232,11 +1232,6 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                               >
                                                   <TooltipIconButton
                                                       label={t.locationTracking}
-                                                      description={
-                                                          isTrackingLocation
-                                                              ? t.disableLocationTracking
-                                                              : t.enableLocationTracking
-                                                      }
                                                       aria-pressed={
                                                           isTrackingLocation
                                                       }

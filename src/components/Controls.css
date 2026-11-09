@@ -2961,6 +2961,10 @@ a.bookmark-workspace-tree-item {
         minmax(12rem, var(--settings-select-width, 12rem));
 }
 
+.settings-select-row[data-setting='location'] {
+    --settings-select-width: calc(12rem + 2.75rem + 0.5rem);
+}
+
 .settings-location-controls {
     display: flex;
     align-items: center;
