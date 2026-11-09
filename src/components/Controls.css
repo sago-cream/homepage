@@ -2968,6 +2968,22 @@ a.bookmark-workspace-tree-item {
     min-width: 0;
 }
 
+.settings-location-tracking {
+    display: flex;
+    flex-shrink: 0;
+}
+
+.settings-location-tracking button {
+    width: 2.75rem;
+    min-height: 2.75rem;
+    border-radius: 0.75rem;
+}
+
+.settings-location-tracking button[aria-pressed='true'] {
+    color: var(--clr-primary);
+    background-color: var(--clr-neutral-light);
+}
+
 .settings-page .settings-select {
     background-color: var(--clr-neutral-light);
 }
