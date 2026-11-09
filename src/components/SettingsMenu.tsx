@@ -11,6 +11,8 @@ import {
     ChevronRight,
     Keyboard,
     Mailbox,
+    MapPin,
+    MapPinOff,
     Monitor,
     Moon,
     Palette,
@@ -75,6 +77,7 @@ import { KeybindSettingsSection } from './KeybindSettingsSection';
 import { SettingsChoice } from './SettingsChoice';
 import { SettingsDropdown } from './SettingsDropdown';
 import type { SettingsDropdownOption } from './SettingsDropdown';
+import { TooltipIconButton } from './TooltipIconButton';
 
 interface ThemeHydrationRoot extends HTMLElement {
     __homepageThemeHydrationObserver?: MutationObserver;
@@ -420,6 +423,9 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                 );
                 const control =
                     row?.querySelector<HTMLElement>('[aria-checked="true"]') ??
+                    row?.querySelector<HTMLElement>(
+                        '.settings-select:not(:disabled)'
+                    ) ??
                     row?.querySelector<HTMLElement>(
                         'button:not(:disabled), input:not(:disabled)'
                     );
@@ -1197,44 +1203,6 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                   </div>
                                   <div className='settings-card'>
                                       <div
-                                          className='settings-row'
-                                          data-setting='location-tracking'
-                                      >
-                                          <div className='settings-row-copy'>
-                                              <span className='settings-row-label'>
-                                                  {t.useCurrentLocation}
-                                              </span>
-                                              {locationTrackingFailed ||
-                                              isSyncingLocation ? (
-                                                  <span
-                                                      className='settings-row-description'
-                                                      role='status'
-                                                  >
-                                                      {locationDescription}
-                                                  </span>
-                                              ) : undefined}
-                                          </div>
-                                          <button
-                                              type='button'
-                                              className='settings-animation-switch'
-                                              role='switch'
-                                              aria-label={t.useCurrentLocation}
-                                              aria-checked={isTrackingLocation}
-                                              disabled={!isGeolocationAvailable}
-                                              onClick={() => {
-                                                  setOpenDropdownId(undefined);
-                                                  toggleLocationTracking();
-                                              }}
-                                          >
-                                              <span
-                                                  className='settings-switch-track'
-                                                  aria-hidden
-                                              >
-                                                  <span className='settings-switch-thumb' />
-                                              </span>
-                                          </button>
-                                      </div>
-                                      <div
                                           className='settings-row settings-select-row'
                                           data-setting='location'
                                       >
@@ -1245,11 +1213,47 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                               >
                                                   {t.location}
                                               </span>
-                                              <span className='settings-row-description'>
-                                                  {t.locationDescription}
+                                              <span
+                                                  className='settings-row-description'
+                                                  role={
+                                                      locationTrackingFailed ||
+                                                      isSyncingLocation
+                                                          ? 'status'
+                                                          : undefined
+                                                  }
+                                              >
+                                                  {locationDescription}
                                               </span>
                                           </div>
                                           <div className='settings-location-controls'>
+                                              <div
+                                                  className='settings-location-tracking'
+                                                  data-setting='location-tracking'
+                                              >
+                                                  <TooltipIconButton
+                                                      label={t.locationTracking}
+                                                      aria-pressed={
+                                                          isTrackingLocation
+                                                      }
+                                                      disabled={
+                                                          !isGeolocationAvailable
+                                                      }
+                                                      onClick={() => {
+                                                          setOpenDropdownId(
+                                                              undefined
+                                                          );
+                                                          toggleLocationTracking();
+                                                      }}
+                                                  >
+                                                      {isTrackingLocation ? (
+                                                          <MapPin aria-hidden />
+                                                      ) : (
+                                                          <MapPinOff
+                                                              aria-hidden
+                                                          />
+                                                      )}
+                                                  </TooltipIconButton>
+                                              </div>
                                               <SettingsDropdown
                                                   id='location-picker'
                                                   labelledBy='location-picker-label'

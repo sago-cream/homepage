@@ -2961,11 +2961,31 @@ a.bookmark-workspace-tree-item {
         minmax(12rem, var(--settings-select-width, 12rem));
 }
 
+.settings-select-row[data-setting='location'] {
+    --settings-select-width: calc(12rem + 2.75rem + 0.5rem);
+}
+
 .settings-location-controls {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     min-width: 0;
+}
+
+.settings-location-tracking {
+    display: flex;
+    flex-shrink: 0;
+}
+
+.settings-location-tracking button {
+    width: 2.75rem;
+    min-height: 2.75rem;
+    border-radius: 0.75rem;
+}
+
+.settings-location-tracking button[aria-pressed='true'] {
+    color: var(--clr-primary);
+    background-color: var(--clr-neutral-light);
 }
 
 .settings-page .settings-select {
