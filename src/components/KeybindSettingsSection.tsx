@@ -239,11 +239,20 @@ export const KeybindSettingsSection = ({
                             >
                                 <Trash2 aria-hidden />
                             </button>
+                            {error?.id === binding.id && (
+                                <p
+                                    id='keybind-error'
+                                    className='bookmark-manager-error settings-keybind-error'
+                                    role='alert'
+                                >
+                                    {error.message}
+                                </p>
+                            )}
                         </div>
                     );
                 })}
             </div>
-            {error ? (
+            {error && error.id === undefined ? (
                 <p
                     id='keybind-error'
                     className='bookmark-manager-error'

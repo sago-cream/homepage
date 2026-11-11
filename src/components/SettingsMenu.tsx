@@ -705,15 +705,6 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                               </header>
                               <aside className='settings-page-sidebar'>
                                   <h1 id='settings-page-title'>{t.settings}</h1>
-                                  <button
-                                      className='settings-page-sidebar-button settings-page-back'
-                                      type='button'
-                                      ref={closeButtonRef}
-                                      onClick={requestSettingsClose}
-                                  >
-                                      <ArrowLeft aria-hidden />
-                                      <span>{t.backToHomepage}</span>
-                                  </button>
                                   <form
                                       className='settings-sidebar-search'
                                       role='search'
@@ -849,6 +840,20 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                 );
                                             })}
                                   </nav>
+                                  <button
+                                      className='settings-page-sidebar-button settings-page-back'
+                                      type='button'
+                                      aria-label={t.backToHomepage}
+                                      ref={closeButtonRef}
+                                      onClick={requestSettingsClose}
+                                  >
+                                      <ArrowLeft aria-hidden />
+                                      <X
+                                          className='settings-back-close'
+                                          aria-hidden
+                                      />
+                                      <span>{t.backToHomepage}</span>
+                                  </button>
                               </aside>
 
                               <section
