@@ -2416,6 +2416,17 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-page {
+    --settings-border: color-mix(in srgb, var(--clr-text) 12%, transparent);
+    --settings-error: color-mix(
+        in srgb,
+        var(--clr-aqi-unhealthy) 75%,
+        var(--clr-text)
+    );
+    --settings-selected: color-mix(
+        in srgb,
+        var(--clr-primary) 10%,
+        transparent
+    );
     --settings-accent-lightness: 42%;
     --clr-primary: hsl(
         var(--theme-primary-hue),
@@ -2501,12 +2512,14 @@ a.bookmark-workspace-tree-item {
 
 .settings-page-content {
     width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
     height: 100%;
     min-height: 0;
     padding: 2rem;
     display: grid;
-    grid-template-columns: 15rem minmax(0, 1fr);
-    gap: 2rem;
+    grid-template-columns: 14rem minmax(0, 1fr);
+    gap: 3rem;
     align-items: stretch;
 }
 
@@ -2522,11 +2535,23 @@ a.bookmark-workspace-tree-item {
     border-inline-end: 1px solid var(--clr-text-alpha-2);
 }
 
+.settings-page-title:focus {
+    outline: none;
+}
+
 .settings-page-sidebar h1 {
     margin: 0 0 0.25rem;
     padding-inline: 0.75rem;
     font: var(--fontBoldMd);
     color: var(--clr-neutral);
+}
+
+.settings-page-back {
+    margin-top: auto;
+}
+
+.settings-back-close {
+    display: none;
 }
 
 .settings-page-navigation {
@@ -2608,7 +2633,7 @@ a.bookmark-workspace-tree-item {
     cursor: pointer;
     outline: 2px solid transparent;
     outline-offset: 2px;
-    font: var(--fontBoldSm);
+    font: var(--fontBaseSm);
     text-align: left;
     transition:
         background-color var(--motion-duration-fast) var(--motion-ease-out),
@@ -2629,7 +2654,8 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-page-sidebar-button[aria-current='page'] {
-    background-color: var(--clr-primary-alpha-2);
+    font-weight: var(--fw-bold);
+    background-color: var(--settings-selected);
     color: var(--clr-primary);
 }
 
@@ -2990,6 +3016,44 @@ a.bookmark-workspace-tree-item {
 
 .settings-page .settings-select {
     background-color: var(--clr-neutral-light);
+    box-shadow: inset 0 0 0 1px var(--settings-border);
+}
+
+.settings-page .settings-select[aria-expanded='true']:not(:focus-visible) {
+    outline-color: transparent;
+}
+
+.settings-page .settings-select:focus-visible {
+    box-shadow: none;
+    outline-color: var(--clr-primary);
+    outline-offset: 0;
+}
+
+.settings-page .bookmark-workspace-field :is(input, select) {
+    border-color: var(--settings-border);
+    box-shadow: none;
+}
+
+.settings-page .bookmark-workspace-field :is(input, select):focus-visible {
+    border-color: transparent;
+    outline-color: var(--clr-primary);
+    outline-offset: 0;
+}
+
+.settings-page .bookmark-manager-error {
+    color: var(--settings-error);
+    line-height: 1.5;
+}
+
+.settings-page
+    :is(
+        .settings-select,
+        .bookmark-workspace-field input
+    )[aria-invalid='true'] {
+    border-color: transparent;
+    box-shadow: none;
+    outline: 2px solid var(--settings-error);
+    outline-offset: 0;
 }
 
 :root[data-theme='dark'] .settings-page .settings-select,
@@ -3298,11 +3362,11 @@ a.bookmark-workspace-tree-item {
 
 @media (width < 48rem) {
     .settings-page-content {
-        padding: max(1rem, env(safe-area-inset-top)) 1rem
+        padding: max(0.5rem, env(safe-area-inset-top)) 1rem
             max(1rem, env(safe-area-inset-bottom));
         grid-template-columns: minmax(0, 1fr);
         grid-template-rows: auto minmax(0, 1fr);
-        gap: 1rem;
+        gap: 0.5rem;
     }
 
     .settings-page-sidebar {
@@ -3322,7 +3386,23 @@ a.bookmark-workspace-tree-item {
     }
 
     .settings-page-back {
-        width: auto;
+        grid-column: 2;
+        grid-row: 1;
+        margin: 0;
+        width: 2.75rem;
+        height: 2.75rem;
+        padding: 0;
+        display: grid;
+        place-items: center;
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .settings-page-back > :is(span, svg:first-child) {
+        display: none;
+    }
+
+    .settings-page-back .settings-back-close {
+        display: block;
     }
 
     .settings-sidebar-search,
@@ -3354,7 +3434,7 @@ a.bookmark-workspace-tree-item {
         gap: 1rem;
         padding: 0.25rem;
         border-bottom: 1px solid var(--clr-text-alpha-2);
-        padding-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
     }
 
     .settings-category-back {
@@ -3375,10 +3455,18 @@ a.bookmark-workspace-tree-item {
         overflow: auto;
     }
 
+    .settings-page-navigation[data-searching='false'] {
+        align-self: start;
+        padding: 0.25rem;
+        gap: 0;
+        border: 1px solid var(--settings-border);
+        border-radius: 1rem;
+    }
+
     .settings-page-navigation .settings-page-sidebar-button {
         min-height: 3.5rem;
         grid-template-columns: 1.25rem minmax(0, 1fr) 1.25rem;
-        font: var(--fontBoldMd);
+        font: var(--fontBaseMd);
     }
 
     .settings-section-chevron {
@@ -3402,6 +3490,12 @@ a.bookmark-workspace-tree-item {
 
     .settings-page-section {
         grid-column: 1;
+        gap: 0.5rem;
+    }
+
+    .settings-page .settings-page-section > .settings-section-heading,
+    .settings-page .settings-feed-heading {
+        padding-block: 0 0.25rem;
     }
 
     .settings-page .settings-row,
@@ -3423,6 +3517,10 @@ a.bookmark-workspace-tree-item {
     .settings-page .settings-theme-group {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .settings-page .settings-select-row[data-setting='language'] {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 10rem);
     }
 
     .settings-page .settings-row:has(> .settings-animation-switch) {
@@ -5231,6 +5329,10 @@ a.bookmark-workspace-tree-item {
     width: 2.5rem;
 }
 
+.settings-keybind-error {
+    grid-column: 1 / -1;
+}
+
 /* Empty settings sections share one scale below their navigation or toolbar. */
 .settings-empty-state {
     --bookmark-workspace-control-radius: 0.75rem;
@@ -5259,15 +5361,8 @@ a.bookmark-workspace-tree-item {
 .settings-empty-state > :is(p, span) {
     max-width: 20rem;
     font: var(--fontBaseSm);
+    line-height: 1.5;
     text-wrap: pretty;
-}
-
-@media (max-width: 600px) {
-    .settings-page .settings-keybind-row {
-        padding: 1rem;
-        grid-template-columns: minmax(0, 1fr) 4rem 2.5rem;
-        gap: 0.5rem;
-    }
 }
 
 /* Theme-aware scrollbars stay inside their panes and never chain to the homepage. */
@@ -5532,7 +5627,7 @@ a.bookmark-workspace-tree-item {
     width: 100%;
 }
 .settings-dropdown-options .settings-dropdown-option[data-active='true'] {
-    background: var(--clr-primary-alpha-2);
+    background: var(--clr-text-alpha-2);
     outline: 2px solid var(--clr-primary);
     outline-offset: -2px;
 }

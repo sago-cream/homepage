@@ -269,6 +269,7 @@ export const useBookmarkSearch = (
         const handleHotkey = (event: KeyboardEvent) => {
             if (
                 bookmarksLoading ||
+                globalThis.matchMedia('(width < 48rem)').matches ||
                 globalThis.document.querySelector(
                     '[role="dialog"][aria-modal="true"], dialog[open]'
                 )
