@@ -59,10 +59,13 @@ test('literal Chinese text remains searchable alongside recorded keys', () => {
 });
 
 test('slash commands accept Latin, Zhuyin, mixed text, and the Zhuyin slash key', () => {
-    const feeds: SlashCommandItem[] = [{ command: 'feeds', label: '/feeds' }];
+    const feeds: SlashCommandItem[] = [{ command: 'feeds', label: '/launch' }];
     for (const query of [
         '/',
         '/FEEDS',
+        '/launch',
+        '/LAUNCH',
+        '/la',
         '/ㄑ',
         '/ㄑㄍㄍㄎㄋ',
         '/fㄍeㄎs',

@@ -2135,8 +2135,8 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                         bookmark={
                                                                             bookmark
                                                                         }
-                                                                        addToFeedsLabel={
-                                                                            t.addToFeeds
+                                                                        addToQuickLaunchLabel={
+                                                                            t.addToQuickLaunch
                                                                         }
                                                                         onAddToFeeds={getAddToFeedsAction(
                                                                             bookmark.id
@@ -2367,8 +2367,8 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                         ) : (
                                                             <BookmarkActions
                                                                 bookmark={node}
-                                                                addToFeedsLabel={
-                                                                    t.addToFeeds
+                                                                addToQuickLaunchLabel={
+                                                                    t.addToQuickLaunch
                                                                 }
                                                                 onAddToFeeds={getAddToFeedsAction(
                                                                     node.id

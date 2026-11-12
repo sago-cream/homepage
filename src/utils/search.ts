@@ -34,7 +34,7 @@ const maxSearchResults = 4;
 const slashCommands = [
     {
         command: 'feeds',
-        label: '/feeds',
+        label: '/launch',
     },
 ] as const satisfies readonly SlashCommandItem[];
 
@@ -84,7 +84,9 @@ export const getSlashCommandResults = (
         [query, alias].some(
             (candidate) =>
                 candidate !== undefined &&
-                command.label.toLowerCase().startsWith(candidate)
+                [command.label, '/feeds'].some((label) =>
+                    label.startsWith(candidate)
+                )
         )
     );
 };

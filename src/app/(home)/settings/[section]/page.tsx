@@ -7,9 +7,11 @@ export const dynamicParams = false;
 export const metadata: Metadata = { title: 'Settings · Homepage' };
 
 export function generateStaticParams(): ReadonlyArray<{ section: string }> {
-    return Object.values(settingsSectionPaths).map((path) => ({
-        section: path.split('/').at(-1) ?? '',
-    }));
+    return [...Object.values(settingsSectionPaths), '/settings/feeds'].map(
+        (path) => ({
+            section: path.split('/').at(-1) ?? '',
+        })
+    );
 }
 
 export default function SettingsSection(): ReactNode {

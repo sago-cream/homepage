@@ -134,7 +134,8 @@ export const KeybindSettingsSection = ({
                                         },
                                         ...commands.map((command) => ({
                                             value: `command:${command.command}`,
-                                            label: command.label,
+                                            label: `${t.quickLaunch} (${command.label})`,
+                                            searchText: `${t.quickLaunch} /launch /feeds`,
                                         })),
                                         ...bookmarks.map((bookmark) => ({
                                             value: `bookmark:${bookmark.id}`,

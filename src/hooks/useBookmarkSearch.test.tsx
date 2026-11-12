@@ -189,7 +189,7 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
         });
         await change('/ㄋ');
         expect(search.slashCommandResults).toEqual([
-            { command: 'feeds', label: '/feeds' },
+            { command: 'feeds', label: '/launch' },
         ]);
         expect(search.hasGoogleSearchResult).toBe(false);
         await press(input, { key: 'Enter' });

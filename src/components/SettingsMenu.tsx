@@ -10,7 +10,7 @@ import {
     Bookmark,
     ChevronRight,
     Keyboard,
-    Mailbox,
+    Layers,
     MapPin,
     MapPinOff,
     Monitor,
@@ -72,8 +72,8 @@ import { getCssUrlValue } from '@/utils/wallpaperStyle';
 import { wallpaperAcceptedContentTypes } from '../../shared/wallpaper';
 import { BookmarkManager } from './BookmarkManager';
 import type { BookmarkManagerHandle } from './BookmarkManager';
-import { FeedSettingsSection } from './FeedSettingsSection';
 import { KeybindSettingsSection } from './KeybindSettingsSection';
+import { QuickLaunchSettingsSection } from './QuickLaunchSettingsSection';
 import { SettingsChoice } from './SettingsChoice';
 import { SettingsDropdown } from './SettingsDropdown';
 import type { SettingsDropdownOption } from './SettingsDropdown';
@@ -590,7 +590,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             id: 'content',
             label: t.bookmarks,
         },
-        { icon: Mailbox, id: 'feeds', label: t.feeds },
+        { icon: Layers, id: 'feeds', label: t.quickLaunch },
         {
             icon: Keyboard,
             id: 'keybinds',
@@ -1353,7 +1353,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                               ) : undefined}
 
                               {selectedSection === 'feeds' ? (
-                                  <FeedSettingsSection
+                                  <QuickLaunchSettingsSection
                                       onOpenBookmark={(bookmarkId) => {
                                           bookmarkManagerRef.current?.openBookmark(
                                               bookmarkId

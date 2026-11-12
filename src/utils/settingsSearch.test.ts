@@ -46,3 +46,23 @@ test('keeps translated result labels and category context', () => {
     ).toEqual([]);
     expect(getSettingsSearchResults(getMessages('en'), ' ', '')).toEqual([]);
 });
+
+test('finds Quick Launch by its new name, old name, and bookmark-opening intent', () => {
+    for (const locale of ['en', 'zh-TW'] as const) {
+        for (const query of [
+            'quick launch',
+            '快速啟動',
+            '/launch',
+            '/feeds',
+            '動態',
+            'open tabs together',
+        ]) {
+            expect(
+                getSettingsSearchResults(getMessages(locale), query, '')[0]
+            ).toMatchObject({
+                section: 'feeds',
+                label: getMessages(locale).quickLaunch,
+            });
+        }
+    }
+});

@@ -28,10 +28,10 @@ export const getSettingsSearchResults = (
         },
         {
             id: 'feeds',
-            label: t.feeds,
+            label: t.quickLaunch,
             section: 'feeds',
-            sectionLabel: t.feeds,
-            keywords: `/feeds ${t.feedEmpty} ${t.addFeedBookmark}`,
+            sectionLabel: t.quickLaunch,
+            keywords: `/launch /feeds feeds 動態 quick launch 快速啟動 open tabs together bookmarks 書籤 分頁 一起 ${t.quickLaunchEmpty} ${t.chooseLaunchBookmarks}`,
         },
         {
             id: 'keybinds',

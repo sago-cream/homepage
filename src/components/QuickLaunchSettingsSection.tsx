@@ -3,15 +3,17 @@ import { DragDropProvider } from '@dnd-kit/react';
 import type { DragEndEvent } from '@dnd-kit/react';
 import { isSortable, useSortable } from '@dnd-kit/react/sortable';
 import { GripVertical, Link as LinkIcon, Plus, Search, X } from 'lucide-react';
+import Link from 'next/link';
 
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useLocale } from '@/hooks/useLocale';
 import type { BookmarkLinkData } from '@/types/bookmarks';
 import { getFeedBookmarks, setFeedBookmarkIds } from '@/utils/feeds';
 import { getSearchItems, getSearchResults } from '@/utils/search';
+import { settingsSectionPaths } from '@/utils/settingsNavigation';
 import { BookmarkActions, BookmarkCard } from './BookmarkCard';
 
-interface FeedBookmarkRowProps {
+interface QuickLaunchBookmarkRowProps {
     bookmark: BookmarkLinkData;
     disabled: boolean;
     index: number;
@@ -19,7 +21,7 @@ interface FeedBookmarkRowProps {
     onOpen: () => void;
 }
 
-const FeedBookmarkRow: React.FC<FeedBookmarkRowProps> = ({
+const QuickLaunchBookmarkRow: React.FC<QuickLaunchBookmarkRowProps> = ({
     bookmark,
     disabled,
     index,
@@ -60,22 +62,21 @@ const FeedBookmarkRow: React.FC<FeedBookmarkRowProps> = ({
                 labels={{
                     edit: t.openInBookmarkManager,
                     open: locale === 'zh-TW' ? '開啟' : 'Open',
-                    delete: t.removeFromFeeds,
+                    delete: t.removeFromQuickLaunch,
                 }}
             />
         </div>
     );
 };
 
-interface FeedSettingsSectionProps {
+interface QuickLaunchSettingsSectionProps {
     bookmarkControls: BookmarkControls;
     onOpenBookmark: (bookmarkId: string) => void;
 }
 
-export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
-    bookmarkControls,
-    onOpenBookmark,
-}) => {
+export const QuickLaunchSettingsSection: React.FC<
+    QuickLaunchSettingsSectionProps
+> = ({ bookmarkControls, onOpenBookmark }) => {
     const { t } = useLocale();
     const dialogRef = useRef<HTMLDialogElement>(null);
     const addButtonRef = useRef<HTMLButtonElement>(null);
@@ -135,7 +136,7 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
             return (
                 <div className='settings-feed-search-empty'>
                     <Search aria-hidden='true' />
-                    <span>{t.feedSearchPrompt}</span>
+                    <span>{t.quickLaunchAllSelected}</span>
                 </div>
             );
         }
@@ -187,7 +188,7 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
             }}
         >
             <Plus aria-hidden='true' />
-            {t.addFeedBookmark}
+            {t.chooseLaunchBookmarks}
         </button>
     );
 
@@ -195,7 +196,7 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
         <section className='settings-page-section' data-setting='feeds'>
             <div className='settings-feed-heading'>
                 <div className='settings-section-heading'>
-                    <h2>{t.feeds}</h2>
+                    <h2>{t.quickLaunch}</h2>
                 </div>
                 {feedBookmarks.length > 0 && addButton}
             </div>
@@ -230,7 +231,9 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
             >
                 <div className='settings-feed-search-area'>
                     <div className='settings-feed-subheading'>
-                        <h3 id='feed-dialog-title'>{t.addFeedBookmark}</h3>
+                        <h3 id='feed-dialog-title'>
+                            {t.chooseLaunchBookmarks}
+                        </h3>
                         <button
                             type='button'
                             className='settings-icon-button'
@@ -265,15 +268,30 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
                 {feedBookmarks.length === 0 ? (
                     <div className='settings-empty-state'>
                         <LinkIcon aria-hidden='true' />
-                        <strong>{t.feedEmpty}</strong>
-                        <p>{t.feedEmptyDescription}</p>
-                        {addButton}
+                        <strong>{t.quickLaunchEmpty}</strong>
+                        <p>
+                            {searchItems.length === 0
+                                ? t.quickLaunchLibraryEmpty
+                                : t.quickLaunchEmptyDescription}
+                        </p>
+                        {searchItems.length === 0 ? (
+                            <Link
+                                className='settings-action-button'
+                                href={settingsSectionPaths.content}
+                                scroll={false}
+                            >
+                                <Plus aria-hidden='true' />
+                                {t.manageBookmarks}
+                            </Link>
+                        ) : (
+                            addButton
+                        )}
                     </div>
                 ) : (
                     <DragDropProvider onDragEnd={handleDragEnd}>
                         <div className='settings-feed-list bookmark-card-list'>
                             {feedBookmarks.map((bookmark, index) => (
-                                <FeedBookmarkRow
+                                <QuickLaunchBookmarkRow
                                     key={bookmark.id}
                                     bookmark={bookmark}
                                     disabled={!bookmarkControls.canEdit}
