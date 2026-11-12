@@ -99,8 +99,8 @@ export const QuickLaunchDialog: React.FC<{
                         scroll={false}
                     >
                         {hasLibrary
-                            ? t.chooseLaunchBookmarks
-                            : t.manageBookmarks}
+                            ? t.quickLaunchChoose
+                            : t.quickLaunchAddBookmarks}
                     </Link>
                 </div>
             ) : (
@@ -149,7 +149,7 @@ export const QuickLaunchDialog: React.FC<{
                             onClick={onClose}
                             scroll={false}
                         >
-                            {t.chooseLaunchBookmarks}
+                            {t.quickLaunchEdit}
                         </Link>
                         {remaining === undefined ? (
                             <button

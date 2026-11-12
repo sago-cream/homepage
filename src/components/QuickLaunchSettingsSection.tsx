@@ -2,7 +2,15 @@ import { useMemo, useRef, useState } from 'react';
 import { DragDropProvider } from '@dnd-kit/react';
 import type { DragEndEvent } from '@dnd-kit/react';
 import { isSortable, useSortable } from '@dnd-kit/react/sortable';
-import { Check, GripVertical, Layers, Plus, Search, X } from 'lucide-react';
+import {
+    Check,
+    GripVertical,
+    Layers,
+    Pencil,
+    Plus,
+    Search,
+    X,
+} from 'lucide-react';
 import Link from 'next/link';
 
 import type { BookmarkControls } from '@/hooks/useBookmarks';
@@ -218,8 +226,12 @@ export const QuickLaunchSettingsSection: React.FC<
                 searchInputRef.current?.focus();
             }}
         >
-            <Plus aria-hidden='true' />
-            {t.chooseLaunchBookmarks}
+            {feedBookmarks.length > 0 ? (
+                <Pencil aria-hidden />
+            ) : (
+                <Plus aria-hidden />
+            )}
+            {feedBookmarks.length > 0 ? t.quickLaunchEdit : t.quickLaunchChoose}
         </button>
     );
 
@@ -323,7 +335,11 @@ export const QuickLaunchSettingsSection: React.FC<
                 {feedBookmarks.length === 0 ? (
                     <div className='settings-empty-state'>
                         <Layers aria-hidden='true' />
-                        <strong>{t.quickLaunchEmpty}</strong>
+                        <strong>
+                            {searchItems.length === 0
+                                ? t.bookmarksEmpty
+                                : t.quickLaunchEmpty}
+                        </strong>
                         <p>
                             {searchItems.length === 0
                                 ? t.quickLaunchLibraryEmpty
@@ -336,7 +352,7 @@ export const QuickLaunchSettingsSection: React.FC<
                                 scroll={false}
                             >
                                 <Plus aria-hidden='true' />
-                                {t.manageBookmarks}
+                                {t.quickLaunchAddBookmarks}
                             </Link>
                         ) : (
                             addButton
