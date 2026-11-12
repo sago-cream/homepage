@@ -3,14 +3,12 @@ import { DragDropProvider } from '@dnd-kit/react';
 import type { DragEndEvent } from '@dnd-kit/react';
 import { isSortable, useSortable } from '@dnd-kit/react/sortable';
 import { GripVertical, Link as LinkIcon, Plus, Search, X } from 'lucide-react';
-import Link from 'next/link';
 
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useLocale } from '@/hooks/useLocale';
 import type { BookmarkLinkData } from '@/types/bookmarks';
 import { getFeedBookmarks, setFeedBookmarkIds } from '@/utils/feeds';
 import { getSearchItems, getSearchResults } from '@/utils/search';
-import { settingsSectionPaths } from '@/utils/settingsNavigation';
 import { BookmarkActions, BookmarkCard } from './BookmarkCard';
 
 interface FeedBookmarkRowProps {
@@ -268,23 +266,8 @@ export const FeedSettingsSection: React.FC<FeedSettingsSectionProps> = ({
                     <div className='settings-empty-state'>
                         <LinkIcon aria-hidden='true' />
                         <strong>{t.feedEmpty}</strong>
-                        <p>
-                            {searchItems.length === 0
-                                ? t.feedLibraryEmpty
-                                : t.feedEmptyDescription}
-                        </p>
-                        {searchItems.length === 0 ? (
-                            <Link
-                                className='settings-action-button'
-                                href={settingsSectionPaths.content}
-                                scroll={false}
-                            >
-                                <Plus aria-hidden='true' />
-                                {t.manageBookmarks}
-                            </Link>
-                        ) : (
-                            addButton
-                        )}
+                        <p>{t.feedEmptyDescription}</p>
+                        {addButton}
                     </div>
                 ) : (
                     <DragDropProvider onDragEnd={handleDragEnd}>
