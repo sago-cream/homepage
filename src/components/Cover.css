@@ -410,13 +410,3 @@
 .quick-launch-fallback-close svg {
     --icon-size: var(--icon-control);
 }
-
-.search-command-hint {
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    left: 50%;
-    translate: -50% 0;
-    color: var(--clr-text-alpha);
-    font: var(--fontBaseSm);
-    white-space: nowrap;
-}

@@ -109,9 +109,6 @@ const CoverContent: React.FC<CoverContentProps> = ({
         bookmarkControls.isLoading
     );
 
-    const showCommandHint = inputFocused && trimmedSearchValue === '';
-    const commandHintId = `${searchSuggestionsId}-command-hint`;
-
     return (
         <section className='cover'>
             <Mountains />
@@ -168,20 +165,12 @@ const CoverContent: React.FC<CoverContentProps> = ({
                             }
                             aria-expanded={hasSearchSuggestions}
                             aria-autocomplete='list'
-                            aria-describedby={
-                                showCommandHint ? commandHintId : undefined
-                            }
                             onKeyDown={handleSearchKeyDown}
                             onChange={handleSearchChange}
                             onFocus={handleSearchFocus}
                             onBlur={handleSearchBlur}
                         />
                     </form>
-                    {showCommandHint && (
-                        <p className='search-command-hint' id={commandHintId}>
-                            {t.slashCommandHint}
-                        </p>
-                    )}
                 </div>
             </div>
             {hasSearchSuggestions && searchSuggestionsPosition && (

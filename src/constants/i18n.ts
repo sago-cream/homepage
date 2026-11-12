@@ -112,7 +112,8 @@ const messages = {
             'Open these bookmarks together with /launch.',
         quickLaunchSearchPrompt: 'Search your bookmarks to add one.',
         quickLaunch: 'Quick Launch',
-        slashCommandHint: 'Type / for commands',
+        quickLaunchCommandHint:
+            'Type /launch in search to open these bookmarks.',
         quickLaunchRemainingTabs: 'Open remaining Quick Launch tabs',
         import: 'Import',
         importBookmarks: 'Import bookmarks',
@@ -269,7 +270,7 @@ const messages = {
         quickLaunchEmptyDescription: '使用 /launch 一次開啟這些書籤。',
         quickLaunchSearchPrompt: '搜尋書籤以新增至快速啟動。',
         quickLaunch: '快速啟動',
-        slashCommandHint: '輸入 / 查看指令',
+        quickLaunchCommandHint: '在搜尋列輸入 /launch，一次開啟這些書籤。',
         quickLaunchRemainingTabs: '開啟剩餘的快速啟動分頁',
         import: '匯入',
         importBookmarks: '匯入書籤',

@@ -205,6 +205,9 @@ export const QuickLaunchSettingsSection: React.FC<
             <div className='settings-launch-heading'>
                 <div className='settings-section-heading'>
                     <h2>{t.quickLaunch}</h2>
+                    <p className='settings-row-description'>
+                        {t.quickLaunchCommandHint}
+                    </p>
                 </div>
                 {quickLaunchBookmarks.length > 0 && addButton}
             </div>
