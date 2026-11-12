@@ -2416,12 +2416,6 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-page {
-    --fw-bold: 600;
-    --fontBaseSm: var(--fw-base) var(--fs-sm) var(--ff-quicksand);
-    --fontBaseMd: var(--fw-base) var(--fs-md) var(--ff-quicksand);
-    --fontBoldSm: var(--fw-bold) var(--fs-sm) var(--ff-quicksand);
-    --fontBoldMd: var(--fw-bold) var(--fs-md) var(--ff-quicksand);
-    --fontBoldLg: var(--fw-bold) var(--fs-lg) var(--ff-quicksand);
     --settings-border: color-mix(in srgb, var(--clr-text) 12%, transparent);
     --settings-error: color-mix(
         in srgb,
@@ -2474,19 +2468,14 @@ a.bookmark-workspace-tree-item {
     --clr-text-alpha: var(--clr-neutral);
 }
 
-.settings-page:lang(zh-TW) {
-    --fw-base: 400;
-}
-
 .settings-section-heading h2 {
     margin: 0;
-    color: var(--clr-text);
+    color: var(--clr-neutral);
 }
 
 .settings-row-description {
     color: var(--clr-text-alpha);
     font: var(--fontBaseSm);
-    line-height: 1.5;
 }
 
 .settings-icon-button {
@@ -2546,12 +2535,15 @@ a.bookmark-workspace-tree-item {
     border-inline-end: 1px solid var(--clr-text-alpha-2);
 }
 
+.settings-page-title:focus {
+    outline: none;
+}
+
 .settings-page-sidebar h1 {
     margin: 0 0 0.25rem;
     padding-inline: 0.75rem;
-    font: var(--fontBoldLg);
-    color: var(--clr-text);
-    line-height: 1.5;
+    font: var(--fontBoldMd);
+    color: var(--clr-neutral);
 }
 
 .settings-page-back {
@@ -2708,24 +2700,23 @@ a.bookmark-workspace-tree-item {
 .settings-section-heading h2,
 .settings-page .bookmark-workspace-title-group h2 {
     font: var(--fontBoldLg);
-    font-size: var(--fs-lg);
-    line-height: 1.5;
+    font-size: var(--fs-heading);
     text-wrap: balance;
 }
 
 .settings-card {
-    border: 1px solid var(--settings-border);
+    border: 1px solid var(--clr-text-alpha-2);
     border-radius: 1rem;
-    background-color: var(--clr-neutral-light);
+    background-color: var(--clr-panel-bg);
+    box-shadow: var(--shadow-panel);
     overflow: visible;
 }
 
 .settings-page .settings-row {
-    position: relative;
     width: 100%;
     min-height: 4rem;
     padding: 0.75rem 1rem;
-    border-bottom: 0;
+    border-bottom: 1px solid var(--clr-text-alpha-2);
     border-radius: 0;
     color: var(--clr-text);
     font: var(--fontBaseMd);
@@ -2734,15 +2725,6 @@ a.bookmark-workspace-tree-item {
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     gap: 1.5rem;
-}
-
-.settings-card > .settings-row:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    inset-inline: 1rem;
-    bottom: 0;
-    height: 1px;
-    background: var(--settings-border);
 }
 
 .settings-page .settings-row:first-child {
@@ -3073,12 +3055,6 @@ a.bookmark-workspace-tree-item {
     box-shadow: none;
     outline: 2px solid var(--settings-error);
     outline-offset: 0;
-}
-
-.settings-page
-    .settings-animation-switch[aria-checked='true']
-    .settings-switch-thumb {
-    background-color: var(--clr-neutral-light);
 }
 
 :root[data-theme='dark'] .settings-page .settings-select,
@@ -5393,28 +5369,6 @@ a.bookmark-workspace-tree-item {
     font: var(--fontBaseSm);
     line-height: 1.5;
     text-wrap: pretty;
-}
-
-@media (max-width: 600px) {
-    .settings-page .settings-keybind-row {
-        padding: 1rem;
-        grid-template-columns: minmax(0, 1fr) auto;
-        gap: 1rem;
-    }
-
-    .settings-keybind-action {
-        grid-column: 1 / -1;
-    }
-
-    .settings-hotkey-field {
-        width: 5rem;
-    }
-
-    .settings-keybind-remove {
-        justify-self: end;
-        min-width: 2.75rem;
-        min-height: 2.75rem;
-    }
 }
 
 /* Theme-aware scrollbars stay inside their panes and never chain to the homepage. */

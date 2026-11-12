@@ -260,7 +260,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     const [pendingSearchResult, setPendingSearchResult] =
         useState<SettingsSearchResult>();
     const openDropdownIdRef = useRef(openDropdownId);
-    const closeButtonRef = useRef<HTMLButtonElement>(null);
+    const settingsTitleRef = useRef<HTMLHeadingElement>(null);
     const returnFocusRef = useRef<HTMLElement | undefined>(undefined);
     const triggerRef = useRef<HTMLButtonElement>(null);
     const controlRef = useRef<HTMLDivElement>(null);
@@ -275,6 +275,12 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
     if (routeSection !== undefined) {
         lastSectionRef.current = routeSection;
     }
+
+    useEffect(() => {
+        if (isCompactViewport && routeSection === 'keybinds') {
+            router.replace('/settings', { scroll: false });
+        }
+    }, [isCompactViewport, routeSection, router]);
 
     useLayoutEffect(() => {
         const navigation = navigationRef.current;
@@ -382,7 +388,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
 
         globalThis.document.body.style.overflow = 'hidden';
         globalThis.document.addEventListener('keydown', onKeyDown);
-        closeButtonRef.current?.focus();
+        settingsTitleRef.current?.focus({ preventScroll: true });
 
         return () => {
             globalThis.document.body.style.overflow = previousOverflow;
@@ -443,13 +449,26 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         focusedViewRef.current = view;
         if (isCompactViewport) {
             if (isSettingsIndex) {
-                navigationRef.current
-                    ?.querySelector<HTMLElement>(
+                const selectedCategory =
+                    navigationRef.current?.querySelector<HTMLElement>(
                         `[data-section="${lastSectionRef.current}"]`
-                    )
-                    ?.focus({ preventScroll: true });
+                    );
+                (selectedCategory ?? settingsTitleRef.current)?.focus({
+                    preventScroll: true,
+                });
             } else {
-                categoryBackRef.current?.focus({ preventScroll: true });
+                const heading = [
+                    ...document.querySelectorAll<HTMLElement>(
+                        '.settings-page-section h2'
+                    ),
+                ].find((element) => element.getClientRects().length > 0);
+                if (heading) {
+                    heading.tabIndex = -1;
+                    heading.classList.add('settings-page-title');
+                    heading.focus({ preventScroll: true });
+                } else {
+                    categoryBackRef.current?.focus({ preventScroll: true });
+                }
             }
         }
         return undefined;
@@ -592,11 +611,14 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
         id: SettingsSectionId;
         label: string;
     }>;
+    const visibleSettingsSections = settingsSections.filter(
+        (section) => !isCompactViewport || section.id !== 'keybinds'
+    );
     const searchResults = getSettingsSearchResults(
         t,
         settingsQuery,
         locationOptions.map((option) => option.label).join(' ')
-    );
+    ).filter((result) => !isCompactViewport || result.section !== 'keybinds');
     const isSearching = settingsQuery.trim() !== '';
     const openSearchResult = (result: SettingsSearchResult) => {
         setOpenDropdownId(undefined);
@@ -704,7 +726,14 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                   </button>
                               </header>
                               <aside className='settings-page-sidebar'>
-                                  <h1 id='settings-page-title'>{t.settings}</h1>
+                                  <h1
+                                      id='settings-page-title'
+                                      className='settings-page-title'
+                                      ref={settingsTitleRef}
+                                      tabIndex={-1}
+                                  >
+                                      {t.settings}
+                                  </h1>
                                   <form
                                       className='settings-sidebar-search'
                                       role='search'
@@ -790,61 +819,63 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                                     )}
                                                 </button>
                                             ))
-                                          : settingsSections.map((section) => {
-                                                const Icon = section.icon;
-                                                const isSelected =
-                                                    (!isCompactViewport ||
-                                                        !isSettingsIndex) &&
-                                                    selectedSection ===
-                                                        section.id;
+                                          : visibleSettingsSections.map(
+                                                (section) => {
+                                                    const Icon = section.icon;
+                                                    const isSelected =
+                                                        (!isCompactViewport ||
+                                                            !isSettingsIndex) &&
+                                                        selectedSection ===
+                                                            section.id;
 
-                                                return (
-                                                    <Link
-                                                        className='settings-page-sidebar-button'
-                                                        key={section.id}
-                                                        data-section={
-                                                            section.id
-                                                        }
-                                                        href={
-                                                            section.id ===
-                                                            'content'
-                                                                ? bookmarksHrefRef.current
-                                                                : settingsSectionPaths[
-                                                                      section.id
-                                                                  ]
-                                                        }
-                                                        scroll={false}
-                                                        aria-current={
-                                                            isSelected
-                                                                ? 'page'
-                                                                : undefined
-                                                        }
-                                                        onClick={() => {
-                                                            setOpenDropdownId(
-                                                                undefined
-                                                            );
-                                                        }}
-                                                    >
-                                                        <Icon
-                                                            className='icon'
-                                                            aria-hidden
-                                                        />
-                                                        <span>
-                                                            {section.label}
-                                                        </span>
-                                                        <ChevronRight
-                                                            className='settings-section-chevron'
-                                                            aria-hidden
-                                                        />
-                                                    </Link>
-                                                );
-                                            })}
+                                                    return (
+                                                        <Link
+                                                            className='settings-page-sidebar-button'
+                                                            key={section.id}
+                                                            data-section={
+                                                                section.id
+                                                            }
+                                                            href={
+                                                                section.id ===
+                                                                'content'
+                                                                    ? bookmarksHrefRef.current
+                                                                    : settingsSectionPaths[
+                                                                          section
+                                                                              .id
+                                                                      ]
+                                                            }
+                                                            scroll={false}
+                                                            aria-current={
+                                                                isSelected
+                                                                    ? 'page'
+                                                                    : undefined
+                                                            }
+                                                            onClick={() => {
+                                                                setOpenDropdownId(
+                                                                    undefined
+                                                                );
+                                                            }}
+                                                        >
+                                                            <Icon
+                                                                className='icon'
+                                                                aria-hidden
+                                                            />
+                                                            <span>
+                                                                {section.label}
+                                                            </span>
+                                                            <ChevronRight
+                                                                className='settings-section-chevron'
+                                                                aria-hidden
+                                                            />
+                                                        </Link>
+                                                    );
+                                                }
+                                            )}
                                   </nav>
                                   <button
                                       className='settings-page-sidebar-button settings-page-back'
                                       type='button'
                                       aria-label={t.backToHomepage}
-                                      ref={closeButtonRef}
                                       onClick={requestSettingsClose}
                                   >
                                       <ArrowLeft aria-hidden />
@@ -1312,7 +1343,8 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                   </div>
                               </section>
 
-                              {selectedSection === 'keybinds' ? (
+                              {selectedSection === 'keybinds' &&
+                              !isCompactViewport ? (
                                   <KeybindSettingsSection
                                       bookmarkControls={bookmarkControls}
                                       openDropdownId={openDropdownId}

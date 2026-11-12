@@ -12,6 +12,7 @@ import { useBookmarkSearch } from './useBookmarkSearch';
 test('search respects native controls and handles Zhuyin hotkeys and slash commands', async () => {
     const browser = new Window({ url: 'https://example.com' });
     const opened: string[] = [];
+    let isCompactViewport = false;
     const bindings = {
         window: browser,
         document: browser.document,
@@ -20,6 +21,7 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
         addEventListener: browser.addEventListener.bind(browser),
         removeEventListener: browser.removeEventListener.bind(browser),
         getComputedStyle: browser.getComputedStyle.bind(browser),
+        matchMedia: () => ({ matches: isCompactViewport }),
         ResizeObserver: browser.ResizeObserver,
         requestAnimationFrame: () => 0,
         cancelAnimationFrame: () => undefined,
@@ -162,6 +164,10 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
         await press(document.body, { key: 'ㄑ' });
         await press(document.body, { key: 'Process', code: 'KeyF' });
         expect(opened).toEqual([feed.url, feed.url]);
+        isCompactViewport = true;
+        await press(document.body, { key: 'f', code: 'KeyF' });
+        expect(opened).toHaveLength(2);
+        isCompactViewport = false;
         await press(input, { key: 'Process', code: 'KeyF' });
         expect(opened).toHaveLength(2);
 
