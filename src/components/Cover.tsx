@@ -1,15 +1,17 @@
 import React, { lazy, Suspense, useState } from 'react';
-import { Search, X } from 'lucide-react';
+import { Layers, Search } from 'lucide-react';
 
 import { useHomepageAuth } from '@/auth/AuthProvider';
 import { useBookmarks } from '@/hooks/useBookmarks';
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useBookmarkSearch } from '@/hooks/useBookmarkSearch';
 import { useHideLinks } from '@/hooks/useHideLinks';
+import { useLocale } from '@/hooks/useLocale';
 import { useTime } from '@/hooks/useTime';
 import type { AqiData, WeatherData } from '@/types/environment';
 import type { InitialAppPreferences } from '@/types/preferences';
 import { Mountains } from './Mountains';
+import { QuickLaunchDialog } from './QuickLaunchDialog';
 import { SearchSuggestions } from './SearchSuggestions';
 
 const LinkPanel = lazy(
@@ -69,12 +71,13 @@ const CoverContent: React.FC<CoverContentProps> = ({
     isSupabaseEnabled,
 }) => {
     const { time } = useTime();
+    const { t } = useLocale();
     const { hideLinks } = useHideLinks();
     const [isLinkPanelLocked, setIsLinkPanelLocked] = useState(false);
     const {
-        blockedFeedsLinks,
+        isQuickLaunchOpen,
+        closeQuickLaunch,
         clearSearch,
-        clearBlockedFeedsLinks,
         executeSlashCommand,
         focusSearchInput,
         googleSearchResultIndex,
@@ -130,45 +133,63 @@ const CoverContent: React.FC<CoverContentProps> = ({
                         }}
                     />
                 </div>
-                <div
-                    className={[
-                        'search',
-                        inputFocused && 'focused',
-                        hasSearchSuggestions && 'with-suggestions',
-                    ]
-                        .filter(Boolean)
-                        .join(' ')}
-                    ref={searchRef}
-                >
-                    <form
-                        className='search-form'
-                        ref={searchFormRef}
-                        onSubmit={handleSubmit}
-                        onClick={focusSearchInput}
+                <div className='homepage-launch-bar'>
+                    <div
+                        className={[
+                            'search',
+                            inputFocused && 'focused',
+                            hasSearchSuggestions && 'with-suggestions',
+                        ]
+                            .filter(Boolean)
+                            .join(' ')}
+                        ref={searchRef}
                     >
-                        <div className='search-icon'>
-                            <Search className='icon' />
-                        </div>
-                        <input
-                            className='search-input'
-                            type='text'
-                            placeholder='Search...'
-                            autoComplete='off'
-                            value={searchInputValue}
-                            ref={inputRef}
-                            aria-controls={
-                                hasSearchSuggestions
-                                    ? searchSuggestionsId
-                                    : undefined
-                            }
-                            aria-expanded={hasSearchSuggestions}
-                            aria-autocomplete='list'
-                            onKeyDown={handleSearchKeyDown}
-                            onChange={handleSearchChange}
-                            onFocus={handleSearchFocus}
-                            onBlur={handleSearchBlur}
-                        />
-                    </form>
+                        <form
+                            className='search-form'
+                            ref={searchFormRef}
+                            onSubmit={handleSubmit}
+                            onClick={focusSearchInput}
+                        >
+                            <div className='search-icon'>
+                                <Search className='icon' />
+                            </div>
+                            <input
+                                className='search-input'
+                                type='text'
+                                placeholder={t.homepageSearch}
+                                aria-label={t.homepageSearch}
+                                autoComplete='off'
+                                value={searchInputValue}
+                                ref={inputRef}
+                                aria-controls={
+                                    hasSearchSuggestions
+                                        ? searchSuggestionsId
+                                        : undefined
+                                }
+                                aria-expanded={hasSearchSuggestions}
+                                aria-autocomplete='list'
+                                onKeyDown={handleSearchKeyDown}
+                                onChange={handleSearchChange}
+                                onFocus={handleSearchFocus}
+                                onBlur={handleSearchBlur}
+                            />
+                        </form>
+                    </div>
+                    <button
+                        type='button'
+                        className='quick-launch-entry'
+                        aria-haspopup='dialog'
+                        disabled={bookmarkControls.isLoading}
+                        onClick={() => {
+                            executeSlashCommand({
+                                command: 'feeds',
+                                label: '/launch',
+                            });
+                        }}
+                    >
+                        <Layers aria-hidden />
+                        <span>{t.quickLaunch}</span>
+                    </button>
                 </div>
             </div>
             {hasSearchSuggestions && searchSuggestionsPosition && (
@@ -190,32 +211,11 @@ const CoverContent: React.FC<CoverContentProps> = ({
                 />
             )}
 
-            {blockedFeedsLinks.length > 0 && (
-                <div className='feeds-fallback' role='status'>
-                    <div className='feeds-fallback-header'>
-                        <span>Open remaining feed tabs</span>
-                        <button
-                            className='feeds-fallback-close'
-                            type='button'
-                            aria-label='Dismiss'
-                            onClick={clearBlockedFeedsLinks}
-                        >
-                            <X className='icon' />
-                        </button>
-                    </div>
-                    <div className='feeds-fallback-links'>
-                        {blockedFeedsLinks.map(({ link, url }) => (
-                            <a
-                                key={`${link}:${url}`}
-                                href={url}
-                                target='_blank'
-                                rel='noopener noreferrer'
-                            >
-                                {link}
-                            </a>
-                        ))}
-                    </div>
-                </div>
+            {isQuickLaunchOpen && (
+                <QuickLaunchDialog
+                    bookmarkControls={bookmarkControls}
+                    onClose={closeQuickLaunch}
+                />
             )}
 
             <Suspense fallback={undefined}>

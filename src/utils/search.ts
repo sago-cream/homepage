@@ -19,11 +19,6 @@ export interface SearchSuggestionsPosition {
     width: number;
 }
 
-export interface FeedsLink {
-    link: string;
-    url: string;
-}
-
 export interface SlashCommandItem {
     command: 'feeds';
     label: string;
@@ -31,6 +26,7 @@ export interface SlashCommandItem {
 
 const maxSearchResults = 4;
 
+// Keep the command ID stable for saved keybinds; /feeds remains an alias.
 const slashCommands = [
     {
         command: 'feeds',

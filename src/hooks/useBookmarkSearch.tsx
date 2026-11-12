@@ -11,11 +11,9 @@ import type React from 'react';
 
 import { useKeybinds } from '@/hooks/useKeybinds';
 import type { BookmarkCategoryData } from '@/types/bookmarks';
-import { getFeedBookmarks } from '@/utils/feeds';
 import { getHotkey } from '@/utils/keybinds';
 import { getKeyboardKey } from '@/utils/keyboard';
 import type {
-    FeedsLink,
     LinkItem,
     SearchSuggestionsPosition,
     SlashCommandItem,
@@ -30,10 +28,6 @@ import {
 } from '@/utils/search';
 
 const defaultMotionTrackingMs = 2000;
-const feedWindowOffsetHours = 8;
-const feedWindowStartHour = 16;
-const supercellStoreOpenedWindowKey = 'homepage.supercellStoreOpenedWindow';
-
 const getSearchKeySequenceInput = (
     e: React.KeyboardEvent<HTMLInputElement>
 ): string | undefined => {
@@ -47,45 +41,6 @@ const getSearchKeySequenceInput = (
     }
 
     return undefined;
-};
-
-const getFeedsWindowKey = (date = new Date()): string => {
-    const shiftedTimestamp =
-        date.getTime() +
-        (feedWindowOffsetHours - feedWindowStartHour) * 60 * 60 * 1000;
-    const shiftedDate = new Date(shiftedTimestamp);
-
-    return shiftedDate.toISOString().slice(0, 10);
-};
-
-const shouldOpenFeedLink = (link: string, windowKey: string): boolean => {
-    if (link !== 'Supercell Store') {
-        return true;
-    }
-
-    try {
-        return (
-            globalThis.localStorage.getItem(supercellStoreOpenedWindowKey) !==
-            windowKey
-        );
-    } catch {
-        return true;
-    }
-};
-
-const recordOpenedFeedLink = (link: string, windowKey: string): void => {
-    if (link !== 'Supercell Store') {
-        return;
-    }
-
-    try {
-        globalThis.localStorage.setItem(
-            supercellStoreOpenedWindowKey,
-            windowKey
-        );
-    } catch {
-        // Ignore private-mode or storage permission failures.
-    }
 };
 
 const getMaxCssTime = (value: string): number =>
@@ -118,9 +73,9 @@ export const useBookmarkSearch = (
     bookmarkTree: readonly BookmarkCategoryData[],
     bookmarksLoading = false
 ): {
-    blockedFeedsLinks: FeedsLink[];
+    isQuickLaunchOpen: boolean;
+    closeQuickLaunch: () => void;
     clearSearch: () => void;
-    clearBlockedFeedsLinks: () => void;
     executeSlashCommand: (command: SlashCommandItem) => void;
     focusSearchInput: () => void;
     googleSearchResultIndex: number;
@@ -158,7 +113,7 @@ export const useBookmarkSearch = (
     const [inputFocused, setInputFocused] = useState(false);
     const [searchValue, setSearchValue] = useState('');
     const [searchKeySequence, setSearchKeySequence] = useState('');
-    const [blockedFeedsLinks, setBlockedFeedsLinks] = useState<FeedsLink[]>([]);
+    const [isQuickLaunchOpen, setIsQuickLaunchOpen] = useState(false);
     const [requestedSearchResultIndex, setRequestedSearchResultIndex] =
         useState<number | undefined>(undefined);
     const [searchSuggestionsPosition, setSearchSuggestionsPosition] = useState<
@@ -226,44 +181,17 @@ export const useBookmarkSearch = (
               ];
     const searchInputValue = searchValue;
 
-    const executeFeedsCommand = useCallback(() => {
-        const nextBlockedLinks: FeedsLink[] = [];
-        const windowKey = getFeedsWindowKey();
+    const executeSlashCommand = useCallback((_command: SlashCommandItem) => {
+        setInputFocused(false);
+        setSearchValue('');
+        setSearchKeySequence('');
+        setRequestedSearchResultIndex(undefined);
+        setIsQuickLaunchOpen(true);
+    }, []);
 
-        for (const bookmark of getFeedBookmarks(bookmarkTree)) {
-            const link = bookmark.title;
-            if (!shouldOpenFeedLink(link, windowKey)) {
-                continue;
-            }
-
-            const openedTab = globalThis.open(bookmark.url, '_blank');
-            if (openedTab) {
-                openedTab.opener = undefined;
-                recordOpenedFeedLink(link, windowKey);
-                continue;
-            }
-
-            nextBlockedLinks.push({
-                link,
-                url: bookmark.url,
-            });
-        }
-
-        if (nextBlockedLinks.length === 0) {
-            globalThis.requestAnimationFrame(() => {
-                Reflect.apply(globalThis.close, globalThis, []);
-            });
-        }
-
-        setBlockedFeedsLinks(nextBlockedLinks);
-    }, [bookmarkTree]);
-
-    const executeSlashCommand = useCallback(
-        (_command: SlashCommandItem) => {
-            executeFeedsCommand();
-        },
-        [executeFeedsCommand]
-    );
+    const closeQuickLaunch = useCallback(() => {
+        setIsQuickLaunchOpen(false);
+    }, []);
 
     useEffect(() => {
         const handleHotkey = (event: KeyboardEvent) => {
@@ -604,7 +532,6 @@ export const useBookmarkSearch = (
                 e.preventDefault();
                 setSearchValue('/');
                 setSearchKeySequence('/');
-                setBlockedFeedsLinks([]);
                 setInputFocused(true);
                 focusSearchInput();
             }
@@ -654,14 +581,9 @@ export const useBookmarkSearch = (
                 setSearchKeySequence('');
             }
             setRequestedSearchResultIndex(undefined);
-            setBlockedFeedsLinks([]);
         },
         []
     );
-
-    const clearBlockedFeedsLinks = useCallback(() => {
-        setBlockedFeedsLinks([]);
-    }, []);
 
     const handleSearchFocus = useCallback(() => {
         setInputFocused(true);
@@ -676,9 +598,9 @@ export const useBookmarkSearch = (
     }, [googleSearchResultIndex]);
 
     return {
-        blockedFeedsLinks,
+        isQuickLaunchOpen,
+        closeQuickLaunch,
         clearSearch,
-        clearBlockedFeedsLinks,
         executeSlashCommand,
         focusSearchInput,
         googleSearchResultIndex,

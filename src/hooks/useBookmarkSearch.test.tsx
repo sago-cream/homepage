@@ -11,7 +11,6 @@ import { useBookmarkSearch } from './useBookmarkSearch';
 
 test('search respects native controls and handles Zhuyin hotkeys and slash commands', async () => {
     const browser = new Window({ url: 'https://example.com' });
-    const opened: string[] = [];
     let isCompactViewport = false;
     const bindings = {
         window: browser,
@@ -25,9 +24,8 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
         ResizeObserver: browser.ResizeObserver,
         requestAnimationFrame: () => 0,
         cancelAnimationFrame: () => undefined,
-        open: (url: string) => {
-            opened.push(url);
-            return undefined;
+        open: () => {
+            throw new Error('Previewing Quick Launch must not open tabs');
         },
         IS_REACT_ACT_ENVIRONMENT: true,
     };
@@ -163,13 +161,17 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
 
         await press(document.body, { key: 'ㄑ' });
         await press(document.body, { key: 'Process', code: 'KeyF' });
-        expect(opened).toEqual([feed.url, feed.url]);
+        expect(search.isQuickLaunchOpen).toBe(true);
+        await act(async () => {
+            search.closeQuickLaunch();
+            await Promise.resolve();
+        });
         isCompactViewport = true;
         await press(document.body, { key: 'f', code: 'KeyF' });
-        expect(opened).toHaveLength(2);
+        expect(search.isQuickLaunchOpen).toBe(false);
         isCompactViewport = false;
         await press(input, { key: 'Process', code: 'KeyF' });
-        expect(opened).toHaveLength(2);
+        expect(search.isQuickLaunchOpen).toBe(false);
 
         await press(document.body, { key: 'Process', code: 'Slash' });
         expect(document.activeElement).toBe(input);
@@ -193,7 +195,11 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
         ]);
         expect(search.hasGoogleSearchResult).toBe(false);
         await press(input, { key: 'Enter' });
-        expect(opened).toHaveLength(3);
+        expect(search.isQuickLaunchOpen).toBe(true);
+        await act(async () => {
+            search.closeQuickLaunch();
+            await Promise.resolve();
+        });
 
         await act(async () => {
             search.handleSearchBlur();
@@ -201,8 +207,16 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
         });
         await change('ㄥㄑㄍㄍㄎㄋ');
         expect(search.slashCommandResults).toHaveLength(1);
+        expect(input.value).toBe('ㄥㄑㄍㄍㄎㄋ');
         await press(input, { key: 'Enter' });
-        expect(opened).toHaveLength(4);
+        expect(search.isQuickLaunchOpen).toBe(true);
+        await act(async () => {
+            search.closeQuickLaunch();
+            await Promise.resolve();
+        });
+        await change('/launch');
+        await press(input, { key: 'Enter' });
+        expect(search.isQuickLaunchOpen).toBe(true);
     } finally {
         await act(async () => {
             root.unmount();
