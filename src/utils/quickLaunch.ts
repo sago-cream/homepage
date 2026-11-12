@@ -4,7 +4,7 @@ import type {
     BookmarkNodeData,
 } from '@/types/bookmarks';
 
-export const defaultQuickLaunchTitles = [
+export const legacyQuickLaunchTitles = [
     'Instagram',
     'Twitter',
     'Facebook',
@@ -14,6 +14,11 @@ export const defaultQuickLaunchTitles = [
     'Crunchyroll',
     'Supercell Store',
 ] as const;
+
+const legacyQuickLaunchTitleSet = new Set<string>(legacyQuickLaunchTitles);
+
+export const isLegacyQuickLaunchTitle = (title: string): boolean =>
+    legacyQuickLaunchTitleSet.has(title);
 
 export const hasCustomQuickLaunchSelection = (
     bookmarkTree: readonly BookmarkCategoryData[]
@@ -37,7 +42,7 @@ export const getQuickLaunchBookmarks = (
             );
     }
 
-    return defaultQuickLaunchTitles.flatMap((title) => {
+    return legacyQuickLaunchTitles.flatMap((title) => {
         const bookmark = bookmarks.find((item) => item.title === title);
         return bookmark === undefined ? [] : [bookmark];
     });
@@ -45,7 +50,7 @@ export const getQuickLaunchBookmarks = (
 
 const updateQuickLaunchNodes = (
     nodes: readonly BookmarkNodeData[],
-    launchOrderById: ReadonlyMap<string, number>
+    quickLaunchOrderById: ReadonlyMap<string, number>
 ): BookmarkNodeData[] =>
     nodes.map((node) => {
         if (node.type === 'folder') {
@@ -53,12 +58,12 @@ const updateQuickLaunchNodes = (
                 ...node,
                 children: updateQuickLaunchNodes(
                     node.children,
-                    launchOrderById
+                    quickLaunchOrderById
                 ),
             };
         }
 
-        const feedOrder = launchOrderById.get(node.id);
+        const feedOrder = quickLaunchOrderById.get(node.id);
         return {
             ...node,
             feed: feedOrder !== undefined,
@@ -72,33 +77,23 @@ export const setQuickLaunchBookmarkIds = (
     bookmarkTree: readonly BookmarkCategoryData[],
     bookmarkIds: readonly string[]
 ): BookmarkCategoryData[] => {
-    const launchOrderById = new Map(
+    const quickLaunchOrderById = new Map(
         bookmarkIds.map((bookmarkId, index) => [bookmarkId, index])
     );
 
     return bookmarkTree.map((category) => ({
         ...category,
-        children: updateQuickLaunchNodes(category.children, launchOrderById),
+        children: updateQuickLaunchNodes(
+            category.children,
+            quickLaunchOrderById
+        ),
     }));
 };
 
-// Open synchronously inside the user's click so browsers can allow multiple tabs.
-export const openQuickLaunchBookmarks = (
-    bookmarks: readonly BookmarkLinkData[],
-    openTab: (url: string, target: string) => Window | null | undefined = (
-        url,
-        target
-    ) => globalThis.open(url, target)
-): BookmarkLinkData[] =>
-    bookmarks.filter((bookmark) => {
-        try {
-            const tab = openTab(bookmark.url, '_blank');
-            if (!tab) {
-                return true;
-            }
-            tab.opener = undefined;
-            return false;
-        } catch {
-            return true;
-        }
-    });
+export const initializeQuickLaunchSelection = (
+    bookmarkTree: readonly BookmarkCategoryData[]
+): BookmarkCategoryData[] =>
+    setQuickLaunchBookmarkIds(
+        bookmarkTree,
+        getQuickLaunchBookmarks(bookmarkTree).map((bookmark) => bookmark.id)
+    );

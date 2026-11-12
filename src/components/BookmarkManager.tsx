@@ -1014,17 +1014,17 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         });
     };
 
-    const launchBookmarkIds = new Set(
+    const quickLaunchBookmarkIds = new Set(
         getQuickLaunchBookmarks(bookmarkControls.bookmarkTree).map(
             (bookmark) => bookmark.id
         )
     );
     const getAddToQuickLaunchAction = (bookmarkId: string) =>
-        bookmarkControls.canEdit && !launchBookmarkIds.has(bookmarkId)
+        bookmarkControls.canEdit && !quickLaunchBookmarkIds.has(bookmarkId)
             ? () =>
                   bookmarkControls.replaceBookmarkTree(
                       setQuickLaunchBookmarkIds(bookmarkControls.bookmarkTree, [
-                          ...launchBookmarkIds,
+                          ...quickLaunchBookmarkIds,
                           bookmarkId,
                       ])
                   )

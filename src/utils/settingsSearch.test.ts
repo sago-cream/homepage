@@ -46,31 +46,3 @@ test('keeps translated result labels and category context', () => {
     ).toEqual([]);
     expect(getSettingsSearchResults(getMessages('en'), ' ', '')).toEqual([]);
 });
-
-test('finds Quick Launch by name and bookmark-opening intent', () => {
-    for (const locale of ['en', 'zh-TW'] as const) {
-        for (const query of [
-            'quick launch',
-            '快速啟動',
-            '/launch',
-            'open tabs together',
-        ]) {
-            expect(
-                getSettingsSearchResults(getMessages(locale), query, '')[0]
-            ).toMatchObject({
-                section: 'quickLaunch',
-                label: getMessages(locale).quickLaunch,
-            });
-        }
-    }
-});
-
-test('retired command and category names are not settings search aliases', () => {
-    for (const locale of ['en', 'zh-TW'] as const) {
-        for (const query of ['/feeds', 'feeds', '動態']) {
-            expect(
-                getSettingsSearchResults(getMessages(locale), query, '')
-            ).toEqual([]);
-        }
-    }
-});

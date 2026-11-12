@@ -19,6 +19,11 @@ export interface SearchSuggestionsPosition {
     width: number;
 }
 
+export interface QuickLaunchLink {
+    link: string;
+    url: string;
+}
+
 export interface SlashCommandItem {
     command: 'quick-launch';
     label: string;
@@ -78,7 +83,8 @@ export const getSlashCommandResults = (
     return slashCommands.filter((command) =>
         [query, alias].some(
             (candidate) =>
-                candidate !== undefined && command.label.startsWith(candidate)
+                candidate !== undefined &&
+                command.label.toLowerCase().startsWith(candidate)
         )
     );
 };

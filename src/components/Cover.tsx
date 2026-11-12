@@ -1,6 +1,5 @@
-import React, { lazy, Suspense, useCallback, useState } from 'react';
-import { Layers, Search, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import React, { lazy, Suspense, useState } from 'react';
+import { Search, X } from 'lucide-react';
 
 import { useHomepageAuth } from '@/auth/AuthProvider';
 import { useBookmarks } from '@/hooks/useBookmarks';
@@ -11,7 +10,6 @@ import { useLocale } from '@/hooks/useLocale';
 import { useTime } from '@/hooks/useTime';
 import type { AqiData, WeatherData } from '@/types/environment';
 import type { InitialAppPreferences } from '@/types/preferences';
-import { settingsSectionPaths } from '@/utils/settingsNavigation';
 import { Mountains } from './Mountains';
 import { SearchSuggestions } from './SearchSuggestions';
 
@@ -72,26 +70,13 @@ const CoverContent: React.FC<CoverContentProps> = ({
     isSupabaseEnabled,
 }) => {
     const { time } = useTime();
-    const router = useRouter();
-    const openQuickLaunchSetup = useCallback(() => {
-        const hasBookmarks = bookmarkControls.bookmarkTree.some(
-            (category) => category.links.length > 0
-        );
-        router.push(
-            hasBookmarks
-                ? settingsSectionPaths.quickLaunch
-                : settingsSectionPaths.content,
-            { scroll: false }
-        );
-    }, [bookmarkControls.bookmarkTree, router]);
     const { t } = useLocale();
     const { hideLinks } = useHideLinks();
     const [isLinkPanelLocked, setIsLinkPanelLocked] = useState(false);
     const {
-        blockedQuickLaunchBookmarks,
-        clearBlockedQuickLaunchBookmarks,
-        dismissBlockedQuickLaunchBookmark,
+        blockedQuickLaunchLinks,
         clearSearch,
+        clearBlockedQuickLaunchLinks,
         executeSlashCommand,
         focusSearchInput,
         googleSearchResultIndex,
@@ -121,9 +106,11 @@ const CoverContent: React.FC<CoverContentProps> = ({
         trimmedSearchValue,
     } = useBookmarkSearch(
         bookmarkControls.bookmarkTree,
-        bookmarkControls.isLoading,
-        openQuickLaunchSetup
+        bookmarkControls.isLoading
     );
+
+    const showCommandHint = inputFocused && trimmedSearchValue === '';
+    const commandHintId = `${searchSuggestionsId}-command-hint`;
 
     return (
         <section className='cover'>
@@ -148,62 +135,53 @@ const CoverContent: React.FC<CoverContentProps> = ({
                         }}
                     />
                 </div>
-                <div className='homepage-launch-bar'>
-                    <div
-                        className={[
-                            'search',
-                            inputFocused && 'focused',
-                            hasSearchSuggestions && 'with-suggestions',
-                        ]
-                            .filter(Boolean)
-                            .join(' ')}
-                        ref={searchRef}
+                <div
+                    className={[
+                        'search',
+                        inputFocused && 'focused',
+                        hasSearchSuggestions && 'with-suggestions',
+                    ]
+                        .filter(Boolean)
+                        .join(' ')}
+                    ref={searchRef}
+                >
+                    <form
+                        className='search-form'
+                        ref={searchFormRef}
+                        onSubmit={handleSubmit}
+                        onClick={focusSearchInput}
                     >
-                        <form
-                            className='search-form'
-                            ref={searchFormRef}
-                            onSubmit={handleSubmit}
-                            onClick={focusSearchInput}
-                        >
-                            <div className='search-icon'>
-                                <Search className='icon' />
-                            </div>
-                            <input
-                                className='search-input'
-                                type='text'
-                                placeholder={t.homepageSearch}
-                                aria-label={t.homepageSearch}
-                                autoComplete='off'
-                                value={searchInputValue}
-                                ref={inputRef}
-                                aria-controls={
-                                    hasSearchSuggestions
-                                        ? searchSuggestionsId
-                                        : undefined
-                                }
-                                aria-expanded={hasSearchSuggestions}
-                                aria-autocomplete='list'
-                                onKeyDown={handleSearchKeyDown}
-                                onChange={handleSearchChange}
-                                onFocus={handleSearchFocus}
-                                onBlur={handleSearchBlur}
-                            />
-                        </form>
-                    </div>
-                    <button
-                        type='button'
-                        className='quick-launch-entry'
-                        disabled={bookmarkControls.isLoading}
-                        onClick={() => {
-                            executeSlashCommand({
-                                command: 'quick-launch',
-                                label: '/launch',
-                            });
-                        }}
-                    >
-                        <Layers aria-hidden />
-                        <span>{t.quickLaunch}</span>
-                    </button>
+                        <div className='search-icon'>
+                            <Search className='icon' />
+                        </div>
+                        <input
+                            className='search-input'
+                            type='text'
+                            placeholder='Search...'
+                            autoComplete='off'
+                            value={searchInputValue}
+                            ref={inputRef}
+                            aria-controls={
+                                hasSearchSuggestions
+                                    ? searchSuggestionsId
+                                    : undefined
+                            }
+                            aria-expanded={hasSearchSuggestions}
+                            aria-autocomplete='list'
+                            aria-describedby={
+                                showCommandHint ? commandHintId : undefined
+                            }
+                            onKeyDown={handleSearchKeyDown}
+                            onChange={handleSearchChange}
+                            onFocus={handleSearchFocus}
+                            onBlur={handleSearchBlur}
+                        />
+                    </form>
+                    {showCommandHint && (
+                        <p className='search-command-hint' id={commandHintId}>
+                            {t.slashCommandHint}
+                        </p>
+                    )}
                 </div>
             </div>
             {hasSearchSuggestions && searchSuggestionsPosition && (
@@ -225,43 +203,32 @@ const CoverContent: React.FC<CoverContentProps> = ({
                 />
             )}
 
-            {blockedQuickLaunchBookmarks.length > 0 && (
-                <aside
-                    className='quick-launch-fallback'
-                    aria-labelledby='quick-launch-fallback-title'
-                >
+            {blockedQuickLaunchLinks.length > 0 && (
+                <div className='quick-launch-fallback' role='status'>
                     <div className='quick-launch-fallback-header'>
-                        <h2 id='quick-launch-fallback-title'>
-                            {t.quickLaunch}
-                        </h2>
+                        <span>{t.quickLaunchRemainingTabs}</span>
                         <button
+                            className='quick-launch-fallback-close'
                             type='button'
-                            className='settings-icon-button'
-                            aria-label={t.close}
-                            onClick={clearBlockedQuickLaunchBookmarks}
+                            aria-label='Dismiss'
+                            onClick={clearBlockedQuickLaunchLinks}
                         >
-                            <X aria-hidden />
+                            <X className='icon' />
                         </button>
                     </div>
-                    <p role='status'>{t.quickLaunchBlocked}</p>
                     <div className='quick-launch-fallback-links'>
-                        {blockedQuickLaunchBookmarks.map((bookmark) => (
+                        {blockedQuickLaunchLinks.map(({ link, url }) => (
                             <a
-                                key={bookmark.id}
-                                href={bookmark.url}
+                                key={`${link}:${url}`}
+                                href={url}
                                 target='_blank'
                                 rel='noopener noreferrer'
-                                onClick={() => {
-                                    dismissBlockedQuickLaunchBookmark(
-                                        bookmark.id
-                                    );
-                                }}
                             >
-                                {bookmark.title}
+                                {link}
                             </a>
                         ))}
                     </div>
-                </aside>
+                </div>
             )}
 
             <Suspense fallback={undefined}>

@@ -11,13 +11,8 @@ import { useBookmarkSearch } from './useBookmarkSearch';
 
 test('search respects native controls and handles Zhuyin hotkeys and slash commands', async () => {
     const browser = new Window({ url: 'https://example.com' });
-    let isCompactViewport = false;
-    let shouldBlockTabs = true;
-    let emptyLaunches = 0;
     const opened: string[] = [];
-    const onEmptyQuickLaunch = () => {
-        emptyLaunches++;
-    };
+    let isCompactViewport = false;
     const bindings = {
         window: browser,
         document: browser.document,
@@ -32,7 +27,7 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
         cancelAnimationFrame: () => undefined,
         open: (url: string) => {
             opened.push(url);
-            return shouldBlockTabs ? undefined : { opener: undefined };
+            return undefined;
         },
         IS_REACT_ACT_ENVIRONMENT: true,
     };
@@ -51,8 +46,8 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
             { id: 'quick-launch', target: 'command:quick-launch', key: 'f' },
         ])
     );
-    const launchBookmark = {
-        id: 'launch-bookmark',
+    const feed = {
+        id: 'feed',
         title: 'GitHub',
         type: 'link' as const,
         url: 'https://github.com',
@@ -61,15 +56,14 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
     const bookmarks = [
         {
             id: 'category',
-            category: 'Bookmarks',
-            children: [launchBookmark],
-            links: [launchBookmark],
+            category: 'QuickLaunch',
+            children: [feed],
+            links: [feed],
         },
     ];
-    let currentBookmarks = bookmarks;
     let search!: ReturnType<typeof useBookmarkSearch>;
     function Consumer() {
-        search = useBookmarkSearch(currentBookmarks, false, onEmptyQuickLaunch);
+        search = useBookmarkSearch(bookmarks);
         return (
             <form ref={search.searchFormRef} onSubmit={search.handleSubmit}>
                 <input
@@ -176,12 +170,7 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
 
         await press(document.body, { key: 'ㄑ' });
         await press(document.body, { key: 'Process', code: 'KeyF' });
-        expect(opened).toEqual([launchBookmark.url, launchBookmark.url]);
-        expect(search.blockedQuickLaunchBookmarks).toEqual([launchBookmark]);
-        await act(async () => {
-            search.clearBlockedQuickLaunchBookmarks();
-            await Promise.resolve();
-        });
+        expect(opened).toEqual([feed.url, feed.url]);
         isCompactViewport = true;
         await press(document.body, { key: 'f', code: 'KeyF' });
         expect(opened).toHaveLength(2);
@@ -212,10 +201,6 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
         expect(search.hasGoogleSearchResult).toBe(false);
         await press(input, { key: 'Enter' });
         expect(opened).toHaveLength(3);
-        await act(async () => {
-            search.clearBlockedQuickLaunchBookmarks();
-            await Promise.resolve();
-        });
 
         await act(async () => {
             search.handleSearchBlur();
@@ -223,44 +208,8 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
         });
         await change('ㄥㄠㄇㄧㄙㄏㄘ');
         expect(search.slashCommandResults).toHaveLength(1);
-        expect(input.value).toBe('ㄥㄠㄇㄧㄙㄏㄘ');
         await press(input, { key: 'Enter' });
         expect(opened).toHaveLength(4);
-        await act(async () => {
-            search.clearBlockedQuickLaunchBookmarks();
-            await Promise.resolve();
-        });
-        await change('/launch');
-        await press(input, { key: 'Enter' });
-        expect(opened).toHaveLength(5);
-        expect(search.blockedQuickLaunchBookmarks).toEqual([launchBookmark]);
-        await act(async () => {
-            search.dismissBlockedQuickLaunchBookmark(launchBookmark.id);
-            await Promise.resolve();
-        });
-        expect(search.blockedQuickLaunchBookmarks).toEqual([]);
-
-        shouldBlockTabs = false;
-        await change('/launch');
-        await press(input, { key: 'Enter' });
-        expect(opened).toHaveLength(6);
-        expect(search.blockedQuickLaunchBookmarks).toEqual([]);
-
-        currentBookmarks = [];
-        await act(async () => {
-            root.render(<Consumer />);
-            await Promise.resolve();
-        });
-        await act(async () => {
-            search.executeSlashCommand({
-                command: 'quick-launch',
-                label: '/launch',
-            });
-            await Promise.resolve();
-        });
-        expect(emptyLaunches).toBe(1);
-        expect(opened).toHaveLength(6);
-        expect(search.blockedQuickLaunchBookmarks).toEqual([]);
     } finally {
         await act(async () => {
             root.unmount();

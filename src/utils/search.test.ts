@@ -58,15 +58,13 @@ test('literal Chinese text remains searchable alongside recorded keys', () => {
     expect(getSearchResults(items, '中文', 'google')).toEqual(items);
 });
 
-test('Quick Launch accepts Latin, Zhuyin, mixed text, and the Zhuyin slash key', () => {
+test('slash commands accept Latin, Zhuyin, mixed text, and the Zhuyin slash key', () => {
     const launch: SlashCommandItem[] = [
         { command: 'quick-launch', label: '/launch' },
     ];
     for (const query of [
         '/',
-        '/launch',
         '/LAUNCH',
-        '/la',
         '/ㄠ',
         '/ㄠㄇㄧㄙㄏㄘ',
         '/lㄇuㄙcㄘ',
@@ -82,16 +80,12 @@ test('Quick Launch accepts Latin, Zhuyin, mixed text, and the Zhuyin slash key',
         'ㄠㄇㄧㄙㄏㄘ',
         '/unknown',
         '/ㄠㄇㄧㄙㄏㄘx',
-        '/feeds',
-        '/FEEDS',
-        '/f',
-        '/ㄑㄍㄍㄎㄋ',
     ]) {
         expect(getSlashCommandResults(query)).toEqual([]);
     }
 });
 
-test('Quick Launch uses recorded keys when the IME leaves residual text', () => {
+test('slash commands use recorded keys when the IME leaves residual text', () => {
     const launch = getSlashCommandResults('/launch');
     expect(getSlashCommandResults('/ㄘ', '/launch')).toEqual(launch);
     expect(getSlashCommandResults('ㄥㄘ', 'launch')).toEqual(launch);

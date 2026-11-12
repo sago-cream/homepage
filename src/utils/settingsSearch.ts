@@ -31,7 +31,7 @@ export const getSettingsSearchResults = (
             label: t.quickLaunch,
             section: 'quickLaunch',
             sectionLabel: t.quickLaunch,
-            keywords: `/launch quick launch 快速啟動 open tabs together bookmarks 書籤 分頁 一起 ${t.quickLaunchEmpty} ${t.chooseLaunchBookmarks}`,
+            keywords: `/launch ${t.quickLaunchEmpty} ${t.addQuickLaunchBookmark}`,
         },
         {
             id: 'keybinds',

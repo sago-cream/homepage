@@ -9,8 +9,8 @@ A personal browser homepage for fast bookmark access across browsers with instan
 - Set your browser homepage as <https://homepage.hsichen.dev>.
 - Press <kbd>Space</kbd> to start searching, and <kbd>Enter</kbd> to
   open.
-- Use Quick Launch to open your saved set of bookmarks together in new tabs. Click it beside homepage search or type `/launch`. Manage the set and tab order in Settings → Quick Launch.
-- On desktop, open Settings → Keybinds to assign a single letter (A–Z) to Quick Launch or a bookmark. Bindings stay in this browser and work while you are not typing or using a dialog. Hotkeys and slash commands also accept equivalent Zhuyin input.
+- Type `/` in search to see commands. Use `/launch` to open your Quick Launch bookmarks together.
+- Open Settings → Keybinds to assign a single letter (A–Z) to `/launch` or a bookmark. Bindings stay in this browser and work while you are not typing or using a dialog. Hotkeys and slash commands also accept equivalent Zhuyin input.
 - Sign in to upload a wallpaper; guests keep the default mountain scene.
 - Turn on the map pin in Preferences to follow your location, or turn it off to choose a Taiwan weather and AQI location.
 

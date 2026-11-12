@@ -1,7 +1,6 @@
 import { Bookmark, Layers, Search } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
-import { useLocale } from '@/hooks/useLocale';
 import type {
     LinkItem,
     SearchSuggestionsPosition,
@@ -40,14 +39,13 @@ export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
     searchResultIndexOffset,
     slashCommandResults,
     trimmedSearchValue,
-}) => {
-    const { t } = useLocale();
-    return createPortal(
+}) =>
+    createPortal(
         <div
             className='search-suggestions'
             id={id}
             role='listbox'
-            aria-label={t.searchSuggestions}
+            aria-label='Other bookmark matches'
             style={
                 {
                     '--suggestion-left': `${position.left}px`,
@@ -84,11 +82,10 @@ export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
                         }}
                     >
                         <span className='search-suggestion-icon'>
-                            <Layers className='icon' aria-hidden />
+                            <Layers className='icon' />
                         </span>
                         <span className='search-suggestion-text'>
-                            {t.quickLaunch}
-                            <small>{command.label}</small>
+                            {command.label}
                         </span>
                     </button>
                 );
@@ -162,4 +159,3 @@ export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
         </div>,
         globalThis.document.body
     );
-};
