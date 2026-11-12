@@ -3,10 +3,9 @@ import { expect, test } from 'bun:test';
 import type { BookmarkCategoryData, BookmarkLinkData } from '@/types/bookmarks';
 import { coerceBookmarkTree } from './bookmarks';
 import {
-    getFeedBookmarks,
-    initializeFeedSelection,
-    setFeedBookmarkIds,
-} from './feeds';
+    getQuickLaunchBookmarks,
+    setQuickLaunchBookmarkIds,
+} from './quickLaunch';
 
 const bookmark = (
     id: string,
@@ -46,9 +45,9 @@ const reload = (
     return restored;
 };
 const selectedIds = (value: readonly BookmarkCategoryData[]) =>
-    getFeedBookmarks(value).map(({ id }) => id);
+    getQuickLaunchBookmarks(value).map(({ id }) => id);
 
-test('stored Feeds selections and explicit order survive a round trip without migration', () => {
+test('stored selections and explicit order survive a round trip without migration', () => {
     const stored = tree([
         bookmark('first', { feed: true, feedOrder: 1 }),
         bookmark('second', { feed: true, feedOrder: 0 }),
@@ -56,9 +55,13 @@ test('stored Feeds selections and explicit order survive a round trip without mi
     ]);
     expect(selectedIds(reload(stored))).toEqual(['second', 'first']);
     expect(
-        selectedIds(reload(setFeedBookmarkIds(stored, ['first', 'second'])))
+        selectedIds(
+            reload(setQuickLaunchBookmarkIds(stored, ['first', 'second']))
+        )
     ).toEqual(['first', 'second']);
-    expect(selectedIds(reload(setFeedBookmarkIds(stored, [])))).toEqual([]);
+    expect(selectedIds(reload(setQuickLaunchBookmarkIds(stored, [])))).toEqual(
+        []
+    );
 });
 
 test('legacy defaults are retained until the user chooses a set, including nested bookmarks', () => {
@@ -67,12 +70,13 @@ test('legacy defaults are retained until the user chooses a set, including neste
         bookmark('YouTube'),
         bookmark('custom'),
     ]);
-    expect(selectedIds(initializeFeedSelection(legacy))).toEqual([
-        'GitHub',
-        'YouTube',
-    ]);
+    expect(selectedIds(legacy)).toEqual(['GitHub', 'YouTube']);
     expect(
-        selectedIds(reload(setFeedBookmarkIds(legacy, ['custom', 'GitHub'])))
+        selectedIds(
+            reload(setQuickLaunchBookmarkIds(legacy, ['custom', 'GitHub']))
+        )
     ).toEqual(['custom', 'GitHub']);
-    expect(selectedIds(reload(setFeedBookmarkIds(legacy, [])))).toEqual([]);
+    expect(selectedIds(reload(setQuickLaunchBookmarkIds(legacy, [])))).toEqual(
+        []
+    );
 });

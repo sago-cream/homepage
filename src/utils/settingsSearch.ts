@@ -27,11 +27,11 @@ export const getSettingsSearchResults = (
             keywords: t.bookmarkSettingsKeywords,
         },
         {
-            id: 'feeds',
+            id: 'quickLaunch',
             label: t.quickLaunch,
-            section: 'feeds',
+            section: 'quickLaunch',
             sectionLabel: t.quickLaunch,
-            keywords: `/launch /feeds feeds 動態 quick launch 快速啟動 open tabs together bookmarks 書籤 分頁 一起 ${t.quickLaunchEmpty} ${t.chooseLaunchBookmarks}`,
+            keywords: `/launch quick launch 快速啟動 open tabs together bookmarks 書籤 分頁 一起 ${t.quickLaunchEmpty} ${t.chooseLaunchBookmarks}`,
         },
         {
             id: 'keybinds',

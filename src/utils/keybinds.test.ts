@@ -75,7 +75,7 @@ test('loads drafts and rejects corrupt entries and case-insensitive duplicates',
             ])
         )
     ).toEqual([
-        { id: 'a', target: 'command:feeds', key: 'f' },
+        { id: 'a', target: 'command:quick-launch', key: 'f' },
         { id: 'zhuyin', target: 'bookmark:two', key: 'g' },
         { id: 'c', target: '', key: '' },
         { id: 'd', target: '', key: '' },

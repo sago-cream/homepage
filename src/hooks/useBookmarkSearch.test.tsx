@@ -47,17 +47,24 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
     }
     browser.localStorage.setItem(
         keybindStorageKey,
-        JSON.stringify([{ id: 'feeds', target: 'command:feeds', key: 'f' }])
+        JSON.stringify([
+            { id: 'quick-launch', target: 'command:quick-launch', key: 'f' },
+        ])
     );
-    const feed = {
-        id: 'feed',
+    const launchBookmark = {
+        id: 'launch-bookmark',
         title: 'GitHub',
         type: 'link' as const,
         url: 'https://github.com',
         feed: true,
     };
     const bookmarks = [
-        { id: 'category', category: 'Feeds', children: [feed], links: [feed] },
+        {
+            id: 'category',
+            category: 'Bookmarks',
+            children: [launchBookmark],
+            links: [launchBookmark],
+        },
     ];
     let currentBookmarks = bookmarks;
     let search!: ReturnType<typeof useBookmarkSearch>;
@@ -169,8 +176,8 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
 
         await press(document.body, { key: 'ㄑ' });
         await press(document.body, { key: 'Process', code: 'KeyF' });
-        expect(opened).toEqual([feed.url, feed.url]);
-        expect(search.blockedQuickLaunchBookmarks).toEqual([feed]);
+        expect(opened).toEqual([launchBookmark.url, launchBookmark.url]);
+        expect(search.blockedQuickLaunchBookmarks).toEqual([launchBookmark]);
         await act(async () => {
             search.clearBlockedQuickLaunchBookmarks();
             await Promise.resolve();
@@ -186,7 +193,7 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
         expect(document.activeElement).toBe(input);
         expect(search.searchInputValue).toBe('/');
         await act(async () => {
-            for (const letter of 'feeds') {
+            for (const letter of 'launch') {
                 input.dispatchEvent(
                     new browser.KeyboardEvent('keydown', {
                         key: 'Process',
@@ -198,9 +205,9 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
             }
             await Promise.resolve();
         });
-        await change('/ㄋ');
+        await change('/ㄘ');
         expect(search.slashCommandResults).toEqual([
-            { command: 'feeds', label: '/launch' },
+            { command: 'quick-launch', label: '/launch' },
         ]);
         expect(search.hasGoogleSearchResult).toBe(false);
         await press(input, { key: 'Enter' });
@@ -214,9 +221,9 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
             search.handleSearchBlur();
             await Promise.resolve();
         });
-        await change('ㄥㄑㄍㄍㄎㄋ');
+        await change('ㄥㄠㄇㄧㄙㄏㄘ');
         expect(search.slashCommandResults).toHaveLength(1);
-        expect(input.value).toBe('ㄥㄑㄍㄍㄎㄋ');
+        expect(input.value).toBe('ㄥㄠㄇㄧㄙㄏㄘ');
         await press(input, { key: 'Enter' });
         expect(opened).toHaveLength(4);
         await act(async () => {
@@ -226,9 +233,9 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
         await change('/launch');
         await press(input, { key: 'Enter' });
         expect(opened).toHaveLength(5);
-        expect(search.blockedQuickLaunchBookmarks).toEqual([feed]);
+        expect(search.blockedQuickLaunchBookmarks).toEqual([launchBookmark]);
         await act(async () => {
-            search.dismissBlockedQuickLaunchBookmark(feed.id);
+            search.dismissBlockedQuickLaunchBookmark(launchBookmark.id);
             await Promise.resolve();
         });
         expect(search.blockedQuickLaunchBookmarks).toEqual([]);
@@ -245,7 +252,10 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
             await Promise.resolve();
         });
         await act(async () => {
-            search.executeSlashCommand({ command: 'feeds', label: '/launch' });
+            search.executeSlashCommand({
+                command: 'quick-launch',
+                label: '/launch',
+            });
             await Promise.resolve();
         });
         expect(emptyLaunches).toBe(1);

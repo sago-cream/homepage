@@ -590,7 +590,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             id: 'content',
             label: t.bookmarks,
         },
-        { icon: Layers, id: 'feeds', label: t.quickLaunch },
+        { icon: Layers, id: 'quickLaunch', label: t.quickLaunch },
         {
             icon: Keyboard,
             id: 'keybinds',
@@ -1352,7 +1352,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                                   />
                               ) : undefined}
 
-                              {selectedSection === 'feeds' ? (
+                              {selectedSection === 'quickLaunch' ? (
                                   <QuickLaunchSettingsSection
                                       onOpenBookmark={(bookmarkId) => {
                                           bookmarkManagerRef.current?.openBookmark(

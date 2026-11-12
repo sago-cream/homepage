@@ -20,16 +20,15 @@ export interface SearchSuggestionsPosition {
 }
 
 export interface SlashCommandItem {
-    command: 'feeds';
+    command: 'quick-launch';
     label: string;
 }
 
 const maxSearchResults = 4;
 
-// Keep the command ID stable for saved keybinds; /feeds remains an alias.
 const slashCommands = [
     {
-        command: 'feeds',
+        command: 'quick-launch',
         label: '/launch',
     },
 ] as const satisfies readonly SlashCommandItem[];
@@ -79,10 +78,7 @@ export const getSlashCommandResults = (
     return slashCommands.filter((command) =>
         [query, alias].some(
             (candidate) =>
-                candidate !== undefined &&
-                [command.label, '/feeds'].some((label) =>
-                    label.startsWith(candidate)
-                )
+                candidate !== undefined && command.label.startsWith(candidate)
         )
     );
 };

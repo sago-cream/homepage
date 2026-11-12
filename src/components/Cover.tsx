@@ -79,7 +79,7 @@ const CoverContent: React.FC<CoverContentProps> = ({
         );
         router.push(
             hasBookmarks
-                ? settingsSectionPaths.feeds
+                ? settingsSectionPaths.quickLaunch
                 : settingsSectionPaths.content,
             { scroll: false }
         );
@@ -196,7 +196,7 @@ const CoverContent: React.FC<CoverContentProps> = ({
                         disabled={bookmarkControls.isLoading}
                         onClick={() => {
                             executeSlashCommand({
-                                command: 'feeds',
+                                command: 'quick-launch',
                                 label: '/launch',
                             });
                         }}

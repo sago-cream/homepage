@@ -64,7 +64,10 @@ import {
     isBookmarkLink,
     isBookmarkRootCategory,
 } from '@/utils/bookmarks';
-import { getFeedBookmarks, setFeedBookmarkIds } from '@/utils/feeds';
+import {
+    getQuickLaunchBookmarks,
+    setQuickLaunchBookmarkIds,
+} from '@/utils/quickLaunch';
 import { ActionMenu } from './ActionMenu';
 import { BookmarkActions, BookmarkCard } from './BookmarkCard';
 import { TooltipIconButton } from './TooltipIconButton';
@@ -1011,17 +1014,17 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
         });
     };
 
-    const feedBookmarkIds = new Set(
-        getFeedBookmarks(bookmarkControls.bookmarkTree).map(
+    const launchBookmarkIds = new Set(
+        getQuickLaunchBookmarks(bookmarkControls.bookmarkTree).map(
             (bookmark) => bookmark.id
         )
     );
-    const getAddToFeedsAction = (bookmarkId: string) =>
-        bookmarkControls.canEdit && !feedBookmarkIds.has(bookmarkId)
+    const getAddToQuickLaunchAction = (bookmarkId: string) =>
+        bookmarkControls.canEdit && !launchBookmarkIds.has(bookmarkId)
             ? () =>
                   bookmarkControls.replaceBookmarkTree(
-                      setFeedBookmarkIds(bookmarkControls.bookmarkTree, [
-                          ...feedBookmarkIds,
+                      setQuickLaunchBookmarkIds(bookmarkControls.bookmarkTree, [
+                          ...launchBookmarkIds,
                           bookmarkId,
                       ])
                   )
@@ -2138,7 +2141,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                         addToQuickLaunchLabel={
                                                                             t.addToQuickLaunch
                                                                         }
-                                                                        onAddToFeeds={getAddToFeedsAction(
+                                                                        onAddToQuickLaunch={getAddToQuickLaunchAction(
                                                                             bookmark.id
                                                                         )}
                                                                         labels={
@@ -2370,7 +2373,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                 addToQuickLaunchLabel={
                                                                     t.addToQuickLaunch
                                                                 }
-                                                                onAddToFeeds={getAddToFeedsAction(
+                                                                onAddToQuickLaunch={getAddToQuickLaunchAction(
                                                                     node.id
                                                                 )}
                                                                 labels={

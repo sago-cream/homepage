@@ -1,4 +1,5 @@
 export interface BookmarkLinkData {
+    // Persisted selection fields keep their original names to preserve saved bookmarks.
     feed?: boolean;
     feedOrder?: number;
     id: string;

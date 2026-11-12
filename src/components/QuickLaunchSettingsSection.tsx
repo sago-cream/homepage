@@ -16,7 +16,10 @@ import Link from 'next/link';
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useLocale } from '@/hooks/useLocale';
 import type { BookmarkLinkData } from '@/types/bookmarks';
-import { getFeedBookmarks, setFeedBookmarkIds } from '@/utils/feeds';
+import {
+    getQuickLaunchBookmarks,
+    setQuickLaunchBookmarkIds,
+} from '@/utils/quickLaunch';
 import { getSearchItems, getSearchResults } from '@/utils/search';
 import { settingsSectionPaths } from '@/utils/settingsNavigation';
 import { ActionMenu } from './ActionMenu';
@@ -43,24 +46,24 @@ const QuickLaunchBookmarkRow: React.FC<QuickLaunchBookmarkRowProps> = ({
 }) => {
     const { locale, t } = useLocale();
     const sortable = useSortable({
-        accept: 'settings-feed-bookmark',
+        accept: 'settings-launch-bookmark',
         disabled,
-        group: 'settings-feeds',
+        group: 'settings-quick-launch',
         id: bookmark.id,
         index,
-        type: 'settings-feed-bookmark',
+        type: 'settings-launch-bookmark',
     });
 
     return (
         <div
             ref={sortable.ref}
-            className='bookmark-workspace-list-row settings-feed-bookmark'
-            data-feed-id={bookmark.id}
+            className='bookmark-workspace-list-row settings-launch-bookmark'
+            data-launch-id={bookmark.id}
             data-dragging={sortable.isDragSource ? 'true' : undefined}
         >
             <button
                 ref={sortable.handleRef}
-                className='settings-feed-drag-handle'
+                className='settings-launch-drag-handle'
                 type='button'
                 aria-label={t.dragBookmark}
                 disabled={disabled}
@@ -113,20 +116,20 @@ export const QuickLaunchSettingsSection: React.FC<
     const selectedListRef = useRef<HTMLDivElement>(null);
     const pendingAddedRef = useRef<string | undefined>(undefined);
     const searchInputRef = useRef<HTMLInputElement>(null);
-    const feedBookmarks = useMemo(
-        () => getFeedBookmarks(bookmarkControls.bookmarkTree),
+    const launchBookmarks = useMemo(
+        () => getQuickLaunchBookmarks(bookmarkControls.bookmarkTree),
         [bookmarkControls.bookmarkTree]
     );
     const selectedCountLabel =
-        feedBookmarks.length === 1
+        launchBookmarks.length === 1
             ? t.quickLaunchOneSelected
             : t.quickLaunchSelectedCount.replace(
                   '{count}',
-                  String(feedBookmarks.length)
+                  String(launchBookmarks.length)
               );
-    const feedBookmarkIds = useMemo(
-        () => new Set(feedBookmarks.map((bookmark) => bookmark.id)),
-        [feedBookmarks]
+    const launchBookmarkIds = useMemo(
+        () => new Set(launchBookmarks.map((bookmark) => bookmark.id)),
+        [launchBookmarks]
     );
     const searchItems = useMemo(
         () => getSearchItems(bookmarkControls.bookmarkTree),
@@ -144,9 +147,12 @@ export const QuickLaunchSettingsSection: React.FC<
               );
     }, [query, searchItems]);
 
-    const saveFeedBookmarkIds = (bookmarkIds: readonly string[]) => {
+    const saveQuickLaunchBookmarkIds = (bookmarkIds: readonly string[]) => {
         const saved = bookmarkControls.replaceBookmarkTree(
-            setFeedBookmarkIds(bookmarkControls.bookmarkTree, bookmarkIds)
+            setQuickLaunchBookmarkIds(
+                bookmarkControls.bookmarkTree,
+                bookmarkIds
+            )
         );
         setSaveFailed(!saved);
         return saved;
@@ -156,10 +162,10 @@ export const QuickLaunchSettingsSection: React.FC<
         if (sourceIndex === destinationIndex) {
             return;
         }
-        const bookmarkIds = feedBookmarks.map((bookmark) => bookmark.id);
+        const bookmarkIds = launchBookmarks.map((bookmark) => bookmark.id);
         const [bookmarkId] = bookmarkIds.splice(sourceIndex, 1);
         bookmarkIds.splice(destinationIndex, 0, bookmarkId);
-        saveFeedBookmarkIds(bookmarkIds);
+        saveQuickLaunchBookmarkIds(bookmarkIds);
     };
 
     const handleDragEnd = (event: DragEndEvent) => {
@@ -173,7 +179,7 @@ export const QuickLaunchSettingsSection: React.FC<
     const searchResultsContent = (() => {
         if (searchResults.length === 0) {
             return (
-                <div className='settings-feed-search-empty'>
+                <div className='settings-launch-search-empty'>
                     <Search aria-hidden='true' />
                     <span>{t.bookmarkSearchEmpty}</span>
                 </div>
@@ -185,14 +191,14 @@ export const QuickLaunchSettingsSection: React.FC<
                 key={result.id}
                 type='button'
                 disabled={!bookmarkControls.canEdit}
-                aria-pressed={feedBookmarkIds.has(result.id)}
+                aria-pressed={launchBookmarkIds.has(result.id)}
                 onClick={() => {
                     if (
-                        saveFeedBookmarkIds([
-                            ...feedBookmarks
+                        saveQuickLaunchBookmarkIds([
+                            ...launchBookmarks
                                 .filter((bookmark) => bookmark.id !== result.id)
                                 .map((bookmark) => bookmark.id),
-                            ...(feedBookmarkIds.has(result.id)
+                            ...(launchBookmarkIds.has(result.id)
                                 ? []
                                 : [result.id]),
                         ])
@@ -206,7 +212,7 @@ export const QuickLaunchSettingsSection: React.FC<
                     <strong>{result.title}</strong>
                     <small>{result.pathLabel}</small>
                 </span>
-                {feedBookmarkIds.has(result.id) ? (
+                {launchBookmarkIds.has(result.id) ? (
                     <Check aria-hidden />
                 ) : (
                     <Plus aria-hidden />
@@ -226,40 +232,43 @@ export const QuickLaunchSettingsSection: React.FC<
                 searchInputRef.current?.focus();
             }}
         >
-            {feedBookmarks.length > 0 ? (
+            {launchBookmarks.length > 0 ? (
                 <Pencil aria-hidden />
             ) : (
                 <Plus aria-hidden />
             )}
-            {feedBookmarks.length > 0 ? t.quickLaunchEdit : t.quickLaunchChoose}
+            {launchBookmarks.length > 0
+                ? t.quickLaunchEdit
+                : t.quickLaunchChoose}
         </button>
     );
 
     return (
-        <section className='settings-page-section' data-setting='feeds'>
-            <div className='settings-feed-heading'>
+        <section className='settings-page-section' data-setting='quickLaunch'>
+            <div className='settings-launch-heading'>
                 <div className='settings-section-heading'>
                     <h2>{t.quickLaunch}</h2>
-                    {feedBookmarks.length > 0 && (
+                    {launchBookmarks.length > 0 && (
                         <p className='settings-row-description'>
                             {t.quickLaunchSettingsDescription}
                         </p>
                     )}
                 </div>
-                {feedBookmarks.length > 0 && addButton}
+                {launchBookmarks.length > 0 && addButton}
             </div>
             <dialog
                 ref={dialogRef}
-                className='settings-feed-dialog'
+                className='settings-launch-dialog'
                 onClose={() => {
                     if (pendingAddedRef.current) {
                         const row = [
                             ...(selectedListRef.current?.querySelectorAll<HTMLElement>(
-                                '[data-feed-id]'
+                                '[data-launch-id]'
                             ) ?? []),
                         ].find(
                             (item) =>
-                                item.dataset.feedId === pendingAddedRef.current
+                                item.dataset.launchId ===
+                                pendingAddedRef.current
                         );
                         row?.scrollIntoView({ block: 'nearest' });
                         pendingAddedRef.current = undefined;
@@ -267,7 +276,7 @@ export const QuickLaunchSettingsSection: React.FC<
                     setQuery('');
                     addButtonRef.current?.focus({ preventScroll: true });
                 }}
-                aria-labelledby='feed-dialog-title'
+                aria-labelledby='quick-launch-picker-title'
                 onClick={(event) => {
                     if (event.target === event.currentTarget) {
                         dialogRef.current?.close();
@@ -277,9 +286,9 @@ export const QuickLaunchSettingsSection: React.FC<
                     event.stopPropagation();
                 }}
             >
-                <div className='settings-feed-search-area'>
-                    <div className='settings-feed-subheading'>
-                        <h3 id='feed-dialog-title'>
+                <div className='settings-launch-search-area'>
+                    <div className='settings-launch-subheading'>
+                        <h3 id='quick-launch-picker-title'>
                             {t.chooseLaunchBookmarks}
                         </h3>
                         <button
@@ -291,11 +300,11 @@ export const QuickLaunchSettingsSection: React.FC<
                             <X aria-hidden='true' />
                         </button>
                     </div>
-                    <div className='settings-feed-search'>
+                    <div className='settings-launch-search'>
                         <Search aria-hidden='true' />
                         <input
                             ref={searchInputRef}
-                            id='feed-bookmark-search'
+                            id='quick-launch-bookmark-search'
                             type='search'
                             aria-label={t.bookmarkSearch}
                             autoComplete='off'
@@ -307,7 +316,7 @@ export const QuickLaunchSettingsSection: React.FC<
                             }}
                         />
                     </div>
-                    <div className='settings-feed-results' aria-live='polite'>
+                    <div className='settings-launch-results' aria-live='polite'>
                         {searchResultsContent}
                     </div>
                     <div className='settings-launch-picker-footer'>
@@ -331,8 +340,8 @@ export const QuickLaunchSettingsSection: React.FC<
                     {t.bookmarkSaveFailed}
                 </p>
             )}
-            <div className='settings-feed-selected' ref={selectedListRef}>
-                {feedBookmarks.length === 0 ? (
+            <div className='settings-launch-selected' ref={selectedListRef}>
+                {launchBookmarks.length === 0 ? (
                     <div className='settings-empty-state'>
                         <Layers aria-hidden='true' />
                         <strong>
@@ -360,8 +369,8 @@ export const QuickLaunchSettingsSection: React.FC<
                     </div>
                 ) : (
                     <DragDropProvider onDragEnd={handleDragEnd}>
-                        <div className='settings-feed-list bookmark-card-list'>
-                            {feedBookmarks.map((bookmark, index) => (
+                        <div className='settings-launch-list bookmark-card-list'>
+                            {launchBookmarks.map((bookmark, index) => (
                                 <QuickLaunchBookmarkRow
                                     key={bookmark.id}
                                     bookmark={bookmark}
@@ -378,7 +387,7 @@ export const QuickLaunchSettingsSection: React.FC<
                                             : undefined
                                     }
                                     onMoveDown={
-                                        index < feedBookmarks.length - 1 &&
+                                        index < launchBookmarks.length - 1 &&
                                         bookmarkControls.canEdit
                                             ? () => {
                                                   moveBookmark(
@@ -392,8 +401,8 @@ export const QuickLaunchSettingsSection: React.FC<
                                         onOpenBookmark(bookmark.id);
                                     }}
                                     onRemove={() => {
-                                        saveFeedBookmarkIds(
-                                            feedBookmarks.flatMap((item) =>
+                                        saveQuickLaunchBookmarkIds(
+                                            launchBookmarks.flatMap((item) =>
                                                 item.id === bookmark.id
                                                     ? []
                                                     : [item.id]

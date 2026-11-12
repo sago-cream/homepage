@@ -11,10 +11,12 @@ import type React from 'react';
 
 import { useKeybinds } from '@/hooks/useKeybinds';
 import type { BookmarkCategoryData, BookmarkLinkData } from '@/types/bookmarks';
-import { getFeedBookmarks } from '@/utils/feeds';
 import { getHotkey } from '@/utils/keybinds';
 import { getKeyboardKey } from '@/utils/keyboard';
-import { openQuickLaunchBookmarks } from '@/utils/quickLaunch';
+import {
+    getQuickLaunchBookmarks,
+    openQuickLaunchBookmarks,
+} from '@/utils/quickLaunch';
 import type {
     LinkItem,
     SearchSuggestionsPosition,
@@ -188,7 +190,7 @@ export const useBookmarkSearch = (
 
     const executeSlashCommand = useCallback(
         (_command: SlashCommandItem) => {
-            const bookmarks = getFeedBookmarks(bookmarkTree);
+            const bookmarks = getQuickLaunchBookmarks(bookmarkTree);
             setInputFocused(false);
             setSearchValue('');
             setSearchKeySequence('');
