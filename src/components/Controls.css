@@ -3095,15 +3095,15 @@ a.bookmark-workspace-tree-item {
     gap: 0.5rem;
 }
 
-.settings-feed-card {
+.settings-launch-card {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: stretch;
     gap: 1rem;
 }
 
-.settings-feed-selected,
-.settings-feed-search-area {
+.settings-launch-selected,
+.settings-launch-search-area {
     min-width: 0;
     padding: 1rem;
     display: grid;
@@ -3111,17 +3111,17 @@ a.bookmark-workspace-tree-item {
     gap: 1rem;
 }
 
-.settings-feed-selected {
+.settings-launch-selected {
     min-height: 14rem;
 }
 
 @media (width < 48rem) {
-    .settings-feed-card {
+    .settings-launch-card {
         grid-template-columns: minmax(0, 1fr);
     }
 }
 
-.settings-feed-subheading {
+.settings-launch-subheading {
     min-height: 1.5rem;
     color: var(--clr-neutral);
     font: var(--fontBoldSm);
@@ -3131,12 +3131,12 @@ a.bookmark-workspace-tree-item {
     gap: 0.75rem;
 }
 
-.settings-feed-list {
+.settings-launch-list {
     display: grid;
     gap: 0.5rem;
 }
 
-.settings-feed-bookmark {
+.settings-launch-bookmark {
     min-width: 0;
     min-height: 3.5rem;
     padding: 0.5rem;
@@ -3151,13 +3151,13 @@ a.bookmark-workspace-tree-item {
         opacity var(--motion-duration-fast) var(--motion-ease-out);
 }
 
-.settings-feed-bookmark[data-dragging='true'] {
+.settings-launch-bookmark[data-dragging='true'] {
     z-index: 2;
     opacity: 0.92;
     box-shadow: var(--shadow-panel-hover);
 }
 
-.settings-feed-drag-handle {
+.settings-launch-drag-handle {
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 0.75rem;
@@ -3172,24 +3172,24 @@ a.bookmark-workspace-tree-item {
     place-items: center;
 }
 
-.settings-feed-drag-handle:hover,
-.settings-feed-drag-handle:focus-visible {
+.settings-launch-drag-handle:hover,
+.settings-launch-drag-handle:focus-visible {
     background-color: var(--clr-text-alpha-2);
     color: var(--clr-text);
     outline: none;
 }
 
-.settings-feed-drag-handle:active {
+.settings-launch-drag-handle:active {
     cursor: grabbing;
     scale: var(--motion-press-scale);
 }
 
-.settings-feed-drag-handle svg,
-.settings-feed-remove svg {
+.settings-launch-drag-handle svg,
+.settings-launch-remove svg {
     --icon-size: var(--icon-control);
 }
 
-.settings-feed-bookmark-icon {
+.settings-launch-bookmark-icon {
     width: 2rem;
     height: 2rem;
     border-radius: 0.5rem;
@@ -3199,19 +3199,19 @@ a.bookmark-workspace-tree-item {
     place-items: center;
 }
 
-.settings-feed-bookmark-icon svg {
+.settings-launch-bookmark-icon svg {
     --icon-size: var(--icon-inline);
 }
 
-.settings-feed-bookmark-copy,
-.settings-feed-results button > span {
+.settings-launch-bookmark-copy,
+.settings-launch-results button > span {
     min-width: 0;
     display: grid;
     gap: 0.25rem;
 }
 
-.settings-feed-bookmark-copy strong,
-.settings-feed-results strong {
+.settings-launch-bookmark-copy strong,
+.settings-launch-results strong {
     overflow: hidden;
     color: var(--clr-text);
     font: var(--fontBoldSm);
@@ -3219,8 +3219,8 @@ a.bookmark-workspace-tree-item {
     white-space: nowrap;
 }
 
-.settings-feed-bookmark-copy small,
-.settings-feed-results small {
+.settings-launch-bookmark-copy small,
+.settings-launch-results small {
     overflow: hidden;
     color: var(--clr-text-alpha);
     font: var(--fontBaseSm);
@@ -3228,20 +3228,20 @@ a.bookmark-workspace-tree-item {
     white-space: nowrap;
 }
 
-.settings-feed-results strong,
-.settings-feed-results small {
+.settings-launch-results strong,
+.settings-launch-results small {
     line-height: 1.5;
 }
 
-.settings-feed-remove {
+.settings-launch-remove {
     background-color: transparent;
 }
 
-.settings-feed-search {
+.settings-launch-search {
     position: relative;
 }
 
-.settings-feed-search > svg {
+.settings-launch-search > svg {
     position: absolute;
     top: 50%;
     left: 0.75rem;
@@ -3251,7 +3251,7 @@ a.bookmark-workspace-tree-item {
     translate: 0 -50%;
 }
 
-.settings-feed-search input {
+.settings-launch-search input {
     width: 100%;
     min-height: 2.75rem;
     padding: 0.5rem 0.75rem 0.5rem 2.25rem;
@@ -3268,13 +3268,13 @@ a.bookmark-workspace-tree-item {
         outline-color var(--motion-duration-fast) var(--motion-ease-out);
 }
 
-.settings-feed-search input:focus-visible {
+.settings-launch-search input:focus-visible {
     border-color: transparent;
     box-shadow: none;
     outline-color: var(--clr-primary-alpha);
 }
 
-.settings-feed-results {
+.settings-launch-results {
     min-height: 6rem;
     max-height: 24rem;
     display: grid;
@@ -3285,7 +3285,7 @@ a.bookmark-workspace-tree-item {
     scrollbar-gutter: stable;
 }
 
-.settings-feed-results button {
+.settings-launch-results button {
     width: 100%;
     min-height: 3.5rem;
     padding: 0.5rem 0.75rem;
@@ -3307,30 +3307,30 @@ a.bookmark-workspace-tree-item {
     gap: 0.75rem;
 }
 
-.settings-feed-results button > span {
+.settings-launch-results button > span {
     align-self: stretch;
     align-content: center;
 }
 
-.settings-feed-results button:hover,
-.settings-feed-results button:focus-visible {
+.settings-launch-results button:hover,
+.settings-launch-results button:focus-visible {
     background-color: var(--clr-text-alpha-2);
     color: var(--clr-primary);
 }
 
-.settings-feed-results button:focus-visible {
+.settings-launch-results button:focus-visible {
     outline-color: var(--clr-primary-alpha);
 }
 
-.settings-feed-results button:active {
+.settings-launch-results button:active {
     scale: var(--motion-press-scale);
 }
 
-.settings-feed-results button > svg {
+.settings-launch-results button > svg {
     --icon-size: var(--icon-control);
 }
 
-.settings-feed-search-empty {
+.settings-launch-search-empty {
     min-height: 6rem;
     padding: 1rem;
     line-height: 1.5;
@@ -3344,7 +3344,7 @@ a.bookmark-workspace-tree-item {
     text-wrap: pretty;
 }
 
-.settings-feed-search-empty > svg {
+.settings-launch-search-empty > svg {
     --icon-size: var(--icon-inline);
     flex: 0 0 auto;
 }
@@ -3494,7 +3494,7 @@ a.bookmark-workspace-tree-item {
     }
 
     .settings-page .settings-page-section > .settings-section-heading,
-    .settings-page .settings-feed-heading {
+    .settings-page .settings-launch-heading {
         padding-block: 0 0.25rem;
     }
 
@@ -4901,10 +4901,10 @@ a.bookmark-workspace-tree-item {
 .settings-location-controls .settings-select-control {
     width: 100%;
 }
-.settings-feed-selected {
+.settings-launch-selected {
     padding: 0;
 }
-.settings-feed-dialog {
+.settings-launch-dialog {
     margin: auto;
     width: min(32rem, calc(100vw - 2rem));
     max-height: min(38rem, calc(100svh - 2rem));
@@ -4915,16 +4915,16 @@ a.bookmark-workspace-tree-item {
     box-shadow: var(--shadow-panel);
     overflow: auto;
 }
-.settings-feed-dialog::backdrop {
+.settings-launch-dialog::backdrop {
     background: var(--clr-overlay);
 }
-.settings-feed-dialog .settings-feed-subheading {
+.settings-launch-dialog .settings-launch-subheading {
     justify-content: space-between;
 }
-.settings-feed-dialog .settings-feed-results {
+.settings-launch-dialog .settings-launch-results {
     max-height: 24rem;
 }
-.settings-feed-heading {
+.settings-launch-heading {
     --bookmark-workspace-control-radius: 0.75rem;
     display: flex;
     align-items: start;
@@ -4932,7 +4932,7 @@ a.bookmark-workspace-tree-item {
     flex-wrap: wrap;
     gap: 1rem;
 }
-.settings-feed-heading .settings-section-heading {
+.settings-launch-heading .settings-section-heading {
     flex: 1 1 18rem;
 }
 
@@ -5376,7 +5376,7 @@ a.bookmark-workspace-tree-item {
     .bookmark-workspace-icon-grid,
     .settings-dropdown,
     .bookmark-workspace-trash-list,
-    .settings-feed-results,
+    .settings-launch-results,
     .bookmark-action-menu
 ) {
     scrollbar-width: thin;
@@ -5395,7 +5395,7 @@ a.bookmark-workspace-tree-item {
     .bookmark-workspace-icon-grid,
     .settings-dropdown,
     .bookmark-workspace-trash-list,
-    .settings-feed-results,
+    .settings-launch-results,
     .bookmark-action-menu
 )::-webkit-scrollbar {
     width: 0.5rem;
@@ -5411,7 +5411,7 @@ a.bookmark-workspace-tree-item {
     .bookmark-workspace-icon-grid,
     .settings-dropdown,
     .bookmark-workspace-trash-list,
-    .settings-feed-results,
+    .settings-launch-results,
     .bookmark-action-menu
 )::-webkit-scrollbar-thumb {
     border: 2px solid transparent;
@@ -5524,7 +5524,7 @@ a.bookmark-workspace-tree-item {
 }
 
 .settings-page-section > .settings-section-heading,
-.settings-feed-heading {
+.settings-launch-heading {
     position: sticky;
     top: 0;
     z-index: 2;
@@ -5541,16 +5541,16 @@ a.bookmark-workspace-tree-item {
 .settings-keybinds {
     scroll-padding-block: 3rem 5rem;
 }
-.settings-feed-dialog {
+.settings-launch-dialog {
     max-height: calc(100dvh - 2rem);
     overflow: hidden;
 }
-.settings-feed-search-area {
+.settings-launch-search-area {
     min-height: 0;
     max-height: calc(100dvh - 2rem);
     grid-template-rows: auto auto minmax(0, 1fr);
 }
-.settings-feed-results {
+.settings-launch-results {
     min-height: 0;
 }
 

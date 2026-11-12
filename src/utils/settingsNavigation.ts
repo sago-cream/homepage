@@ -1,6 +1,6 @@
 export const settingsSectionPaths = {
     content: '/settings/bookmarks',
-    feeds: '/settings/feeds',
+    quickLaunch: '/settings/quick-launch',
     keybinds: '/settings/keybinds',
     appearance: '/settings/appearance',
     preferences: '/settings/preferences',

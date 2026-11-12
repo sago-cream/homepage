@@ -19,13 +19,13 @@ export interface SearchSuggestionsPosition {
     width: number;
 }
 
-export interface FeedsLink {
+export interface QuickLaunchLink {
     link: string;
     url: string;
 }
 
 export interface SlashCommandItem {
-    command: 'feeds';
+    command: 'quick-launch';
     label: string;
 }
 
@@ -33,8 +33,8 @@ const maxSearchResults = 4;
 
 const slashCommands = [
     {
-        command: 'feeds',
-        label: '/feeds',
+        command: 'quick-launch',
+        label: '/launch',
     },
 ] as const satisfies readonly SlashCommandItem[];
 

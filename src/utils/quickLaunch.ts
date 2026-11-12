@@ -4,7 +4,7 @@ import type {
     BookmarkNodeData,
 } from '@/types/bookmarks';
 
-export const legacyFeedTitles = [
+export const legacyQuickLaunchTitles = [
     'Instagram',
     'Twitter',
     'Facebook',
@@ -15,24 +15,24 @@ export const legacyFeedTitles = [
     'Supercell Store',
 ] as const;
 
-const legacyFeedTitleSet = new Set<string>(legacyFeedTitles);
+const legacyQuickLaunchTitleSet = new Set<string>(legacyQuickLaunchTitles);
 
-export const isLegacyFeedTitle = (title: string): boolean =>
-    legacyFeedTitleSet.has(title);
+export const isLegacyQuickLaunchTitle = (title: string): boolean =>
+    legacyQuickLaunchTitleSet.has(title);
 
-export const hasCustomFeedSelection = (
+export const hasCustomQuickLaunchSelection = (
     bookmarkTree: readonly BookmarkCategoryData[]
 ): boolean =>
     bookmarkTree.some((category) =>
         category.links.some((bookmark) => bookmark.feed !== undefined)
     );
 
-export const getFeedBookmarks = (
+export const getQuickLaunchBookmarks = (
     bookmarkTree: readonly BookmarkCategoryData[]
 ): BookmarkLinkData[] => {
     const bookmarks = bookmarkTree.flatMap((category) => category.links);
 
-    if (hasCustomFeedSelection(bookmarkTree)) {
+    if (hasCustomQuickLaunchSelection(bookmarkTree)) {
         return bookmarks
             .filter((bookmark) => bookmark.feed === true)
             .toSorted(
@@ -42,25 +42,28 @@ export const getFeedBookmarks = (
             );
     }
 
-    return legacyFeedTitles.flatMap((title) => {
+    return legacyQuickLaunchTitles.flatMap((title) => {
         const bookmark = bookmarks.find((item) => item.title === title);
         return bookmark === undefined ? [] : [bookmark];
     });
 };
 
-const updateFeedNodes = (
+const updateQuickLaunchNodes = (
     nodes: readonly BookmarkNodeData[],
-    feedOrderById: ReadonlyMap<string, number>
+    quickLaunchOrderById: ReadonlyMap<string, number>
 ): BookmarkNodeData[] =>
     nodes.map((node) => {
         if (node.type === 'folder') {
             return {
                 ...node,
-                children: updateFeedNodes(node.children, feedOrderById),
+                children: updateQuickLaunchNodes(
+                    node.children,
+                    quickLaunchOrderById
+                ),
             };
         }
 
-        const feedOrder = feedOrderById.get(node.id);
+        const feedOrder = quickLaunchOrderById.get(node.id);
         return {
             ...node,
             feed: feedOrder !== undefined,
@@ -70,24 +73,27 @@ const updateFeedNodes = (
         };
     });
 
-export const setFeedBookmarkIds = (
+export const setQuickLaunchBookmarkIds = (
     bookmarkTree: readonly BookmarkCategoryData[],
     bookmarkIds: readonly string[]
 ): BookmarkCategoryData[] => {
-    const feedOrderById = new Map(
+    const quickLaunchOrderById = new Map(
         bookmarkIds.map((bookmarkId, index) => [bookmarkId, index])
     );
 
     return bookmarkTree.map((category) => ({
         ...category,
-        children: updateFeedNodes(category.children, feedOrderById),
+        children: updateQuickLaunchNodes(
+            category.children,
+            quickLaunchOrderById
+        ),
     }));
 };
 
-export const initializeFeedSelection = (
+export const initializeQuickLaunchSelection = (
     bookmarkTree: readonly BookmarkCategoryData[]
 ): BookmarkCategoryData[] =>
-    setFeedBookmarkIds(
+    setQuickLaunchBookmarkIds(
         bookmarkTree,
-        getFeedBookmarks(bookmarkTree).map((bookmark) => bookmark.id)
+        getQuickLaunchBookmarks(bookmarkTree).map((bookmark) => bookmark.id)
     );

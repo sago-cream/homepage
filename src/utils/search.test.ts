@@ -59,36 +59,38 @@ test('literal Chinese text remains searchable alongside recorded keys', () => {
 });
 
 test('slash commands accept Latin, Zhuyin, mixed text, and the Zhuyin slash key', () => {
-    const feeds: SlashCommandItem[] = [{ command: 'feeds', label: '/feeds' }];
+    const launch: SlashCommandItem[] = [
+        { command: 'quick-launch', label: '/launch' },
+    ];
     for (const query of [
         '/',
-        '/FEEDS',
-        '/ㄑ',
-        '/ㄑㄍㄍㄎㄋ',
-        '/fㄍeㄎs',
-        'ㄥㄑㄍㄍㄎㄋ',
-        '  ㄥㄑe  ',
+        '/LAUNCH',
+        '/ㄠ',
+        '/ㄠㄇㄧㄙㄏㄘ',
+        '/lㄇuㄙcㄘ',
+        'ㄥㄠㄇㄧㄙㄏㄘ',
+        '  ㄥㄠa  ',
     ]) {
         expect(isSlashCommandSearch(query)).toBe(true);
-        expect(getSlashCommandResults(query)).toEqual(feeds);
+        expect(getSlashCommandResults(query)).toEqual(launch);
     }
     for (const query of [
         '',
-        'feeds',
-        'ㄑㄍㄍㄎㄋ',
+        'launch',
+        'ㄠㄇㄧㄙㄏㄘ',
         '/unknown',
-        '/ㄑㄍㄍㄎㄋx',
+        '/ㄠㄇㄧㄙㄏㄘx',
     ]) {
         expect(getSlashCommandResults(query)).toEqual([]);
     }
 });
 
 test('slash commands use recorded keys when the IME leaves residual text', () => {
-    const feeds = getSlashCommandResults('/feeds');
-    expect(getSlashCommandResults('/ㄋ', '/feeds')).toEqual(feeds);
-    expect(getSlashCommandResults('ㄥㄋ', 'feeds')).toEqual(feeds);
-    expect(getSlashCommandResults('/ㄑ', '/unknown')).toEqual([]);
-    expect(getSlashCommandResults('feeds', '/feeds')).toEqual([]);
-    expect(getSlashCommandResults('/feeds!', '/feeds')).toEqual([]);
-    expect(getSlashCommandResults('/ㄑㄍㄍㄎㄋx', '/')).toEqual([]);
+    const launch = getSlashCommandResults('/launch');
+    expect(getSlashCommandResults('/ㄘ', '/launch')).toEqual(launch);
+    expect(getSlashCommandResults('ㄥㄘ', 'launch')).toEqual(launch);
+    expect(getSlashCommandResults('/ㄠ', '/unknown')).toEqual([]);
+    expect(getSlashCommandResults('launch', '/launch')).toEqual([]);
+    expect(getSlashCommandResults('/launch!', '/launch')).toEqual([]);
+    expect(getSlashCommandResults('/ㄠㄇㄧㄙㄏㄘx', '/')).toEqual([]);
 });

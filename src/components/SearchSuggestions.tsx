@@ -1,4 +1,4 @@
-import { Bookmark, Rss, Search } from 'lucide-react';
+import { Bookmark, Layers, Search } from 'lucide-react';
 import { createPortal } from 'react-dom';
 
 import type {
@@ -82,7 +82,7 @@ export const SearchSuggestions: React.FC<SearchSuggestionsProps> = ({
                         }}
                     >
                         <span className='search-suggestion-icon'>
-                            <Rss className='icon' />
+                            <Layers className='icon' />
                         </span>
                         <span className='search-suggestion-text'>
                             {command.label}

@@ -6,6 +6,7 @@ import { useBookmarks } from '@/hooks/useBookmarks';
 import type { BookmarkControls } from '@/hooks/useBookmarks';
 import { useBookmarkSearch } from '@/hooks/useBookmarkSearch';
 import { useHideLinks } from '@/hooks/useHideLinks';
+import { useLocale } from '@/hooks/useLocale';
 import { useTime } from '@/hooks/useTime';
 import type { AqiData, WeatherData } from '@/types/environment';
 import type { InitialAppPreferences } from '@/types/preferences';
@@ -69,12 +70,13 @@ const CoverContent: React.FC<CoverContentProps> = ({
     isSupabaseEnabled,
 }) => {
     const { time } = useTime();
+    const { t } = useLocale();
     const { hideLinks } = useHideLinks();
     const [isLinkPanelLocked, setIsLinkPanelLocked] = useState(false);
     const {
-        blockedFeedsLinks,
+        blockedQuickLaunchLinks,
         clearSearch,
-        clearBlockedFeedsLinks,
+        clearBlockedQuickLaunchLinks,
         executeSlashCommand,
         focusSearchInput,
         googleSearchResultIndex,
@@ -190,21 +192,21 @@ const CoverContent: React.FC<CoverContentProps> = ({
                 />
             )}
 
-            {blockedFeedsLinks.length > 0 && (
-                <div className='feeds-fallback' role='status'>
-                    <div className='feeds-fallback-header'>
-                        <span>Open remaining feed tabs</span>
+            {blockedQuickLaunchLinks.length > 0 && (
+                <div className='quick-launch-fallback' role='status'>
+                    <div className='quick-launch-fallback-header'>
+                        <span>{t.quickLaunchRemainingTabs}</span>
                         <button
-                            className='feeds-fallback-close'
+                            className='quick-launch-fallback-close'
                             type='button'
                             aria-label='Dismiss'
-                            onClick={clearBlockedFeedsLinks}
+                            onClick={clearBlockedQuickLaunchLinks}
                         >
                             <X className='icon' />
                         </button>
                     </div>
-                    <div className='feeds-fallback-links'>
-                        {blockedFeedsLinks.map(({ link, url }) => (
+                    <div className='quick-launch-fallback-links'>
+                        {blockedQuickLaunchLinks.map(({ link, url }) => (
                             <a
                                 key={`${link}:${url}`}
                                 href={url}

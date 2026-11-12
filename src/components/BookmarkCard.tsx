@@ -27,26 +27,31 @@ export const BookmarkActions: React.FC<{
     bookmark: { title: string; url?: string };
     onEdit: () => void;
     onDelete?: () => void;
-    onAddToFeeds?: () => void;
-    addToFeedsLabel?: string;
+    onAddToQuickLaunch?: () => void;
+    addToQuickLaunchLabel?: string;
     labels: { edit: string; open: string; delete: string };
 }> = ({
     bookmark,
     onEdit,
     onDelete,
-    onAddToFeeds,
-    addToFeedsLabel,
+    onAddToQuickLaunch,
+    addToQuickLaunchLabel,
     labels,
 }) => (
     <ActionMenu
-        label={`${bookmark.title}: ${labels.edit}${bookmark.url ? `, ${labels.open}` : ''}${onAddToFeeds ? `, ${addToFeedsLabel}` : ''}${onDelete ? `, ${labels.delete}` : ''}`}
+        label={`${bookmark.title}: ${labels.edit}${bookmark.url ? `, ${labels.open}` : ''}${onAddToQuickLaunch ? `, ${addToQuickLaunchLabel}` : ''}${onDelete ? `, ${labels.delete}` : ''}`}
         items={[
             { label: labels.edit, onSelect: onEdit },
             ...(bookmark.url
                 ? [{ label: labels.open, href: bookmark.url }]
                 : []),
-            ...(onAddToFeeds && addToFeedsLabel
-                ? [{ label: addToFeedsLabel, onSelect: onAddToFeeds }]
+            ...(onAddToQuickLaunch && addToQuickLaunchLabel
+                ? [
+                      {
+                          label: addToQuickLaunchLabel,
+                          onSelect: onAddToQuickLaunch,
+                      },
+                  ]
                 : []),
             ...(onDelete
                 ? [{ label: labels.delete, onSelect: onDelete, danger: true }]

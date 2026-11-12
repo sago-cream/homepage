@@ -47,7 +47,11 @@ export const parseKeybinds = (value: string | null | undefined): Keybind[] => {
             if (key !== '') {
                 keys.add(key);
             }
-            return [{ id: item.id, target: item.target, key }];
+            const target =
+                item.target === 'command:feeds'
+                    ? 'command:quick-launch'
+                    : item.target;
+            return [{ id: item.id, target, key }];
         });
     } catch {
         return [];

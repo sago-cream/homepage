@@ -42,7 +42,9 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
     }
     browser.localStorage.setItem(
         keybindStorageKey,
-        JSON.stringify([{ id: 'feeds', target: 'command:feeds', key: 'f' }])
+        JSON.stringify([
+            { id: 'quick-launch', target: 'command:quick-launch', key: 'f' },
+        ])
     );
     const feed = {
         id: 'feed',
@@ -52,7 +54,12 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
         feed: true,
     };
     const bookmarks = [
-        { id: 'category', category: 'Feeds', children: [feed], links: [feed] },
+        {
+            id: 'category',
+            category: 'QuickLaunch',
+            children: [feed],
+            links: [feed],
+        },
     ];
     let search!: ReturnType<typeof useBookmarkSearch>;
     function Consumer() {
@@ -175,7 +182,7 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
         expect(document.activeElement).toBe(input);
         expect(search.searchInputValue).toBe('/');
         await act(async () => {
-            for (const letter of 'feeds') {
+            for (const letter of 'launch') {
                 input.dispatchEvent(
                     new browser.KeyboardEvent('keydown', {
                         key: 'Process',
@@ -187,9 +194,9 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
             }
             await Promise.resolve();
         });
-        await change('/ㄋ');
+        await change('/ㄘ');
         expect(search.slashCommandResults).toEqual([
-            { command: 'feeds', label: '/feeds' },
+            { command: 'quick-launch', label: '/launch' },
         ]);
         expect(search.hasGoogleSearchResult).toBe(false);
         await press(input, { key: 'Enter' });
@@ -199,7 +206,7 @@ test('search respects native controls and handles Zhuyin hotkeys and slash comma
             search.handleSearchBlur();
             await Promise.resolve();
         });
-        await change('ㄥㄑㄍㄍㄎㄋ');
+        await change('ㄥㄠㄇㄧㄙㄏㄘ');
         expect(search.slashCommandResults).toHaveLength(1);
         await press(input, { key: 'Enter' });
         expect(opened).toHaveLength(4);
