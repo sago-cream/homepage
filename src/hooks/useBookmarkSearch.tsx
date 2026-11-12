@@ -10,9 +10,11 @@ import {
 import type React from 'react';
 
 import { useKeybinds } from '@/hooks/useKeybinds';
-import type { BookmarkCategoryData } from '@/types/bookmarks';
+import type { BookmarkCategoryData, BookmarkLinkData } from '@/types/bookmarks';
+import { getFeedBookmarks } from '@/utils/feeds';
 import { getHotkey } from '@/utils/keybinds';
 import { getKeyboardKey } from '@/utils/keyboard';
+import { openQuickLaunchBookmarks } from '@/utils/quickLaunch';
 import type {
     LinkItem,
     SearchSuggestionsPosition,
@@ -71,10 +73,12 @@ const getElementMotionDuration = (element: HTMLElement): number => {
 
 export const useBookmarkSearch = (
     bookmarkTree: readonly BookmarkCategoryData[],
-    bookmarksLoading = false
+    bookmarksLoading = false,
+    onEmptyQuickLaunch?: () => void
 ): {
-    isQuickLaunchOpen: boolean;
-    closeQuickLaunch: () => void;
+    blockedQuickLaunchBookmarks: BookmarkLinkData[];
+    clearBlockedQuickLaunchBookmarks: () => void;
+    dismissBlockedQuickLaunchBookmark: (bookmarkId: string) => void;
     clearSearch: () => void;
     executeSlashCommand: (command: SlashCommandItem) => void;
     focusSearchInput: () => void;
@@ -113,7 +117,8 @@ export const useBookmarkSearch = (
     const [inputFocused, setInputFocused] = useState(false);
     const [searchValue, setSearchValue] = useState('');
     const [searchKeySequence, setSearchKeySequence] = useState('');
-    const [isQuickLaunchOpen, setIsQuickLaunchOpen] = useState(false);
+    const [blockedQuickLaunchBookmarks, setBlockedQuickLaunchBookmarks] =
+        useState<BookmarkLinkData[]>([]);
     const [requestedSearchResultIndex, setRequestedSearchResultIndex] =
         useState<number | undefined>(undefined);
     const [searchSuggestionsPosition, setSearchSuggestionsPosition] = useState<
@@ -181,17 +186,34 @@ export const useBookmarkSearch = (
               ];
     const searchInputValue = searchValue;
 
-    const executeSlashCommand = useCallback((_command: SlashCommandItem) => {
-        setInputFocused(false);
-        setSearchValue('');
-        setSearchKeySequence('');
-        setRequestedSearchResultIndex(undefined);
-        setIsQuickLaunchOpen(true);
+    const executeSlashCommand = useCallback(
+        (_command: SlashCommandItem) => {
+            const bookmarks = getFeedBookmarks(bookmarkTree);
+            setInputFocused(false);
+            setSearchValue('');
+            setSearchKeySequence('');
+            setRequestedSearchResultIndex(undefined);
+            setBlockedQuickLaunchBookmarks(openQuickLaunchBookmarks(bookmarks));
+            if (bookmarks.length === 0) {
+                onEmptyQuickLaunch?.();
+            }
+        },
+        [bookmarkTree, onEmptyQuickLaunch]
+    );
+
+    const clearBlockedQuickLaunchBookmarks = useCallback(() => {
+        setBlockedQuickLaunchBookmarks([]);
     }, []);
 
-    const closeQuickLaunch = useCallback(() => {
-        setIsQuickLaunchOpen(false);
-    }, []);
+    const dismissBlockedQuickLaunchBookmark = useCallback(
+        (bookmarkId: string) => {
+            setBlockedQuickLaunchBookmarks(
+                (bookmarks: readonly BookmarkLinkData[]) =>
+                    bookmarks.filter((bookmark) => bookmark.id !== bookmarkId)
+            );
+        },
+        []
+    );
 
     useEffect(() => {
         const handleHotkey = (event: KeyboardEvent) => {
@@ -598,8 +620,9 @@ export const useBookmarkSearch = (
     }, [googleSearchResultIndex]);
 
     return {
-        isQuickLaunchOpen,
-        closeQuickLaunch,
+        blockedQuickLaunchBookmarks,
+        clearBlockedQuickLaunchBookmarks,
+        dismissBlockedQuickLaunchBookmark,
         clearSearch,
         executeSlashCommand,
         focusSearchInput,

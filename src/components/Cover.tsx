@@ -1,5 +1,6 @@
-import React, { lazy, Suspense, useState } from 'react';
-import { Layers, Search } from 'lucide-react';
+import React, { lazy, Suspense, useCallback, useState } from 'react';
+import { Layers, Search, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import { useHomepageAuth } from '@/auth/AuthProvider';
 import { useBookmarks } from '@/hooks/useBookmarks';
@@ -10,8 +11,8 @@ import { useLocale } from '@/hooks/useLocale';
 import { useTime } from '@/hooks/useTime';
 import type { AqiData, WeatherData } from '@/types/environment';
 import type { InitialAppPreferences } from '@/types/preferences';
+import { settingsSectionPaths } from '@/utils/settingsNavigation';
 import { Mountains } from './Mountains';
-import { QuickLaunchDialog } from './QuickLaunchDialog';
 import { SearchSuggestions } from './SearchSuggestions';
 
 const LinkPanel = lazy(
@@ -71,12 +72,25 @@ const CoverContent: React.FC<CoverContentProps> = ({
     isSupabaseEnabled,
 }) => {
     const { time } = useTime();
+    const router = useRouter();
+    const openQuickLaunchSetup = useCallback(() => {
+        const hasBookmarks = bookmarkControls.bookmarkTree.some(
+            (category) => category.links.length > 0
+        );
+        router.push(
+            hasBookmarks
+                ? settingsSectionPaths.feeds
+                : settingsSectionPaths.content,
+            { scroll: false }
+        );
+    }, [bookmarkControls.bookmarkTree, router]);
     const { t } = useLocale();
     const { hideLinks } = useHideLinks();
     const [isLinkPanelLocked, setIsLinkPanelLocked] = useState(false);
     const {
-        isQuickLaunchOpen,
-        closeQuickLaunch,
+        blockedQuickLaunchBookmarks,
+        clearBlockedQuickLaunchBookmarks,
+        dismissBlockedQuickLaunchBookmark,
         clearSearch,
         executeSlashCommand,
         focusSearchInput,
@@ -107,7 +121,8 @@ const CoverContent: React.FC<CoverContentProps> = ({
         trimmedSearchValue,
     } = useBookmarkSearch(
         bookmarkControls.bookmarkTree,
-        bookmarkControls.isLoading
+        bookmarkControls.isLoading,
+        openQuickLaunchSetup
     );
 
     return (
@@ -178,7 +193,6 @@ const CoverContent: React.FC<CoverContentProps> = ({
                     <button
                         type='button'
                         className='quick-launch-entry'
-                        aria-haspopup='dialog'
                         disabled={bookmarkControls.isLoading}
                         onClick={() => {
                             executeSlashCommand({
@@ -211,11 +225,43 @@ const CoverContent: React.FC<CoverContentProps> = ({
                 />
             )}
 
-            {isQuickLaunchOpen && (
-                <QuickLaunchDialog
-                    bookmarkControls={bookmarkControls}
-                    onClose={closeQuickLaunch}
-                />
+            {blockedQuickLaunchBookmarks.length > 0 && (
+                <aside
+                    className='quick-launch-fallback'
+                    aria-labelledby='quick-launch-fallback-title'
+                >
+                    <div className='quick-launch-fallback-header'>
+                        <h2 id='quick-launch-fallback-title'>
+                            {t.quickLaunch}
+                        </h2>
+                        <button
+                            type='button'
+                            className='settings-icon-button'
+                            aria-label={t.close}
+                            onClick={clearBlockedQuickLaunchBookmarks}
+                        >
+                            <X aria-hidden />
+                        </button>
+                    </div>
+                    <p role='status'>{t.quickLaunchBlocked}</p>
+                    <div className='quick-launch-fallback-links'>
+                        {blockedQuickLaunchBookmarks.map((bookmark) => (
+                            <a
+                                key={bookmark.id}
+                                href={bookmark.url}
+                                target='_blank'
+                                rel='noopener noreferrer'
+                                onClick={() => {
+                                    dismissBlockedQuickLaunchBookmark(
+                                        bookmark.id
+                                    );
+                                }}
+                            >
+                                {bookmark.title}
+                            </a>
+                        ))}
+                    </div>
+                </aside>
             )}
 
             <Suspense fallback={undefined}>

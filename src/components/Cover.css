@@ -332,10 +332,6 @@
     --icon-size: var(--icon-prominent);
 }
 
-.quick-launch-header svg {
-    --icon-size: var(--icon-control);
-}
-
 .homepage-launch-bar {
     width: 100%;
     justify-content: center;
@@ -380,117 +376,76 @@
     font: var(--fontBaseSm);
 }
 
-.quick-launch-dialog {
-    --bookmark-workspace-control-radius: 0.75rem;
-    margin: auto;
-    width: min(32rem, calc(100vw - 2rem));
+.quick-launch-fallback {
+    position: fixed;
+    left: 50%;
+    bottom: 2rem;
+    translate: -50% 0;
+    width: min(28rem, calc(100vw - 2rem));
     max-height: calc(100dvh - 2rem);
-    padding: 1.5rem;
-    border: 1px solid var(--clr-text-alpha-2);
+    padding: 1rem;
     border-radius: 1rem;
     background: var(--clr-neutral-light);
-    color: var(--clr-text);
     box-shadow: var(--shadow-panel);
-    overflow: auto;
-    overscroll-behavior: contain;
-}
-
-.quick-launch-dialog::backdrop {
-    background: var(--clr-overlay);
-}
-
-.quick-launch-header,
-.quick-launch-header h2,
-.quick-launch-footer {
-    display: flex;
-    align-items: center;
+    color: var(--clr-text);
+    z-index: 5;
+    display: grid;
     gap: 0.75rem;
-}
-
-.quick-launch-header,
-.quick-launch-footer {
-    justify-content: space-between;
-}
-
-.quick-launch-header h2 {
-    font: var(--fontBoldLg);
-}
-
-.quick-launch-dialog > p {
-    margin-block: 0.75rem 1rem;
-}
-
-.quick-launch-bookmarks {
-    min-height: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    display: grid;
-    gap: 0.5rem;
-    padding: 0;
-    list-style: none;
 }
 
-.quick-launch-bookmarks a {
+.quick-launch-fallback-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.75rem;
-    min-height: 3.5rem;
-    padding: 0.75rem;
+    gap: 1rem;
+}
+
+.quick-launch-fallback-header h2 {
+    font: var(--fontBoldMd);
+}
+
+.quick-launch-fallback > p {
+    font: var(--fontBaseSm);
+    line-height: 1.5;
+}
+
+.quick-launch-fallback-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.quick-launch-fallback-links a {
+    min-height: 2.75rem;
+    padding: 0.5rem 0.75rem;
+    display: flex;
+    align-items: center;
     border-radius: 0.75rem;
     background: var(--clr-text-alpha-2);
     color: var(--clr-text);
+    font: var(--fontBaseMd);
     text-decoration: none;
+    overflow-wrap: anywhere;
 }
 
-.quick-launch-bookmarks a:focus-visible {
+.quick-launch-fallback-links a:hover {
+    color: var(--clr-primary);
+}
+
+.quick-launch-fallback-links a:focus-visible {
     outline: 2px solid var(--clr-primary);
     outline-offset: -2px;
 }
 
-.quick-launch-bookmarks a:hover {
-    color: var(--clr-primary);
+.quick-launch-fallback-header .settings-icon-button {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
 }
 
-.quick-launch-bookmarks a > span {
-    display: grid;
-    gap: 0.25rem;
-    min-width: 0;
-}
-
-.quick-launch-bookmarks strong,
-.quick-launch-bookmarks small {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.quick-launch-bookmarks strong {
-    font: var(--fontBoldMd);
-}
-
-.quick-launch-bookmarks small {
-    font: var(--fontBaseSm);
-    color: var(--clr-text-alpha);
-}
-
-.quick-launch-bookmarks svg {
-    flex-shrink: 0;
+.quick-launch-fallback-header svg {
     --icon-size: var(--icon-control);
-}
-
-.quick-launch-footer {
-    flex-wrap: wrap;
-    margin-top: 1rem;
-}
-
-.quick-launch-status {
-    font: var(--fontBaseMd);
-    line-height: 1.5;
-}
-
-.quick-launch-empty {
-    min-height: 12rem;
 }
 
 @media (width < 48rem) {
@@ -500,45 +455,5 @@
 
     .homepage-launch-bar:has(.search.with-suggestions) .quick-launch-entry {
         visibility: hidden;
-    }
-
-    .quick-launch-dialog {
-        padding: 1rem;
-    }
-
-    .quick-launch-footer > * {
-        flex: 1 1 auto;
-        justify-content: center;
-    }
-}
-
-.quick-launch-dialog[open] {
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.quick-launch-dialog > :is(.quick-launch-header, p, .quick-launch-footer) {
-    flex-shrink: 0;
-}
-
-.quick-launch-dialog a.bookmark-workspace-primary-button,
-.quick-launch-edit {
-    text-decoration: none;
-}
-
-.quick-launch-edit:focus-visible {
-    outline: 2px solid var(--clr-primary);
-    outline-offset: 2px;
-}
-
-@media (width < 48rem) {
-    .quick-launch-header .settings-icon-button,
-    .quick-launch-footer > :is(a, button) {
-        min-height: 2.75rem;
-    }
-
-    .quick-launch-header .settings-icon-button {
-        min-width: 2.75rem;
     }
 }

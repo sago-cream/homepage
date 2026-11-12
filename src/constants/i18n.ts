@@ -115,16 +115,12 @@ const messages = {
         quickLaunchChoose: 'Choose',
         quickLaunchEdit: 'Edit',
         quickLaunchAddBookmarks: 'Add bookmarks',
-        quickLaunchDescription: 'Open these bookmarks in new tabs.',
         quickLaunchSettingsDescription:
             'Open from the homepage or type /launch in search. Drag to reorder.',
-        quickLaunchOpenTabs: 'Open {count} tabs',
-        quickLaunchOpenOneTab: 'Open 1 tab',
         quickLaunchOneSelected: '1 selected',
         quickLaunchSelectedCount: '{count} selected',
         quickLaunchBlocked:
             'Some tabs were blocked. Open the links below or allow popups.',
-        quickLaunchOpened: 'All tabs opened.',
         homepageSearch: 'Search bookmarks or the web',
         searchSuggestions: 'Bookmarks and commands',
         close: 'Close',
@@ -289,16 +285,12 @@ const messages = {
         quickLaunchChoose: '選擇',
         quickLaunchEdit: '編輯',
         quickLaunchAddBookmarks: '新增書籤',
-        quickLaunchDescription: '在新分頁開啟這些書籤。',
         quickLaunchSettingsDescription:
             '從首頁或在搜尋列輸入 /launch 開啟。拖曳可調整順序。',
-        quickLaunchOpenTabs: '開啟 {count} 個分頁',
-        quickLaunchOpenOneTab: '開啟 1 個分頁',
         quickLaunchOneSelected: '已選 1 個',
         quickLaunchSelectedCount: '已選 {count} 個',
         quickLaunchBlocked:
             '部分分頁遭封鎖。請開啟下方連結，或允許彈出式視窗。',
-        quickLaunchOpened: '已開啟所有分頁。',
         homepageSearch: '搜尋書籤或網頁',
         searchSuggestions: '書籤與指令',
         close: '關閉',
