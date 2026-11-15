@@ -1,8 +1,18 @@
 import { completeConfigBase } from 'eslint-config-complete';
 import { defineConfig } from 'eslint/config';
 
+import { dialogFocusRules } from './scripts/eslint-rules/dialog-focus.mjs';
+
 export default defineConfig(
     ...completeConfigBase,
+
+    {
+        plugins: { homepage: { rules: dialogFocusRules } },
+        rules: {
+            'homepage/stable-dialog-ref': 'error',
+            'homepage/no-invalid-focus-effect': 'error',
+        },
+    },
 
     {
         ignores: [
@@ -25,6 +35,7 @@ export default defineConfig(
     {
         files: [
             'next.config.ts',
+            'playwright.config.ts',
             'src/app/**/{error,layout,loading,not-found,page}.tsx',
             'src/proxy.ts',
         ],

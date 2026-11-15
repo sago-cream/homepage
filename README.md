@@ -39,7 +39,14 @@ Without the corresponding key, that metric is omitted.
 bun run lint
 bun test
 bun run build
+bunx playwright install chromium
+bun run test:e2e
 ```
+
+ESLint rejects inline native-dialog ref callbacks and effects that focus
+`aria-invalid` fields. Keep dialog refs stable and focus validation errors in
+submit handlers so typing and unrelated rerenders cannot reset input focus.
+Chromium tests cover desktop and mobile bookmark editing and validation.
 
 ## Deployment
 
