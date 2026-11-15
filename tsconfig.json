@@ -39,5 +39,10 @@
         "dist/types/**/*.ts",
         "dist/dev/types/**/*.ts"
     ],
-    "exclude": ["node_modules", "dist", "next.config.ts"]
+    "exclude": [
+        "node_modules",
+        "dist",
+        "next.config.ts",
+        "playwright.config.ts"
+    ]
 }

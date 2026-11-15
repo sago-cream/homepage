@@ -1,5 +1,6 @@
 /* eslint-disable no-nested-ternary -- Visual state branches are clearest inline in this workspace. */
 import React, {
+    useCallback,
     useEffect,
     useId,
     useImperativeHandle,
@@ -64,6 +65,7 @@ import {
     isBookmarkLink,
     isBookmarkRootCategory,
 } from '@/utils/bookmarks';
+import { showModalDialog } from '@/utils/dialog';
 import {
     getQuickLaunchBookmarks,
     setQuickLaunchBookmarkIds,
@@ -533,6 +535,17 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
     const emptyTrashDescriptionId = useId();
     const importInputId = useId();
     const dialogRef = useRef<HTMLDivElement>(null);
+    const editorDialogRef = useRef<HTMLDialogElement>(null);
+    const attachEditorDialog = useCallback(
+        (element: HTMLDialogElement | null) => {
+            editorDialogRef.current = element;
+            if (element && !element.open) {
+                showModalDialog(element);
+                element.querySelector<HTMLInputElement>('input')?.focus();
+            }
+        },
+        []
+    );
     const editorReturnFocusRef = useRef<HTMLElement | undefined>(undefined);
     const trashReturnFocusRef = useRef<HTMLElement | undefined>(undefined);
     const emptyTrashReturnFocusRef = useRef<HTMLElement | undefined>(undefined);
@@ -1091,6 +1104,11 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
 
         if (Object.keys(errors).length > 0) {
             setFormErrors(errors);
+            editorDialogRef.current
+                ?.querySelector<HTMLInputElement>(
+                    errors.title ? '[name="title"]' : '[name="url"]'
+                )
+                ?.focus();
             return;
         }
 
@@ -1396,13 +1414,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
             preventScroll: true,
         });
     }, [bookmarkTree]);
-
-    useEffect(() => {
-        const invalid = dialogRef.current?.querySelector<HTMLInputElement>(
-            '.bookmark-edit-fields input[aria-invalid="true"]'
-        );
-        invalid?.focus();
-    }, [formErrors]);
 
     useEffect(() => {
         if (isSearchOpen) {
@@ -2428,14 +2439,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                     <dialog
                         className='bookmark-settings-editor bookmark-edit-dialog'
                         aria-label={formTitle}
-                        ref={(element) => {
-                            if (element && !element.open) {
-                                element.showModal();
-                                element
-                                    .querySelector<HTMLInputElement>('input')
-                                    ?.focus();
-                            }
-                        }}
+                        ref={attachEditorDialog}
                         onCancel={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
@@ -2496,14 +2500,12 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                         </span>
                                         <input
                                             autoFocus
+                                            name='title'
                                             type='text'
                                             value={editorDraft.title}
                                             aria-invalid={
                                                 formErrors.title !== undefined
                                             }
-                                            onPointerDown={(event) => {
-                                                event.currentTarget.focus();
-                                            }}
                                             onChange={(event) => {
                                                 setEditorDraft({
                                                     ...editorDraft,
@@ -2529,6 +2531,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                 <span>{t.bookmarkUrl}</span>
                                                 <input
                                                     type='text'
+                                                    name='url'
                                                     inputMode='url'
                                                     placeholder='https://'
                                                     value={editorDraft.url}
@@ -2536,9 +2539,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                         formErrors.url !==
                                                         undefined
                                                     }
-                                                    onPointerDown={(event) => {
-                                                        event.currentTarget.focus();
-                                                    }}
                                                     onChange={(event) => {
                                                         setEditorDraft({
                                                             ...editorDraft,
@@ -2605,11 +2605,6 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                                                                 t.categoryIconSearch
                                                             }
                                                             value={iconQuery}
-                                                            onPointerDown={(
-                                                                event
-                                                            ) => {
-                                                                event.currentTarget.focus();
-                                                            }}
                                                             onChange={(
                                                                 event
                                                             ) => {
@@ -2734,11 +2729,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                 {isTrashOpen ? (
                     <dialog
                         className='bookmark-workspace-trash-dialog bookmark-trash-modal'
-                        ref={(element) => {
-                            if (element && !element.open) {
-                                element.showModal();
-                            }
-                        }}
+                        ref={showModalDialog}
                         onCancel={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
@@ -2846,11 +2837,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                         role='alertdialog'
                         aria-describedby={emptyTrashDescriptionId}
                         aria-label={t.emptyTrash}
-                        ref={(element) => {
-                            if (element && !element.open) {
-                                element.showModal();
-                            }
-                        }}
+                        ref={showModalDialog}
                         onCancel={(event) => {
                             event.preventDefault();
                             event.stopPropagation();
@@ -2901,11 +2888,7 @@ export const BookmarkManager: React.FC<BookmarkManagerProps> = ({
                         role='alertdialog'
                         aria-label={t.discardChanges}
                         aria-describedby={discardDescriptionId}
-                        ref={(element) => {
-                            if (element && !element.open) {
-                                element.showModal();
-                            }
-                        }}
+                        ref={showModalDialog}
                         onCancel={(event) => {
                             event.preventDefault();
                             event.stopPropagation();

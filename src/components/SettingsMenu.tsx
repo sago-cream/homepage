@@ -57,6 +57,7 @@ import {
     removeStorageValue,
     writeStorageValue,
 } from '@/utils/browserStorage';
+import { showModalDialog } from '@/utils/dialog';
 import {
     clearPreferenceCookie,
     writePreferenceCookie,
@@ -637,6 +638,28 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
             ? undefined
             : Math.round(wallpaperControls.progress);
 
+    const attachSettingsDialog = useCallback(
+        (element: HTMLDialogElement | null) => {
+            if (element && !element.open) {
+                const active = document.activeElement;
+                returnFocusRef.current =
+                    active instanceof HTMLElement &&
+                    active !== document.body &&
+                    !active.closest('.settings-page')
+                        ? active
+                        : (triggerRef.current ??
+                          controlRef.current
+                              ?.closest('.user-floating-bar')
+                              ?.querySelector<HTMLElement>(
+                                  '.user-menu-trigger'
+                              ) ??
+                          undefined);
+                showModalDialog(element);
+            }
+        },
+        []
+    );
+
     const settingsPage =
         isOpen && isBrowser()
             ? createPortal(
@@ -653,24 +676,7 @@ export const SettingsMenu: React.FC<SettingsMenuProps> = ({
                       }}
                   >
                       <dialog
-                          ref={(element) => {
-                              if (element && !element.open) {
-                                  const active = document.activeElement;
-                                  returnFocusRef.current =
-                                      active instanceof HTMLElement &&
-                                      active !== document.body &&
-                                      !active.closest('.settings-page')
-                                          ? active
-                                          : (triggerRef.current ??
-                                            controlRef.current
-                                                ?.closest('.user-floating-bar')
-                                                ?.querySelector<HTMLElement>(
-                                                    '.user-menu-trigger'
-                                                ) ??
-                                            undefined);
-                                  element.showModal();
-                              }
-                          }}
+                          ref={attachSettingsDialog}
                           onCancel={(event) => {
                               if (event.target === event.currentTarget) {
                                   event.preventDefault();

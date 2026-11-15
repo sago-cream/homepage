@@ -19,3 +19,7 @@ next-env.d.ts
 .DS_Store
 .vercel
 .data/
+
+# Browser test artifacts
+playwright-report/
+test-results/
